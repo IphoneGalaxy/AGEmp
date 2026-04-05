@@ -1,0 +1,64 @@
+/* ==========================================
+   Estilos base da aplicação
+   ========================================== */
+
+body {
+  background-color: #f3f4f6;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Tab ativa (borda azul inferior) */
+.tab-active {
+  border-bottom: 2px solid #2563eb;
+  color: #2563eb;
+  font-weight: bold;
+}
+
+/* Esconde scrollbar em WebKit (Chrome/Safari/Edge) */
+.hide-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================
+   Animações
+   ========================================== */
+
+/* Fade in com deslizar suave de baixo para cima */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Animação do Toast: aparece, permanece e desaparece */
+@keyframes toastSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+}
+
+.toast-anim {
+  animation: toastSlide 3s ease-in-out forwards;
+}
