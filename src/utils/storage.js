@@ -1,50 +1,92 @@
 /**
  * Módulo de persistência de dados.
- * Gerencia leitura/escrita no localStorage, migração de formato antigo
- * e operações de backup (exportação e importação).
+ * Gerencia leitura/escrita no localStorage, migração de formatos antigos,
+ * normalização de dados e operações de backup.
  */
 
 const STORAGE_KEY = 'loanManagerData';
 
 /**
- * Carrega os dados do localStorage e aplica migração de formato antigo se necessário.
- * O formato antigo usava `client.transactions` com tipo 'loan'/'payment'.
- * O formato atual usa `client.loans` com array de `payments` dentro de cada loan.
- *
- * @returns {{ fundsTransactions: Array, clients: Array } | null} Dados carregados ou null se vazio.
+ * Normaliza um empréstimo individual, garantindo que possua interestRate.
+ * @param {Object} loan - Objeto do empréstimo.
+ * @param {number} defaultRate - Taxa padrão de juros (%).
+ * @returns {Object} Empréstimo normalizado.
  */
-export const loadData = () => {
+const normalizeLoan = (loan, defaultRate) => ({
+  ...loan,
+  interestRate: loan.interestRate != null ? loan.interestRate : defaultRate,
+  payments: loan.payments || [],
+});
+
+/**
+ * Normaliza um cliente, migrando formato antigo e garantindo interestRate nos empréstimos.
+ *
+ * Migrações:
+ * - v1: client.transactions → client.loans (formato antigo com type 'loan'/'payment')
+ * - v2: loan sem interestRate → adiciona interestRate com valor padrão
+ *
+ * @param {Object} client - Objeto do cliente.
+ * @param {number} defaultRate - Taxa de juros padrão.
+ * @returns {Object} Cliente normalizado.
+ */
+const normalizeClient = (client, defaultRate) => {
+  // Migração v1: formato antigo (transactions) → formato novo (loans)
+  if (client.transactions && !client.loans) {
+    const oldLoans = client.transactions
+      .filter((t) => t.type === 'loan')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const oldPayments = client.transactions
+      .filter((t) => t.type === 'payment')
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const newLoans = oldLoans.map((l) => ({
+      id: l.id,
+      date: l.date,
+      amount: l.amount,
+      interestRate: defaultRate,
+      payments: [],
+    }));
+    if (newLoans.length > 0 && oldPayments.length > 0) {
+      newLoans[0].payments = oldPayments;
+    }
+    return { id: client.id, name: client.name, loans: newLoans };
+  }
+
+  // Migração v2: adiciona interestRate a empréstimos que não possuem
+  if (client.loans) {
+    return {
+      ...client,
+      loans: client.loans.map((loan) => normalizeLoan(loan, defaultRate)),
+    };
+  }
+
+  return { ...client, loans: [] };
+};
+
+/**
+ * Normaliza uma lista de clientes, aplicando todas as migrações.
+ * Usado ao carregar dados, importar backups e restaurar backups automáticos.
+ *
+ * @param {Array} clients - Lista de clientes (pode conter dados de qualquer versão).
+ * @param {number} defaultRate - Taxa de juros padrão para contratos sem taxa definida.
+ * @returns {Array} Lista de clientes normalizada.
+ */
+export const normalizeClients = (clients, defaultRate = 10) => {
+  if (!Array.isArray(clients)) return [];
+  return clients.map((c) => normalizeClient(c, defaultRate));
+};
+
+/**
+ * Carrega os dados do localStorage com migração automática.
+ * @param {number} defaultRate - Taxa padrão para empréstimos antigos.
+ * @returns {{ fundsTransactions: Array, clients: Array } | null}
+ */
+export const loadData = (defaultRate = 10) => {
   const savedData = localStorage.getItem(STORAGE_KEY);
   if (!savedData) return null;
 
   const parsed = JSON.parse(savedData);
   const fundsTransactions = parsed.fundsTransactions || [];
-  let clients = [];
-
-  if (parsed.clients) {
-    clients = parsed.clients.map((client) => {
-      // Migração: formato antigo (transactions) → formato novo (loans)
-      if (client.transactions && !client.loans) {
-        const oldLoans = client.transactions
-          .filter((t) => t.type === 'loan')
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-        const oldPayments = client.transactions
-          .filter((t) => t.type === 'payment')
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
-        const newLoans = oldLoans.map((l) => ({
-          id: l.id,
-          date: l.date,
-          amount: l.amount,
-          payments: [],
-        }));
-        if (newLoans.length > 0 && oldPayments.length > 0) {
-          newLoans[0].payments = oldPayments;
-        }
-        return { id: client.id, name: client.name, loans: newLoans };
-      }
-      return client;
-    });
-  }
+  const clients = normalizeClients(parsed.clients, defaultRate);
 
   return { fundsTransactions, clients };
 };
@@ -52,15 +94,15 @@ export const loadData = () => {
 /**
  * Salva os dados no localStorage.
  * @param {Array} fundsTransactions - Transações do caixa pessoal.
- * @param {Array} clients - Lista de clientes com empréstimos e pagamentos.
+ * @param {Array} clients - Lista de clientes.
  */
 export const saveData = (fundsTransactions, clients) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({ fundsTransactions, clients }));
 };
 
 /**
- * Exporta os dados como um arquivo .txt para download.
- * @param {Array} fundsTransactions - Transações do caixa pessoal.
+ * Exporta os dados como arquivo .txt para download.
+ * @param {Array} fundsTransactions - Transações do caixa.
  * @param {Array} clients - Lista de clientes.
  */
 export const exportBackup = (fundsTransactions, clients) => {
@@ -78,9 +120,9 @@ export const exportBackup = (fundsTransactions, clients) => {
 };
 
 /**
- * Lê e valida um arquivo de backup importado pelo usuário.
- * @param {File} file - Arquivo selecionado pelo input file.
- * @returns {Promise<{ fundsTransactions: Array, clients: Array }>} Dados do backup.
+ * Lê e valida um arquivo de backup importado.
+ * @param {File} file - Arquivo selecionado pelo input.
+ * @returns {Promise<{ fundsTransactions: Array, clients: Array }>}
  */
 export const parseBackupFile = (file) => {
   return new Promise((resolve, reject) => {

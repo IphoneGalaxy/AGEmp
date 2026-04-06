@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { formatMoney, formatDate } from '../utils/format';
+import React, { useState } from 'react';
+import { formatDate } from '../utils/format';
 import { generateId } from '../utils/ids';
 import { IconDelete } from './Icons';
 
@@ -10,28 +10,24 @@ import { IconDelete } from './Icons';
  * - Cards de resumo financeiro (disponível / na rua)
  * - Recebimentos do mês (pendentes, recebidos, meta)
  * - Movimentação de caixa pessoal
- * - Seção de backup (exportar/importar)
  *
  * @param {Object} props
- * @param {Object} props.globalStats - Estatísticas globais calculadas.
- * @param {Array}  props.fundsTransactions - Lista de transações do caixa.
+ * @param {Object}   props.globalStats - Estatísticas globais calculadas.
+ * @param {Array}    props.fundsTransactions - Lista de transações do caixa.
  * @param {Function} props.onAddFundTransaction - Callback para adicionar transação.
  * @param {Function} props.onDeleteFundTransaction - Callback para remover transação por ID.
- * @param {Function} props.onExport - Callback para exportar backup.
- * @param {Function} props.onImport - Callback para importar backup (recebe event do input).
  * @param {Function} props.showToast - Callback para exibir notificação toast.
+ * @param {Function} props.displayMoney - Função para formatar/ocultar valores monetários.
  */
 const Dashboard = ({
   globalStats,
   fundsTransactions,
   onAddFundTransaction,
   onDeleteFundTransaction,
-  onExport,
-  onImport,
   showToast,
+  displayMoney,
 }) => {
   const [addAmount, setAddAmount] = useState('');
-  const fileInputRef = useRef(null);
 
   const handleFund = (action) => {
     if (!addAmount || Number(addAmount) <= 0) return;
@@ -59,13 +55,13 @@ const Dashboard = ({
         <div className="bg-blue-600 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
           <p className="text-blue-100 text-sm font-medium relative z-10">Total Disponível</p>
           <p className="text-2xl font-bold mt-1 relative z-10">
-            {formatMoney(globalStats.availableMoney)}
+            {displayMoney(globalStats.availableMoney)}
           </p>
         </div>
         <div className="bg-orange-500 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
           <p className="text-orange-100 text-sm font-medium relative z-10">Total na Rua</p>
           <p className="text-2xl font-bold mt-1 relative z-10">
-            {formatMoney(globalStats.totalLent)}
+            {displayMoney(globalStats.totalLent)}
           </p>
         </div>
       </div>
@@ -81,7 +77,7 @@ const Dashboard = ({
             Falta Receber (Pendentes)
           </p>
           <p className="text-4xl font-black text-red-600">
-            {formatMoney(globalStats.dashPending)}
+            {displayMoney(globalStats.dashPending)}
           </p>
         </div>
 
@@ -89,13 +85,13 @@ const Dashboard = ({
           <div className="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
             <p className="text-[10px] text-green-700 font-bold uppercase mb-1">Já Recebido</p>
             <p className="font-bold text-green-800 text-sm">
-              {formatMoney(globalStats.dashPaid)}
+              {displayMoney(globalStats.dashPaid)}
             </p>
           </div>
           <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-center">
             <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Meta do Mês</p>
             <p className="font-bold text-gray-700 text-sm">
-              {formatMoney(globalStats.dashExpected)}
+              {displayMoney(globalStats.dashExpected)}
             </p>
           </div>
         </div>
@@ -148,7 +144,7 @@ const Dashboard = ({
                     </div>
                     <div>
                       <p className="font-bold text-sm text-gray-800">
-                        {formatMoney(Math.abs(t.amount))}
+                        {displayMoney(Math.abs(t.amount))}
                       </p>
                       <p className="text-[10px] text-gray-400">{formatDate(t.date)}</p>
                     </div>
@@ -167,37 +163,6 @@ const Dashboard = ({
             </div>
           </div>
         )}
-      </div>
-
-      {/* Segurança e Backup */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
-        <h3 className="text-lg font-bold text-gray-800 mb-1">Segurança e Backup</h3>
-        <p className="text-xs text-gray-500 mb-4">
-          Salve seus dados num arquivo de texto. Se trocar de celular ou limpar o navegador, você
-          poderá restaurá-los aqui.
-        </p>
-
-        <div className="flex gap-2">
-          <button
-            onClick={onExport}
-            className="flex-1 bg-blue-50 text-blue-800 py-3 rounded-xl font-bold shadow-sm text-sm border border-blue-200 active:bg-blue-100"
-          >
-            📥 Salvar Backup
-          </button>
-          <button
-            onClick={() => fileInputRef.current.click()}
-            className="flex-1 bg-gray-50 text-gray-800 py-3 rounded-xl font-bold shadow-sm text-sm border border-gray-200 active:bg-gray-100"
-          >
-            📤 Importar
-          </button>
-          <input
-            type="file"
-            accept=".txt,.json"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            onChange={onImport}
-          />
-        </div>
       </div>
     </div>
   );

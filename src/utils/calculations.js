@@ -4,14 +4,25 @@
  * Processa todos os clientes, empréstimos e pagamentos para gerar
  * estatísticas globais e dados processados para exibição.
  *
- * REGRAS DE NEGÓCIO (não alterar):
- * - Juros fixos de 10% sobre o saldo devedor (principal)
+ * REGRAS DE NEGÓCIO:
+ * - Juros sobre o saldo devedor (principal), com taxa definida por contrato
  * - Pagamento cobre primeiro os juros, depois amortiza o principal
  * - Empréstimos feitos no mês corrente só geram expectativa no mês seguinte
  * - Se todos os juros do mês atual estão pagos, exibe dados do próximo mês
+ * - Contratos sem interestRate usam 10% como fallback (compatibilidade)
  */
 
 import { capitalize } from './format';
+
+/**
+ * Obtém a taxa decimal do empréstimo (ex: 10 → 0.10).
+ * @param {Object} loan - Objeto do empréstimo.
+ * @returns {number} Taxa decimal.
+ */
+const getLoanRate = (loan) => {
+  const rate = loan.interestRate != null ? loan.interestRate : 10;
+  return rate / 100;
+};
 
 /**
  * Calcula todas as estatísticas globais a partir dos dados brutos.
@@ -19,12 +30,6 @@ import { capitalize } from './format';
  * @param {Array} clients - Lista de clientes com empréstimos e pagamentos.
  * @param {Array} fundsTransactions - Transações manuais do caixa.
  * @param {Object} timeInfo - Informações temporais do sistema.
- * @param {number} timeInfo.currentMonth - Mês atual (0-11).
- * @param {number} timeInfo.currentYear - Ano atual.
- * @param {number} timeInfo.nextMonth - Próximo mês (0-11).
- * @param {number} timeInfo.nextYear - Ano do próximo mês.
- * @param {Date} timeInfo.today - Data de hoje.
- * @param {Date} timeInfo.nextMonthDate - Objeto Date do 1º dia do próximo mês.
  * @returns {Object} Estatísticas globais processadas.
  */
 export const calculateGlobalStats = (clients, fundsTransactions, timeInfo) => {
@@ -51,6 +56,7 @@ export const calculateGlobalStats = (clients, fundsTransactions, timeInfo) => {
 
     const processedLoans = (client.loans || [])
       .map((loan) => {
+        const rate = getLoanRate(loan);
         let principal = loan.amount;
         totalLoansGiven += loan.amount;
 
@@ -66,7 +72,7 @@ export const calculateGlobalStats = (clients, fundsTransactions, timeInfo) => {
         );
 
         const processedPayments = sortedPayments.map((p) => {
-          const interestDue = principal * 0.1;
+          const interestDue = principal * rate;
           let interestPaid = 0;
           let amortized = 0;
 
@@ -107,7 +113,7 @@ export const calculateGlobalStats = (clients, fundsTransactions, timeInfo) => {
 
         let lExpectedThis = 0;
         let lExpectedNext = 0;
-        const baseInterest = principal * 0.1;
+        const baseInterest = principal * rate;
 
         if (principal > 0) {
           if (

@@ -1,28 +1,46 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { calculateGlobalStats } from './utils/calculations';
-import { loadData, saveData, exportBackup, parseBackupFile } from './utils/storage';
+import { loadData, saveData, exportBackup, parseBackupFile, normalizeClients } from './utils/storage';
+import { loadSettings, saveSettings, getEffectiveTheme } from './utils/settings';
+import { createAutoBackup, restoreAutoBackup, getAutoBackupCount } from './utils/autoBackup';
+import { formatMoney } from './utils/format';
 import Dashboard from './components/Dashboard';
 import ClientsList from './components/ClientsList';
 import ClientView from './components/ClientView';
+import Settings from './components/Settings';
 import Toast from './components/Toast';
+import { IconEye, IconEyeOff } from './components/Icons';
+import './app.css';
 
 /**
  * Componente raiz da aplicação.
  *
  * Responsabilidades:
- * - Gerenciar o estado global (clientes, transações, aba ativa, cliente selecionado)
+ * - Gerenciar estado global (clientes, transações, configurações)
  * - Carregar/salvar dados no localStorage
  * - Computar estatísticas globais via motor de cálculos
- * - Orquestrar navegação entre Dashboard, ClientsList e ClientView
- * - Gerenciar backup (exportar/importar)
+ * - Orquestrar navegação entre Dashboard, ClientsList, ClientView e Settings
+ * - Gerenciar tema (claro/escuro/auto)
+ * - Gerenciar backup manual e automático
+ * - Controlar exibição/ocultação de valores monetários
  */
 function App() {
+  // ==================== CONFIGURAÇÕES ====================
+  const [settings, setSettings] = useState(() => loadSettings());
+
   // ==================== ESTADO GLOBAL ====================
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(settings.defaultTab || 'dashboard');
   const [fundsTransactions, setFundsTransactions] = useState([]);
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+
+  // Controle de visibilidade de valores monetários
+  const [valuesRevealed, setValuesRevealed] = useState(false);
+  const shouldHideMoney = settings.hideSensitiveValues && !valuesRevealed;
+
+  // Ref para controle de auto-backup (evita backup no carregamento inicial)
+  const pendingAutoBackup = useRef(false);
 
   // ==================== TOAST ====================
   const showToast = (message) => {
@@ -30,21 +48,80 @@ function App() {
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  // ==================== PERSISTÊNCIA ====================
+  // ==================== DISPLAY MONEY ====================
+  /**
+   * Formata valores monetários ou os oculta se a configuração estiver ativa.
+   * Componentes usam esta função em vez de formatMoney diretamente para display.
+   */
+  const displayMoney = useCallback(
+    (value) => {
+      if (shouldHideMoney) return 'R$ •••••';
+      return formatMoney(value);
+    },
+    [shouldHideMoney]
+  );
 
-  // Carregar dados iniciais (com migração automática de formato antigo)
+  // ==================== TEMA ====================
   useEffect(() => {
-    const data = loadData();
+    const applyTheme = () => {
+      const effective = getEffectiveTheme(settings.theme);
+      document.documentElement.setAttribute('data-theme', effective);
+    };
+
+    applyTheme();
+
+    // Listener para mudança de preferência do sistema (modo auto)
+    if (settings.theme === 'auto') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', applyTheme);
+      return () => mq.removeEventListener('change', applyTheme);
+    }
+  }, [settings.theme]);
+
+  // ==================== REDUZIR ANIMAÇÕES ====================
+  useEffect(() => {
+    if (settings.reduceAnimations) {
+      document.documentElement.classList.add('reduce-animations');
+    } else {
+      document.documentElement.classList.remove('reduce-animations');
+    }
+  }, [settings.reduceAnimations]);
+
+  // ==================== PERSISTÊNCIA DE SETTINGS ====================
+  const handleUpdateSettings = (newSettings) => {
+    setSettings(newSettings);
+    saveSettings(newSettings);
+  };
+
+  // ==================== PERSISTÊNCIA DE DADOS ====================
+
+  // Carregar dados iniciais (com migração automática)
+  useEffect(() => {
+    const data = loadData(settings.defaultInterestRate || 10);
     if (data) {
       setFundsTransactions(data.fundsTransactions);
       setClients(data.clients);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Salvar dados automaticamente a cada mudança
+  // Salvar dados + auto-backup a cada mudança de estado
   useEffect(() => {
     saveData(fundsTransactions, clients);
-  }, [fundsTransactions, clients]);
+
+    if (pendingAutoBackup.current && settings.autoBackupEnabled) {
+      createAutoBackup(fundsTransactions, clients, settings.maxAutoBackups);
+      pendingAutoBackup.current = false;
+    }
+  }, [fundsTransactions, clients, settings.autoBackupEnabled, settings.maxAutoBackups]);
+
+  /**
+   * Marca que o próximo save deve criar um auto-backup.
+   * Chamado por todos os handlers de ações "importantes".
+   */
+  const triggerAutoBackup = () => {
+    pendingAutoBackup.current = true;
+  };
 
   // ==================== CONTROLE DE TEMPO ====================
   const today = new Date();
@@ -59,6 +136,7 @@ function App() {
   // ==================== MOTOR DE CÁLCULOS ====================
   const globalStats = useMemo(
     () => calculateGlobalStats(clients, fundsTransactions, timeInfo),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [clients, fundsTransactions, currentMonth, currentYear, nextMonth, nextYear]
   );
 
@@ -80,8 +158,13 @@ function App() {
             '⚠️ ATENÇÃO: Isso vai apagar os dados atuais e carregar o backup. Deseja continuar?'
           )
         ) {
+          const normalizedClients = normalizeClients(
+            parsed.clients,
+            settings.defaultInterestRate || 10
+          );
           setFundsTransactions(parsed.fundsTransactions || []);
-          setClients(parsed.clients);
+          setClients(normalizedClients);
+          triggerAutoBackup();
           showToast('✅ Backup restaurado com sucesso!');
         }
       })
@@ -92,32 +175,52 @@ function App() {
           showToast('❌ Erro ao ler o arquivo de backup.');
         }
       });
-    e.target.value = ''; // Permite reimportar o mesmo arquivo
+    e.target.value = '';
+  };
+
+  const handleRestoreAutoBackup = () => {
+    const backup = restoreAutoBackup(0);
+    if (!backup) {
+      showToast('❌ Nenhum backup automático disponível.');
+      return false;
+    }
+    const normalizedClients = normalizeClients(
+      backup.clients,
+      settings.defaultInterestRate || 10
+    );
+    setFundsTransactions(backup.fundsTransactions || []);
+    setClients(normalizedClients);
+    triggerAutoBackup();
+    showToast('✅ Backup automático restaurado!');
+    return true;
   };
 
   // ==================== HANDLERS DE CAIXA ====================
 
   const handleAddFundTransaction = (transaction) => {
     setFundsTransactions((prev) => [transaction, ...prev]);
+    triggerAutoBackup();
   };
 
   const handleDeleteFundTransaction = (id) => {
     setFundsTransactions((prev) => prev.filter((f) => f.id !== id));
+    triggerAutoBackup();
   };
 
   // ==================== HANDLERS DE CLIENTES ====================
 
   const handleAddClient = (client) => {
     setClients((prev) => [client, ...prev]);
+    triggerAutoBackup();
   };
 
   /**
    * Recebe uma função updater que transforma o array de clientes.
    * Usado pelo ClientView para operações de CRUD em empréstimos e pagamentos.
-   * @param {Function} updater - (clients) => newClients
    */
   const handleUpdateClients = (updater) => {
     setClients(updater);
+    triggerAutoBackup();
   };
 
   // ==================== RENDERIZAÇÃO ====================
@@ -125,10 +228,21 @@ function App() {
   return (
     <div className="max-w-md mx-auto bg-gray-50 min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-white pt-10 pb-4 px-6 shadow-sm z-0">
+      <div className="bg-white pt-10 pb-4 px-6 shadow-sm z-0 flex items-center justify-between">
         <h1 className="text-2xl font-black text-gray-800 tracking-tight">
           Finanças <span className="text-blue-600">Pro</span>
         </h1>
+
+        {/* Botão olho: só aparece se ocultar valores estiver ativo */}
+        {settings.hideSensitiveValues && (
+          <button
+            onClick={() => setValuesRevealed((v) => !v)}
+            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            title={valuesRevealed ? 'Ocultar valores' : 'Revelar valores'}
+          >
+            {valuesRevealed ? <IconEye /> : <IconEyeOff />}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -149,26 +263,45 @@ function App() {
         >
           Clientes
         </button>
+        <button
+          className={`flex-1 py-3 text-center text-sm transition-colors ${
+            activeTab === 'settings' ? 'tab-active' : 'text-gray-500'
+          }`}
+          onClick={() => setActiveTab('settings')}
+        >
+          ⚙️ Config.
+        </button>
       </div>
 
       {/* Conteúdo principal */}
       <div className="flex-1 overflow-y-auto hide-scroll pb-10">
-        {activeTab === 'dashboard' ? (
+        {activeTab === 'dashboard' && (
           <Dashboard
             globalStats={globalStats}
             fundsTransactions={fundsTransactions}
             onAddFundTransaction={handleAddFundTransaction}
             onDeleteFundTransaction={handleDeleteFundTransaction}
-            onExport={handleExportBackup}
-            onImport={handleImportBackup}
             showToast={showToast}
+            displayMoney={displayMoney}
           />
-        ) : (
+        )}
+        {activeTab === 'clients' && (
           <ClientsList
             processedClients={globalStats.processedClients}
             clientsCount={clients.length}
             onAddClient={handleAddClient}
             onSelectClient={setSelectedClient}
+            showToast={showToast}
+            displayMoney={displayMoney}
+          />
+        )}
+        {activeTab === 'settings' && (
+          <Settings
+            settings={settings}
+            onUpdateSettings={handleUpdateSettings}
+            onExport={handleExportBackup}
+            onImport={handleImportBackup}
+            onRestoreAutoBackup={handleRestoreAutoBackup}
             showToast={showToast}
           />
         )}
@@ -182,6 +315,8 @@ function App() {
           onUpdateClients={handleUpdateClients}
           onClose={() => setSelectedClient(null)}
           showToast={showToast}
+          displayMoney={displayMoney}
+          settings={settings}
         />
       )}
 

@@ -27,3 +27,24 @@ export const formatDate = (dateStr) => {
  * @returns {string} String com a primeira letra em maiúscula.
  */
 export const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/**
+ * Formata uma taxa de juros com separador decimal brasileiro.
+ * @param {number} rate - Taxa em percentual (ex: 10, 8.5, 12.75).
+ * @returns {string} Taxa formatada (ex: "10%", "8,5%", "12,75%").
+ */
+export const formatRate = (rate) =>
+  rate.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%';
+
+/**
+ * Formata um timestamp ISO para exibição humana em pt-BR.
+ * @param {string} isoStr - Timestamp ISO (ex: "2025-04-05T14:30:00.000Z").
+ * @returns {string} Data e hora formatadas (ex: "05/04/2025 às 14:30").
+ */
+export const formatDateTime = (isoStr) => {
+  if (!isoStr) return '—';
+  const d = new Date(isoStr);
+  const date = d.toLocaleDateString('pt-BR');
+  const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return `${date} às ${time}`;
+};

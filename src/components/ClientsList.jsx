@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { formatMoney } from '../utils/format';
 import { generateId } from '../utils/ids';
 
 /**
@@ -11,11 +10,12 @@ import { generateId } from '../utils/ids';
  * - Badges de status (OK, Falta, Sem dívidas)
  *
  * @param {Object} props
- * @param {Array}    props.processedClients - Clientes com dados processados (do motor de cálculos).
- * @param {number}   props.clientsCount - Quantidade total de clientes (para exibir mensagem vazia).
+ * @param {Array}    props.processedClients - Clientes com dados processados.
+ * @param {number}   props.clientsCount - Quantidade total de clientes.
  * @param {Function} props.onAddClient - Callback para adicionar novo cliente.
  * @param {Function} props.onSelectClient - Callback para selecionar/abrir um cliente.
  * @param {Function} props.showToast - Callback para exibir notificação toast.
+ * @param {Function} props.displayMoney - Função para formatar/ocultar valores monetários.
  */
 const ClientsList = ({
   processedClients,
@@ -23,6 +23,7 @@ const ClientsList = ({
   onAddClient,
   onSelectClient,
   showToast,
+  displayMoney,
 }) => {
   const [newClientName, setNewClientName] = useState('');
 
@@ -77,7 +78,7 @@ const ClientsList = ({
                           : 'bg-red-100 text-red-700'
                       }`}
                     >
-                      Falta {client.dashMonthStr}: {formatMoney(client.dashPending)}
+                      Falta {client.dashMonthStr}: {displayMoney(client.dashPending)}
                     </span>
                   )}
                 </div>
@@ -92,7 +93,7 @@ const ClientsList = ({
                   client.currentDebt > 0 ? 'text-red-500' : 'text-green-600'
                 }`}
               >
-                {formatMoney(client.currentDebt)}
+                {displayMoney(client.currentDebt)}
               </p>
             </div>
           </div>
