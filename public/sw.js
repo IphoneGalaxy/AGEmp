@@ -4,7 +4,6 @@
  * Estratégia:
  * - PRE-CACHE: Shell do app (HTML, ícones, manifest) no install
  * - RUNTIME CACHE: Assets do build (JS/CSS com hash) → Cache First
- * - RUNTIME CACHE: CDN do Tailwind → Cache First (essencial para UI)
  * - NAVIGATION: Network First com fallback para cache
  * - DADOS: Nunca intercepta localStorage nem dados dinâmicos
  *
@@ -12,7 +11,7 @@
  *     Os dados do usuário ficam no localStorage e NÃO são afetados.
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `financas-pro-${CACHE_VERSION}`;
 
 /**
@@ -80,22 +79,6 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match('/') || caches.match(request))
-    );
-    return;
-  }
-
-  // --- CDN TAILWIND ---
-  // Cache First: cacheia na primeira vez, serve do cache depois
-  if (url.hostname === 'cdn.tailwindcss.com') {
-    event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-          return response;
-        });
-      })
     );
     return;
   }
