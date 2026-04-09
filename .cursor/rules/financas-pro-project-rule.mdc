@@ -1,0 +1,487 @@
+---
+description: Regras do projeto AGEmp / Finanças Pro para desenvolvimento seguro, incremental e compatível com a visão futura multiusuário.
+globs:
+  - src/**
+  - public/**
+alwaysApply: true
+---
+
+# Project Rule — AGEmp / Finanças Pro
+
+## Identidade do projeto
+Este projeto é um app web/PWA de controle de empréstimos pessoais chamado **Finanças Pro**.
+
+No estado atual, ele é um sistema **local-first**, de uso individual, sem autenticação e sem backend remoto implementado.
+
+O produto já tem uma direção futura oficial definida: evoluir para uma plataforma multiusuário baseada em Firebase, com relacionamento entre **fornecedor** e **cliente**.
+
+Toda mudança deve respeitar simultaneamente:
+1. o funcionamento atual já estável
+2. a compatibilidade de dados existentes
+3. a direção arquitetural futura já assumida
+
+---
+
+## Estado atual obrigatório a considerar
+
+### Stack atual
+- React 18
+- ReactDOM 18
+- Vite
+- Tailwind CSS + PostCSS
+- Vitest
+- jsdom
+- PWA com manifest + service worker
+- persistência em localStorage
+
+### Estrutura atual relevante
+- `index.html` → entrada HTML
+- `src/main.jsx` → bootstrap da aplicação e registro do service worker
+- `src/App.jsx` → estado e orquestração principal
+- `src/components/` → interface
+- `src/utils/` → lógica de negócio, persistência, backup, formatação e IDs
+- `src/utils/__tests__/` → testes unitários
+- `src/app.css` → estilos globais
+- `public/manifest.json` → manifesto PWA
+- `public/sw.js` → service worker
+
+### Navegação atual
+A navegação é simples e baseada em estado local, sem React Router.
+
+Abas atuais:
+- `dashboard`
+- `clients`
+- `settings`
+
+Existe também overlay para detalhe de cliente.
+
+---
+
+## Princípios obrigatórios
+
+### 1. Preservar funcionamento existente
+Não quebrar:
+- dashboard
+- cadastro de clientes
+- criação, edição e exclusão de contratos
+- criação, edição e exclusão de pagamentos
+- movimentação de caixa
+- backup manual
+- importação de backup
+- backup automático local
+- configurações
+- PWA
+- testes unitários existentes
+
+### 2. Preservar compatibilidade de dados
+A aplicação já possui compatibilidade com formatos antigos.
+
+A migração atual suporta:
+- formato antigo com `transactions`
+- contratos sem `interestRate`
+
+Nunca quebrar compatibilidade com dados antigos ou backups antigos sem plano de migração explícito.
+
+### 3. Preservar abordagem local-first
+Até que a migração para Firebase esteja realmente implementada, o app deve continuar funcionando corretamente como sistema local-first.
+
+Persistência atual:
+- `loanManagerData`
+- `loanManagerSettings`
+- `loanManagerAutoBackups`
+
+Não introduzir mudanças que prejudiquem a experiência local atual sem migração segura.
+
+### 4. Preservar simplicidade da UX
+A UX deve continuar:
+- simples
+- direta
+- mobile-first
+- orientada a fluxo rápido
+
+Evitar:
+- complexidade visual desnecessária
+- navegação pesada sem necessidade
+- refactors cosméticos sem ganho real
+- mudanças grandes de fluxo sem justificativa forte
+
+---
+
+## Contexto visual e de experiência
+
+Este projeto usa os arquivos abaixo como fontes principais de contexto visual e de experiência da interface:
+- `BRAND.md`
+- `DESIGN.md`
+- `PROJECT_OVERRIDES.md`
+
+### Hierarquia de referência visual
+Ao tomar decisões de interface, seguir esta ordem de prioridade:
+1. `PROJECT_OVERRIDES.md`
+2. `DESIGN.md`
+3. `BRAND.md`
+
+### Regras visuais obrigatórias
+Toda mudança de interface deve preservar:
+- clareza
+- simplicidade
+- conforto visual
+- legibilidade
+- consistência entre telas e componentes
+- experiência mobile-first
+- fluxo rápido e fácil de entender
+
+A interface deve seguir a assinatura visual do projeto:
+- amigável
+- minimalista
+- elegante
+- clara
+- confortável para os olhos
+- com sensação premium discreta
+
+Evitar:
+- poluição visual
+- excesso de destaque simultâneo
+- complexidade visual desnecessária
+- redesign cosmético sem ganho funcional real
+- componentes inconsistentes entre telas
+- perda de legibilidade ou piora no mobile
+
+### Aplicação por tipo de agente/tarefa
+Quando a tarefa envolver frontend, layout, componentes, formulários, tabelas, modais, navegação, estados visuais ou responsividade:
+- consultar os arquivos visuais antes de propor ou implementar mudanças
+- reutilizar padrões já definidos
+- não inventar novos padrões sem necessidade
+- sinalizar conflitos entre requisito, arquitetura e design antes de implementar
+
+Quando a tarefa não envolver interface:
+- não forçar decisões de design desnecessárias
+
+### Compatibilidade com a natureza do projeto
+Mesmo com melhorias visuais, preservar sempre:
+- simplicidade do app
+- fluxo operacional rápido
+- legibilidade das informações financeiras
+- facilidade de uso no mobile
+- estabilidade da interface já validada pelo uso
+
+---
+
+## Áreas sensíveis que exigem cautela extrema
+
+### `src/utils/calculations.js`
+Motor financeiro central do projeto.
+
+Controla:
+- juros por contrato
+- fallback de taxa
+- amortização de principal
+- saldo devedor
+- pendências do mês
+- expectativa do próximo mês
+- total emprestado
+- dinheiro disponível
+- estatísticas globais do dashboard
+
+Qualquer alteração aqui deve ser tratada como crítica.
+
+### `src/utils/storage.js`
+Responsável por:
+- leitura e escrita no localStorage
+- exportação de backup
+- importação de backup
+- migração de formatos antigos
+- normalização de clientes e contratos
+
+Mudanças aqui podem quebrar persistência ou compatibilidade.
+
+### `src/utils/autoBackup.js`
+Responsável por:
+- snapshots automáticos
+- rotação de backups
+- restauração de backup automático
+- leitura e contagem de backups automáticos
+
+Mudanças aqui podem comprometer segurança dos dados.
+
+### `src/components/ClientView.jsx`
+Parte mais sensível da operação de interface.
+
+Controla:
+- criação de empréstimo
+- edição e exclusão de contrato
+- registro, edição e exclusão de pagamento
+- extrato
+- validações financeiras locais
+
+### `public/sw.js`
+O service worker deve continuar cacheando apenas o shell da aplicação.
+
+Não implementar cache agressivo de dados dinâmicos.  
+Não introduzir comportamento que gere inconsistência com persistência local.
+
+---
+
+## Regras de negócio obrigatórias
+
+### Juros por contrato
+Cada contrato pode ter sua própria taxa de juros.
+
+Se `interestRate` estiver ausente, usar fallback compatível de `10`.
+
+### Ordem do pagamento
+Pagamento cobre:
+1. primeiro os juros
+2. depois amortiza principal
+
+### Empréstimo no mês corrente
+Empréstimos criados no mês corrente não geram expectativa de juros no próprio mês.
+
+### Exibição do próximo mês
+Se a pendência do mês atual estiver zerada, o sistema pode exibir expectativa do próximo mês.
+
+### Caixa disponível
+O cálculo do dinheiro disponível considera:
+- caixa manual
+- juros recebidos
+- principal amortizado
+- total já emprestado
+
+### Backups antigos
+Backups antigos e dados legados devem continuar legíveis.
+
+---
+
+## Padrões técnicos obrigatórios
+
+### Separação entre UI e lógica
+Manter a separação atual:
+- `src/components/` para interface
+- `src/utils/` para lógica, persistência e cálculo
+
+### Estado centralizado
+O gerenciamento principal de estado permanece centralizado em `src/App.jsx`.
+
+Não introduzir nova camada de estado sem necessidade clara e justificativa técnica.
+
+### Sem backend acoplado no estado atual
+Não assumir backend existente no estado atual do projeto.
+
+Se houver início de migração para Firebase, isso deve ser:
+- incremental
+- explícito
+- compatível com o modo local atual
+
+### Sem suposições falsas
+Não assumir como já implementado:
+- autenticação
+- banco remoto conectado
+- multiusuário
+- perfis
+- notificações
+- Firebase integrado
+
+Se algo não existir hoje, tratar como direção futura, não como realidade atual.
+
+---
+
+## Qualidade e validação obrigatórias
+
+Antes de mudanças sensíveis, revisar impacto em:
+- `calculations.js`
+- `storage.js`
+- `autoBackup.js`
+- `ClientView.jsx`
+- `sw.js`
+
+Sempre que houver alteração relevante, validar:
+- fluxos principais do app
+- cálculos financeiros
+- persistência local
+- importação/exportação
+- backup automático
+- funcionamento do PWA
+- tema escuro/claro
+- comportamento mobile
+
+Os testes existentes devem ser preservados, especialmente os relacionados a:
+- cálculos
+- storage/migração
+- auto-backup
+
+---
+
+## O que deve ser evitado
+
+Evitar:
+- quebrar compatibilidade com localStorage atual
+- quebrar backups antigos
+- alterar cálculo financeiro sem motivo forte
+- acoplar dados futuros diretamente em estruturas locais sem plano de migração
+- assumir que sempre haverá apenas um usuário
+- criar arquitetura que dificulte futura separação entre fornecedor e cliente
+- reescrever o projeto do zero sem necessidade
+- redesign grande sem ganho funcional real
+- introduzir dependência de backend remoto antes da fase apropriada
+- criar cache de dados financeiros no service worker
+- espalhar regras de negócio críticas por múltiplos componentes
+
+---
+
+## O que deve ser preservado
+
+Preservar:
+- simplicidade do app
+- legibilidade da arquitetura
+- organização atual em componentes e utils
+- UX mobile-first
+- PWA leve
+- segurança dos cálculos
+- segurança da persistência
+- compatibilidade de dados antigos
+- fluxo operacional rápido
+- interface em português
+- taxa padrão + taxa por contrato
+- backup automático local
+- exportação/importação de backup
+
+---
+
+## Direção futura oficial do produto
+
+A direção futura é oficial, embora ainda não esteja totalmente implementada.
+
+O projeto deve evoluir para uma plataforma multiusuário entre:
+- **Fornecedor**
+- **Cliente**
+
+### Stack futura oficial
+- Firebase Authentication
+- Cloud Firestore
+- Firebase Cloud Messaging
+- Cloud Functions
+- Firebase Hosting
+
+### Princípios futuros obrigatórios
+Mesmo antes da implementação completa, novas decisões devem respeitar:
+- arquitetura futura multiusuário
+- isolamento de dados entre usuários
+- separação clara entre fornecedor e cliente
+- fornecedor não pode ver clientes de outro fornecedor
+- cliente não pode ver dados de outros clientes
+- migração incremental e segura
+- o app local atual não pode ser quebrado abruptamente
+- funcionalidades atuais devem continuar funcionando durante a transição
+
+### Modelo futuro de vínculo
+Modelo preferido:
+- fornecedor possui código e/ou convite
+- cliente cria conta
+- cliente solicita vínculo ou usa convite/código
+- fornecedor aprova vínculo
+- só então o cliente pode interagir financeiramente com aquele fornecedor
+
+Não seguir modelo aberto ou irrestrito.
+
+### Fluxo futuro oficial de solicitação de empréstimo
+1. usuário cria conta
+2. escolhe papel: fornecedor ou cliente
+3. cliente se vincula a fornecedor
+4. cliente envia pedido de empréstimo
+5. fornecedor recebe solicitação
+6. fornecedor pode aprovar, recusar ou fazer contraproposta
+7. cliente recebe resposta
+8. pedido aprovado pode ser convertido em contrato
+
+### Status futuros planejados
+- `pending`
+- `under_review`
+- `approved`
+- `counteroffer`
+- `rejected`
+- `cancelled_by_client`
+- `converted_to_contract`
+
+### Campos futuros planejados para solicitações
+- `supplierId`
+- `clientId`
+- `requestedAmount`
+- `clientNote`
+- `status`
+- `approvedAmount` ou `counterofferAmount`
+- `supplierNote`
+- `timestamps`
+- indicador de leitura/notificação
+
+### Direção futura de notificações
+O sistema deverá suportar futuramente:
+- novo pedido
+- resposta do fornecedor
+- contraproposta
+- eventos importantes
+
+As configurações futuras devem permitir ativar/desativar tipos de notificação.
+
+Até lá, qualquer desenho novo deve facilitar futura integração com Firebase Cloud Messaging.
+
+### Direção futura de UX
+A UX futura deve:
+- manter simplicidade
+- continuar mobile-first
+- diferenciar claramente fornecedor e cliente
+- incluir área própria de solicitações para fornecedor
+- permitir ao cliente pedir dinheiro diretamente no app
+- usar status visuais amigáveis
+
+Semântica planejada:
+- amarelo/âmbar → pendente
+- azul → em análise
+- verde → aprovado
+- vermelho → recusado
+- laranja → contraproposta
+
+---
+
+## Estratégia futura oficial de implementação
+
+### Fase 1
+- autenticação com email e senha
+- distinção entre fornecedor e cliente
+- perfis básicos
+- estrutura inicial do Firestore
+- vínculo fornecedor-cliente
+
+### Fase 2
+- criação de solicitação de empréstimo pelo cliente
+- fila de solicitações para fornecedor
+- aprovação, recusa e contraproposta
+- histórico de solicitações
+
+### Fase 3
+- notificações
+- conversão de solicitação aprovada em contrato
+- refinamentos de UX
+- configurações de notificação
+
+---
+
+## Regra obrigatória para qualquer agente atuando neste projeto
+Ao trabalhar neste projeto, sempre distinguir claramente:
+- o que já existe hoje
+- o que é obrigatório preservar
+- o que é direção futura ainda não implementada
+
+Mesmo ao atuar só no app local atual, evitar decisões que dificultem a futura evolução para o modelo fornecedor/cliente multiusuário.
+
+Evitar especialmente:
+- assumir estrutura eternamente single-user
+- hardcode de fornecedor único permanente
+- arquitetura que impeça separação de papéis
+- modelagem que conflite fortemente com futura migração para Firebase
+- acoplamento excessivo da regra financeira ao modo local atual sem caminho de migração
+
+Preservar especialmente:
+- lógica de negócio isolada
+- migração segura de dados
+- UX simples
+- integridade dos cálculos
+- evolução compatível
