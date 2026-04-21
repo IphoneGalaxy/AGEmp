@@ -1,3 +1,4 @@
+import { updateProfile } from 'firebase/auth';
 import {
   doc,
   getDoc,
@@ -7,8 +8,9 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
+import { mapFirebaseAuthError } from '../auth/authErrors';
 import { mapFirestoreError } from './firestoreErrors';
-import { db } from './index';
+import { auth, db } from './index';
 
 const USERS_COLLECTION = 'users';
 
@@ -81,6 +83,47 @@ export async function updateUserDisplayName(uid, rawDisplayName) {
     return { ok: true };
   } catch (e) {
     return { ok: false, message: mapFirestoreError(e) };
+  }
+}
+
+/**
+ * Atualiza `displayName` no Firestore (fonte primária) e espelha em Firebase Auth.
+ * Se o Firestore falhar, Auth não é alterado.
+ * Se o Firestore ok e Auth falhar, o documento em `users/{uid}` permanece; retorna sucesso com aviso.
+ *
+ * @param {import('firebase/auth').User} user
+ * @param {string} rawDisplayName
+ * @returns {Promise<
+ *   | { ok: true }
+ *   | { ok: true; authSyncFailed: true; message: string }
+ *   | { ok: false; message: string; stage?: 'firestore' }
+ * >}
+ */
+export async function updateUserDisplayNameWithAuthMirror(user, rawDisplayName) {
+  if (!user?.uid) {
+    return { ok: false, message: 'Sessão inválida. Entre novamente.', stage: 'firestore' };
+  }
+
+  const firestoreResult = await updateUserDisplayName(user.uid, rawDisplayName);
+  if (!firestoreResult.ok) {
+    return { ...firestoreResult, stage: 'firestore' };
+  }
+
+  if (!auth || !auth.currentUser || auth.currentUser.uid !== user.uid) {
+    return { ok: true, authSyncFailed: true, message: 'Sessão desatualizada. O nome foi salvo na nuvem, mas o perfil local não pôde ser atualizado. Saia e entre de novo se necessário.' };
+  }
+
+  const displayName = String(rawDisplayName ?? '').trim();
+
+  try {
+    await updateProfile(auth.currentUser, { displayName: displayName || null });
+    return { ok: true };
+  } catch (e) {
+    return {
+      ok: true,
+      authSyncFailed: true,
+      message: mapFirebaseAuthError(e),
+    };
   }
 }
 

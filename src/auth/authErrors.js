@@ -19,6 +19,7 @@ const AUTH_ERROR_MESSAGES_PT = {
   'auth/popup-closed-by-user': 'Login cancelado.',
   'auth/cancelled-popup-request': 'Login cancelado.',
   'auth/internal-error': 'Erro temporário. Tente novamente em instantes.',
+  'auth/invalid-continue-uri': 'Configuração de recuperação inválida. Tente novamente mais tarde.',
 };
 
 const DEFAULT_MESSAGE = 'Não foi possível concluir. Tente novamente.';

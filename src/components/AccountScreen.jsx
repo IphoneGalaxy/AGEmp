@@ -4,7 +4,7 @@ import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
   ensureUserProfileExists,
   getUserProfile,
-  updateUserDisplayName,
+  updateUserDisplayNameWithAuthMirror,
 } from '../firebase/users';
 
 const sectionCardClass =
@@ -51,19 +51,23 @@ const ModeToggle = ({ mode, onModeChange }) => (
 /**
  * Tela isolada de conta (Firebase Auth — e-mail/senha).
  * Não altera persistência local nem domínio financeiro.
+ * Verificação de e-mail (gate / sendEmailVerification): fora de escopo nesta rodada.
  *
  * @param {Object} props
  * @param {() => void} props.onBack — Volta à lista de configurações.
  * @param {(msg: string) => void} [props.showToast]
  */
 function AccountScreen({ onBack, showToast }) {
-  const { user, authReady, authAvailable, login, signup, logout } = useAuth();
+  const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
+    useAuth();
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [passwordResetMessage, setPasswordResetMessage] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const [remoteProfile, setRemoteProfile] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -120,6 +124,7 @@ function AccountScreen({ onBack, showToast }) {
     setPassword('');
     setConfirmPassword('');
     setError('');
+    setPasswordResetMessage('');
   };
 
   const handleModeChange = (next) => {
@@ -130,6 +135,7 @@ function AccountScreen({ onBack, showToast }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setPasswordResetMessage('');
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setError('Informe o e-mail.');
@@ -164,6 +170,31 @@ function AccountScreen({ onBack, showToast }) {
     }
   };
 
+  const handlePasswordReset = async () => {
+    setError('');
+    setPasswordResetMessage('');
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Informe o e-mail para enviar a recuperação.');
+      return;
+    }
+
+    setResettingPassword(true);
+    try {
+      const result = await requestPasswordReset(trimmedEmail);
+      if (result.ok) {
+        setPasswordResetMessage(
+          'Se este e-mail estiver cadastrado, enviaremos o link de recuperação em instantes. Confira também a pasta de spam.'
+        );
+      } else {
+        setError(result.message);
+      }
+    } finally {
+      setResettingPassword(false);
+    }
+  };
+
   const handleSaveDisplayName = async () => {
     if (!user?.uid) return;
 
@@ -181,14 +212,22 @@ function AccountScreen({ onBack, showToast }) {
     setProfileError('');
     setSavingProfile(true);
     try {
-      const result = await updateUserDisplayName(user.uid, next);
+      const result = await updateUserDisplayNameWithAuthMirror(user, next);
       if (result.ok) {
         const data = await getUserProfile(user.uid);
         setRemoteProfile(data);
         setDisplayNameInput(
           data?.displayName != null ? String(data.displayName) : ''
         );
-        showToast?.('Nome do perfil salvo.');
+        if (result.authSyncFailed) {
+          showToast?.(
+            result.message
+              ? `Nome salvo. Não deu para sincronizar o login: ${result.message}`
+              : 'Nome salvo. O login não foi totalmente sincronizado.'
+          );
+        } else {
+          showToast?.('Nome do perfil salvo.');
+        }
       } else {
         setProfileError(result.message);
       }
@@ -339,6 +378,15 @@ function AccountScreen({ onBack, showToast }) {
               </div>
             )}
 
+            {passwordResetMessage && (
+              <div
+                className="rounded-design-md border border-success/40 bg-success-soft px-4 py-3 text-center"
+                role="status"
+              >
+                <p className="text-sm font-medium leading-relaxed text-success">{passwordResetMessage}</p>
+              </div>
+            )}
+
             <div>
               <label htmlFor="account-email" className="mb-2 block text-sm font-medium text-content-soft">
                 E-mail
@@ -365,6 +413,18 @@ function AccountScreen({ onBack, showToast }) {
                 onChange={(e) => setPassword(e.target.value)}
                 className="min-h-[44px] w-full rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-sm text-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
               />
+              {mode === 'login' && (
+                <div className="mt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handlePasswordReset}
+                    disabled={resettingPassword || submitting}
+                    className="inline-flex min-h-[44px] items-center text-sm font-semibold text-primary underline-offset-2 transition-colors hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {resettingPassword ? 'Enviando…' : 'Esqueci minha senha'}
+                  </button>
+                </div>
+              )}
             </div>
 
             {mode === 'signup' && (

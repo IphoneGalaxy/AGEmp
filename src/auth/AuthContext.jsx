@@ -10,6 +10,7 @@ import React, {
 import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
@@ -28,6 +29,9 @@ const AUTH_UNAVAILABLE_MESSAGE = 'A conta não está disponível neste ambiente.
 /**
  * Provider único: um listener `onAuthStateChanged` para toda a árvore.
  * Não altera fluxo local-first; não exige login.
+ *
+ * Verificação de e-mail (sendEmailVerification / gate por `user.emailVerified`): fora
+ * do escopo nesta rodada; fica no backlog da próxima fase de identidade.
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -147,6 +151,33 @@ export function AuthProvider({ children }) {
     }
   }, [clearProfileRetry]);
 
+  const requestPasswordReset = useCallback(async (email) => {
+    if (!auth) {
+      return { ok: false, message: AUTH_UNAVAILABLE_MESSAGE };
+    }
+
+    const trimmed = String(email ?? '').trim();
+    if (!trimmed) {
+      return { ok: false, message: 'Informe o e-mail para enviar a recuperação.' };
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, trimmed);
+      return { ok: true };
+    } catch (e) {
+      const code =
+        e && typeof e === 'object' && 'code' in e && typeof e.code === 'string' ? e.code : null;
+      if (code === 'auth/user-not-found') {
+        return {
+          ok: false,
+          message:
+            'Não encontramos uma conta com este e-mail. Confira o endereço ou crie uma conta.',
+        };
+      }
+      return { ok: false, message: mapFirebaseAuthError(e) };
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -155,8 +186,9 @@ export function AuthProvider({ children }) {
       login,
       signup,
       logout,
+      requestPasswordReset,
     }),
-    [user, authReady, login, signup, logout]
+    [user, authReady, login, signup, logout, requestPasswordReset]
   );
 
   return (
@@ -172,6 +204,7 @@ export function AuthProvider({ children }) {
  *   login: (email: string, password: string) => Promise<AuthActionResult>;
  *   signup: (email: string, password: string) => Promise<AuthActionResult>;
  *   logout: () => Promise<AuthActionResult>;
+ *   requestPasswordReset: (email: string) => Promise<AuthActionResult>;
  * }}
  */
 export function useAuth() {

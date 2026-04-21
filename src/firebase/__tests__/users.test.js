@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+const { mockUpdateProfile, authMock } = vi.hoisted(() => {
+  return {
+    mockUpdateProfile: vi.fn(),
+    authMock: { currentUser: { uid: 'uid-1' } },
+  };
+});
+
 const mockDoc = vi.fn((database, collectionName, userId) => ({
   database,
   path: `${collectionName}/${userId}`,
@@ -9,6 +16,10 @@ const mockRunTransaction = vi.fn();
 const mockServerTimestamp = vi.fn(() => 'SERVER_TIMESTAMP');
 const mockSetDoc = vi.fn();
 const mockUpdateDoc = vi.fn();
+
+vi.mock('firebase/auth', () => ({
+  updateProfile: (user, profile) => mockUpdateProfile(user, profile),
+}));
 
 vi.mock('firebase/firestore', () => ({
   doc: mockDoc,
@@ -21,6 +32,9 @@ vi.mock('firebase/firestore', () => ({
 
 vi.mock('../index', () => ({
   db: { name: 'mock-db' },
+  get auth() {
+    return authMock;
+  },
 }));
 
 const usersModule = await import('../users');
@@ -32,6 +46,7 @@ const {
   getUserProfile,
   getUserProfileRef,
   updateUserDisplayName,
+  updateUserDisplayNameWithAuthMirror,
 } = usersModule;
 
 describe('firebase/users', () => {
@@ -42,6 +57,8 @@ describe('firebase/users', () => {
     mockServerTimestamp.mockClear();
     mockSetDoc.mockReset();
     mockUpdateDoc.mockReset();
+    mockUpdateProfile.mockReset();
+    authMock.currentUser = { uid: 'uid-1' };
   });
 
   describe('buildUserProfileData', () => {
@@ -128,6 +145,64 @@ describe('firebase/users', () => {
           updatedAt: 'SERVER_TIMESTAMP',
         }
       );
+    });
+  });
+
+  describe('updateUserDisplayNameWithAuthMirror', () => {
+    it('sincroniza o Auth após sucesso no Firestore', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+      mockUpdateProfile.mockResolvedValue(undefined);
+
+      const user = { uid: 'uid-1' };
+      await expect(updateUserDisplayNameWithAuthMirror(user, '  Gui  ')).resolves.toEqual({ ok: true });
+
+      expect(mockUpdateProfile).toHaveBeenCalledWith(
+        { uid: 'uid-1' },
+        { displayName: 'Gui' }
+      );
+    });
+
+    it('envia null ao Auth quando o nome fica vazio', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+      mockUpdateProfile.mockResolvedValue(undefined);
+
+      await updateUserDisplayNameWithAuthMirror({ uid: 'uid-1' }, '   ');
+
+      expect(mockUpdateProfile).toHaveBeenCalledWith({ uid: 'uid-1' }, { displayName: null });
+    });
+
+    it('não chama updateProfile se o Firestore falhar', async () => {
+      mockUpdateDoc.mockRejectedValue(new Error('fail'));
+
+      await expect(
+        updateUserDisplayNameWithAuthMirror({ uid: 'uid-1' }, 'Gui')
+      ).resolves.toMatchObject({ ok: false, stage: 'firestore' });
+
+      expect(mockUpdateProfile).not.toHaveBeenCalled();
+    });
+
+    it('retorna aviso se o Auth não puder ser atualizado (espelho)', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+      mockUpdateProfile.mockRejectedValue({ code: 'auth/internal-error' });
+
+      await expect(updateUserDisplayNameWithAuthMirror({ uid: 'uid-1' }, 'Gui')).resolves.toEqual({
+        ok: true,
+        authSyncFailed: true,
+        message: 'Erro temporário. Tente novamente em instantes.',
+      });
+    });
+
+    it('não chama updateProfile se currentUser for outro uid', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+      authMock.currentUser = { uid: 'outro' };
+
+      const result = await updateUserDisplayNameWithAuthMirror({ uid: 'uid-1' }, 'Gui');
+      expect(result).toEqual({
+        ok: true,
+        authSyncFailed: true,
+        message: expect.stringContaining('Sessão desatualizada'),
+      });
+      expect(mockUpdateProfile).not.toHaveBeenCalled();
     });
   });
 
