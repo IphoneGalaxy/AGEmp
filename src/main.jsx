@@ -1,10 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { AuthProvider } from './auth/AuthContext';
 import './app.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(
+  <AuthProvider>
+    <App />
+  </AuthProvider>
+);
 
 // ==================== SERVICE WORKER (PWA) ====================
 // Registra apenas em produção para não interferir no dev com HMR

@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function allowedUserFields() {
+      return ['displayName', 'createdAt', 'updatedAt'];
+    }
+
+    function hasRequiredUserFields() {
+      return request.resource.data.keys().hasAll(allowedUserFields());
+    }
+
+    function hasOnlyAllowedUserFields() {
+      return request.resource.data.keys().hasOnly(allowedUserFields());
+    }
+
+    function userProfileDataIsValid() {
+      return request.resource.data.displayName is string &&
+        request.resource.data.displayName.size() <= 80 &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.updatedAt is timestamp;
+    }
+
+    function userProfileUpdateChangesOnlyDisplayAndUpdatedAt() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['displayName', 'updatedAt']);
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+        hasRequiredUserFields() &&
+        hasOnlyAllowedUserFields() &&
+        userProfileDataIsValid() &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner(userId) &&
+        hasRequiredUserFields() &&
+        hasOnlyAllowedUserFields() &&
+        userProfileDataIsValid() &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt == request.time &&
+        userProfileUpdateChangesOnlyDisplayAndUpdatedAt();
+
+      allow delete: if false;
+    }
+  }
+}

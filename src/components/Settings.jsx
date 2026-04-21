@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { formatDateTime } from '../utils/format';
 import { getAutoBackupCount, getLastAutoBackup } from '../utils/autoBackup';
+import AccountScreen from './AccountScreen';
 
 /**
  * Toggle switch reutilizável.
@@ -83,6 +84,8 @@ const Settings = ({
 }) => {
   const fileInputRef = useRef(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
+  /** 'main' | 'account' — sub-tela isolada; não cria aba principal. */
+  const [settingsView, setSettingsView] = useState('main');
 
   // Info de backups automáticos (lida direto do localStorage)
   const [backupInfo, setBackupInfo] = useState(() => ({
@@ -111,6 +114,10 @@ const Settings = ({
 
   const sectionCardClass =
     'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
+
+  if (settingsView === 'account') {
+    return <AccountScreen onBack={() => setSettingsView('main')} showToast={showToast} />;
+  }
 
   return (
     <div className="space-y-6 p-4 pb-20">
@@ -146,6 +153,22 @@ const Settings = ({
             onToggle={() => updateSetting('hideSensitiveValues', !settings.hideSensitiveValues)}
           />
         </div>
+      </div>
+
+      {/* ===== CONTA (opcional, Firebase Auth) ===== */}
+      <div className={sectionCardClass}>
+        <h3 className="mb-1 text-lg font-semibold tracking-tight text-content">Conta</h3>
+        <p className="mb-5 text-xs leading-relaxed text-content-muted">
+          Entre ou crie uma conta com e-mail. Opcional: o app continua funcionando com dados
+          apenas neste aparelho.
+        </p>
+        <button
+          type="button"
+          onClick={() => setSettingsView('account')}
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-primary-soft text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80"
+        >
+          Gerenciar conta
+        </button>
       </div>
 
       {/* ===== BACKUP E SEGURANÇA ===== */}
