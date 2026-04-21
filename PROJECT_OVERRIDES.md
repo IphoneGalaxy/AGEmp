@@ -109,6 +109,12 @@ Os componentes mais importantes deste projeto são:
 - evitar formulários longos com sensação pesada
 - priorizar fluidez operacional acima de ornamentação visual
 
+### Exceção prática aprovada para controles inline compactos
+- inputs principais seguem altura mínima de `44px`
+- botões principais seguem altura mínima de `44px`
+- em fluxos inline compactos, controles podem usar `40px` quando isso preservar melhor o layout mobile e a clareza operacional
+- essa exceção deve ser usada com moderação e apenas quando `44px` piorar a densidade do fluxo sem ganho real de usabilidade
+
 ---
 
 ## Diretrizes específicas para listas e blocos operacionais

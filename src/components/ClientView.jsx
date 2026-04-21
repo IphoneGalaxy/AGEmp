@@ -321,40 +321,50 @@ const ClientView = ({
   // ==================== RENDERIZAÇÃO ====================
 
   return (
-    <div className="p-4 flex flex-col h-screen bg-gray-50 absolute top-0 left-0 w-full z-10 overflow-y-auto pb-24">
+    <div className="absolute left-0 top-0 z-10 flex h-screen w-full flex-col overflow-y-auto bg-base p-4 pb-24 sm:px-5">
       {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-6 pt-2">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="p-2 bg-white rounded-full shadow text-gray-600 active:bg-gray-100"
-          >
-            <IconBack />
-          </button>
-          <h2 className="text-2xl font-bold text-gray-800">{clientData.name}</h2>
+      <header className="mb-6 flex items-start gap-3 pt-1">
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border border-edge bg-surface text-content-muted shadow-design-sm transition-colors hover:bg-surface-muted active:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+          aria-label="Voltar"
+        >
+          <IconBack />
+        </button>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h2 className="truncate text-2xl font-semibold tracking-tight text-content">
+            {clientData.name}
+          </h2>
         </div>
         <button
+          type="button"
           onClick={handleDeleteClientClick}
-          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+          className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full border border-transparent text-content-muted transition-colors hover:border-danger-soft hover:bg-danger-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+          aria-label="Excluir cliente"
         >
           <IconDelete />
         </button>
-      </div>
+      </header>
 
       {/* Confirmação de exclusão do cliente */}
       {confirmDeleteClient && (
-        <div className="bg-red-50 p-4 rounded-2xl border border-red-200 mb-6 text-center animate-fade-in shadow-sm">
-          <p className="text-red-800 font-bold mb-3">Apagar cliente e todo o histórico?</p>
+        <div className="mb-6 animate-fade-in rounded-design-lg border border-edge bg-danger-soft p-4 text-center shadow-design-sm sm:p-5">
+          <p className="mb-4 text-sm font-semibold leading-snug text-danger">
+            Apagar cliente e todo o histórico?
+          </p>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={() => setConfirmDeleteClient(false)}
-              className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-medium"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
             >
               Cancelar
             </button>
             <button
+              type="button"
               onClick={executeDeleteClient}
-              className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold shadow-sm"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-danger px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
             >
               Sim, Apagar
             </button>
@@ -363,27 +373,40 @@ const ClientView = ({
       )}
 
       {/* Resumo de dívida */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-6 text-center">
-        <p className="text-gray-500 text-sm font-medium mb-1">Dívida Principal (Todos contratos)</p>
-        <p className="text-3xl font-black text-gray-800">{displayMoney(clientData.currentDebt)}</p>
+      <div className="mb-6 rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm">
+        <div className="text-left">
+          <p className="mb-1 text-sm font-medium text-content-muted">
+            Dívida Principal (Todos contratos)
+          </p>
+          <p className="text-3xl font-bold tabular-nums tracking-tight text-content">
+            {displayMoney(clientData.currentDebt)}
+          </p>
 
-        <div className="mt-3 inline-block bg-blue-100 text-blue-900 px-5 py-2.5 rounded-xl text-md font-bold w-full shadow-sm border border-blue-200">
-          Quitação Total de Tudo: {displayMoney(clientData.currentDebt + clientData.dashExpected)}
-        </div>
+          <div className="mt-3 rounded-design-md border border-edge bg-surface-muted px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-content-muted">
+              Quitação Total de Tudo
+            </p>
+            <p className="mt-1 text-lg font-semibold tabular-nums text-content-soft">
+              {displayMoney(clientData.currentDebt + clientData.dashExpected)}
+            </p>
+          </div>
 
-        <div className="mt-4 flex gap-2 justify-center">
-          <button
-            onClick={() => setShowNewLoanForm(!showNewLoanForm)}
-            className="flex-1 bg-blue-600 text-white px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm"
-          >
-            + Empréstimo
-          </button>
-          <button
-            onClick={generateStatement}
-            className="flex-1 bg-gray-800 text-white px-3 py-2.5 rounded-xl text-sm font-bold shadow-sm"
-          >
-            Copiar Extrato
-          </button>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setShowNewLoanForm(!showNewLoanForm)}
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-primary px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            >
+              + Empréstimo
+            </button>
+            <button
+              type="button"
+              onClick={generateStatement}
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            >
+              Copiar Extrato
+            </button>
+          </div>
         </div>
       </div>
 
@@ -391,60 +414,75 @@ const ClientView = ({
       {showNewLoanForm && (
         <form
           onSubmit={handleAddLoan}
-          className="bg-white p-4 rounded-2xl shadow-lg border border-gray-200 mb-6 animate-fade-in"
+          className="mb-6 animate-fade-in rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm sm:p-5"
         >
-          <div className="flex justify-between items-center mb-3">
-            <h3 className="font-bold text-gray-800">Novo Empréstimo</h3>
-            <span className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-medium">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-base font-semibold text-content">Novo Empréstimo</h3>
+            <span className="inline-flex w-fit max-w-full items-center rounded-design-sm border border-edge bg-primary-soft px-2.5 py-1 text-xs font-medium text-primary">
               Caixa: {displayMoney(availableMoney)}
             </span>
           </div>
-          <input
-            type="date"
-            value={newLoanDate}
-            onChange={(e) => setNewLoanDate(e.target.value)}
-            required
-            className="w-full mb-3 p-3 border rounded-xl bg-gray-50"
-          />
-          <input
-            type="number"
-            step="0.01"
-            value={newLoanAmount}
-            onChange={(e) => setNewLoanAmount(e.target.value)}
-            placeholder="Valor (R$)"
-            required
-            className="w-full mb-3 p-3 border rounded-xl bg-gray-50"
-          />
-          <div className="flex items-center gap-2 mb-4">
-            <label className="text-sm text-gray-600 font-medium whitespace-nowrap">Taxa de juros:</label>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              max="100"
-              value={newLoanRate}
-              onChange={(e) => setNewLoanRate(e.target.value)}
-              required
-              className="w-20 p-3 border rounded-xl bg-gray-50 text-center font-bold"
-            />
-            <span className="text-sm text-gray-500 font-medium">%</span>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-content-muted">Data do contrato</p>
+              <input
+                type="date"
+                value={newLoanDate}
+                onChange={(e) => setNewLoanDate(e.target.value)}
+                required
+                className="w-full min-h-[44px] rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-content-muted">Valor (R$)</p>
+              <input
+                type="number"
+                step="0.01"
+                value={newLoanAmount}
+                onChange={(e) => setNewLoanAmount(e.target.value)}
+                placeholder="Valor (R$)"
+                required
+                className="w-full min-h-[44px] rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content placeholder:text-content-muted shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-content-muted">Taxa de juros (%)</p>
+              <div className="flex max-w-[8.5rem] items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={newLoanRate}
+                  onChange={(e) => setNewLoanRate(e.target.value)}
+                  required
+                  className="min-h-[44px] w-full rounded-design-md border border-edge bg-surface-muted px-3 py-2 text-center text-sm font-semibold text-content tabular-nums shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                />
+                <span className="text-sm font-medium text-content-muted">%</span>
+              </div>
+            </div>
           </div>
-          <div className="flex gap-2">
+
+          <div className="mt-5 flex gap-2">
             <button
               type="button"
               onClick={() => setShowNewLoanForm(false)}
-              className="flex-1 p-3 bg-gray-100 rounded-xl font-medium"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
             >
               Cancelar
             </button>
-            <button type="submit" className="flex-1 p-3 bg-blue-600 text-white rounded-xl font-bold">
+            <button
+              type="submit"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-primary px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            >
               Salvar
             </button>
           </div>
         </form>
       )}
 
-      <h3 className="font-bold text-gray-800 mb-3 ml-1">Contratos em Aberto</h3>
+      <h3 className="mb-3 text-lg font-semibold text-content">Contratos em Aberto</h3>
 
       {/* Lista de contratos */}
       <div className="space-y-4">
@@ -454,114 +492,126 @@ const ClientView = ({
           return (
             <div
               key={loan.id}
-              className={`bg-white rounded-2xl shadow-sm border-2 ${
-                loan.isPaidOff ? 'border-green-200 opacity-70' : 'border-gray-200'
-              } overflow-hidden relative`}
+              className={`overflow-hidden rounded-design-lg border bg-surface shadow-design-sm ${
+                loan.isPaidOff ? 'border-success/40 opacity-80' : 'border-edge'
+              }`}
             >
               {/* Cabeçalho: edição / exclusão / normal */}
               {editingLoan && editingLoan.id === loan.id ? (
                 <form
                   onSubmit={handleSaveEditLoan}
-                  className="p-4 bg-gray-100 border-b border-gray-200 animate-fade-in"
+                  className="animate-fade-in border-b border-edge bg-surface-muted p-4"
                 >
-                  <p className="text-xs font-bold text-blue-700 mb-2">Editando Contrato</p>
-                  <div className="flex gap-2 mb-2">
-                    <input
-                      type="date"
-                      required
-                      value={editingLoan.date}
-                      onChange={(e) => setEditingLoan({ ...editingLoan, date: e.target.value })}
-                      className="w-1/3 p-2 border rounded-lg text-sm"
-                    />
-                    <input
-                      type="number"
-                      step="0.01"
-                      required
-                      value={editingLoan.amount}
-                      onChange={(e) => setEditingLoan({ ...editingLoan, amount: e.target.value })}
-                      className="flex-1 p-2 border rounded-lg text-sm"
-                    />
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary">
+                    Editando contrato
+                  </p>
+
+                  <div className="mb-3 space-y-2">
+                    <div className="flex gap-2">
+                      <div className="min-w-0 w-[38%] space-y-1">
+                        <p className="text-xs font-medium text-content-muted">Data</p>
+                        <input
+                          type="date"
+                          required
+                          value={editingLoan.date}
+                          onChange={(e) => setEditingLoan({ ...editingLoan, date: e.target.value })}
+                          className="min-h-10 w-full rounded-design-md border border-edge bg-surface px-2 py-2 text-sm text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <p className="text-xs font-medium text-content-muted">Valor (R$)</p>
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          value={editingLoan.amount}
+                          onChange={(e) => setEditingLoan({ ...editingLoan, amount: e.target.value })}
+                          className="min-h-10 w-full rounded-design-md border border-edge bg-surface px-3 py-2 text-sm tabular-nums text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-content-muted">Taxa (%)</p>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        required
+                        value={editingLoan.interestRate}
+                        onChange={(e) =>
+                          setEditingLoan({ ...editingLoan, interestRate: e.target.value })
+                        }
+                        className="min-h-10 w-16 rounded-design-md border border-edge bg-surface px-2 py-2 text-center text-sm font-semibold tabular-nums text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                      />
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <label className="text-xs text-gray-600 font-medium">Taxa:</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="0"
-                      max="100"
-                      required
-                      value={editingLoan.interestRate}
-                      onChange={(e) =>
-                        setEditingLoan({ ...editingLoan, interestRate: e.target.value })
-                      }
-                      className="w-16 p-2 border rounded-lg text-sm text-center"
-                    />
-                    <span className="text-xs text-gray-500">%</span>
-                  </div>
+
                   <div className="flex gap-2">
                     <button
                       type="button"
                       onClick={() => setEditingLoan(null)}
-                      className="flex-1 py-1.5 bg-gray-200 rounded-lg text-xs font-bold"
+                      className="flex min-h-10 flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-xs font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold"
+                      className="flex min-h-10 flex-1 items-center justify-center rounded-design-md bg-primary px-2 text-xs font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       Salvar
                     </button>
                   </div>
                 </form>
               ) : confirmDeleteLoanId === loan.id ? (
-                <div className="p-4 bg-red-50 border-b border-red-200 animate-fade-in text-center">
-                  <p className="text-sm font-bold text-red-700 mb-2">Apagar contrato inteiro?</p>
+                <div className="animate-fade-in border-b border-edge bg-danger-soft p-4 text-center">
+                  <p className="mb-3 text-sm font-semibold leading-snug text-danger">
+                    Apagar contrato inteiro?
+                  </p>
                   <div className="flex gap-2">
                     <button
+                      type="button"
                       onClick={() => setConfirmDeleteLoanId(null)}
-                      className="flex-1 py-1.5 bg-gray-200 rounded-lg text-xs font-bold"
+                      className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       Cancelar
                     </button>
                     <button
+                      type="button"
                       onClick={() => executeDeleteLoan(loan.id)}
-                      className="flex-1 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold"
+                      className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-danger px-2 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       Sim, Apagar
                     </button>
                   </div>
                 </div>
               ) : (
-                <div className="p-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center relative">
-                  <div>
-                    <p className="text-xs text-gray-500 uppercase font-bold tracking-wide">
-                      Data: {formatDate(loan.date)}
+                <div className="flex items-start justify-between gap-3 border-b border-edge bg-surface-muted p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-content-muted">{formatDate(loan.date)}</p>
+                    <p className="text-lg font-semibold tabular-nums tracking-tight text-content">
+                      {displayMoney(loan.amount)}
                     </p>
-                    <p className="font-black text-gray-800 text-lg">
-                      Empréstimo: {displayMoney(loan.amount)}
-                    </p>
-                    <p className="text-[10px] text-blue-600 font-bold mt-0.5">
-                      Taxa deste contrato: {loanRateDisplay}
-                    </p>
+                    <p className="mt-0.5 text-xs text-content-muted">Taxa {loanRateDisplay}</p>
+                    {!loan.isPaidOff && (
+                      <div className="mt-2">
+                        {loan.isLoanOK ? (
+                          <span className="inline-flex max-w-full items-center rounded-design-sm bg-success-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-success">
+                            OK ({loan.loanDisplayMonthStr}) ✅
+                          </span>
+                        ) : (
+                          <span className="inline-flex max-w-full items-center rounded-design-sm bg-danger-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-danger">
+                            FALTA {loan.loanDisplayMonthStr}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {!loan.isPaidOff && (
-                    <div className="absolute top-2 right-2">
-                      {loan.isLoanOK ? (
-                        <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm uppercase">
-                          OK ({loan.loanDisplayMonthStr}) ✅
-                        </span>
-                      ) : (
-                        <span className="bg-red-100 text-red-700 text-[10px] font-bold px-2 py-1 rounded shadow-sm animate-pulse uppercase">
-                          FALTA {loan.loanDisplayMonthStr}
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="flex gap-2 text-gray-400 mt-6">
+                  <div className="flex shrink-0 gap-2 text-content-muted">
                     <button
+                      type="button"
+                      aria-label="Editar contrato"
                       onClick={() =>
                         setEditingLoan({
                           id: loan.id,
@@ -570,13 +620,15 @@ const ClientView = ({
                           interestRate: loan.interestRate != null ? loan.interestRate : 10,
                         })
                       }
-                      className="hover:text-blue-600"
+                      className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-design-md text-content-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       <IconEdit />
                     </button>
                     <button
+                      type="button"
+                      aria-label="Excluir contrato"
                       onClick={() => handleDeleteLoanClick(loan.id)}
-                      className="hover:text-red-500"
+                      className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-design-md text-content-muted transition-colors hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       <IconDelete />
                     </button>
@@ -587,71 +639,86 @@ const ClientView = ({
               {/* Corpo do contrato */}
               <div className="p-4">
                 {loan.isPaidOff ? (
-                  <div className="text-center py-2 text-green-600 font-bold bg-green-50 rounded-lg">
+                  <div className="rounded-design-md border border-success/40 bg-success-soft py-2 text-center text-sm font-semibold text-success">
                     ✅ Contrato Quitado!
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between items-end mb-3">
+                    <div className="mb-3 flex items-end justify-between gap-3">
                       <div>
-                        <p className="text-xs text-gray-500">Saldo Devedor (Principal):</p>
-                        <p className="text-xl font-bold text-red-600">
+                        <p className="text-xs font-medium text-content-muted">
+                          Saldo Devedor (Principal):
+                        </p>
+                        <p className="text-xl font-bold tabular-nums text-danger">
                           {displayMoney(loan.currentPrincipal)}
                         </p>
                       </div>
-                      <button
-                        onClick={() => setPayingLoanId(loan.id)}
-                        className="bg-green-100 text-green-700 px-4 py-2 rounded-xl text-sm font-bold shadow-sm border border-green-200"
-                      >
-                        + Pagar Este
-                      </button>
+                    <button
+                      type="button"
+                      onClick={() => setPayingLoanId(loan.id)}
+                      className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-design-md border border-edge bg-success-soft px-4 text-sm font-semibold text-success shadow-design-sm transition-opacity hover:opacity-90 active:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                    >
+                      + Pagar Este
+                    </button>
                     </div>
 
-                    <div className="flex justify-between items-center bg-orange-50 px-3 py-2 rounded-lg border border-orange-100 mb-4">
-                      <p className="text-xs text-orange-800 font-medium">
-                        Juros ({loanRateDisplay}): {displayMoney(loan.baseInterest)}
-                      </p>
-                      <p className="text-sm text-orange-900 font-black">
-                        Quitação: {displayMoney(loan.currentPrincipal + loan.baseInterest)}
-                      </p>
+                    <div className="mb-4 flex items-center justify-between gap-3 rounded-design-md border border-edge bg-warning-soft px-3 py-2">
+                      <div>
+                        <p className="text-xs text-content-muted">Juros ({loanRateDisplay})</p>
+                        <p className="text-sm font-semibold tabular-nums text-content">
+                          {displayMoney(loan.baseInterest)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-content-muted">Quitação</p>
+                        <p className="text-sm font-semibold tabular-nums text-content">
+                          {displayMoney(loan.currentPrincipal + loan.baseInterest)}
+                        </p>
+                      </div>
                     </div>
 
                     {/* Formulário de pagamento */}
                     {payingLoanId === loan.id && (
                       <form
                         onSubmit={handleAddPayment}
-                        className="mb-4 bg-white shadow-md p-4 rounded-xl border border-gray-200 animate-fade-in relative z-10"
+                        className="relative z-10 mb-4 animate-fade-in rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm"
                       >
-                        <p className="text-sm font-bold text-gray-800 mb-3">Novo Pagamento</p>
-                        <div className="flex gap-2 mb-3">
-                          <input
-                            type="date"
-                            value={paymentDate}
-                            onChange={(e) => setPaymentDate(e.target.value)}
-                            required
-                            className="w-1/3 p-2 border rounded-lg bg-gray-50 text-sm"
-                          />
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(e.target.value)}
-                            placeholder="Valor (R$)"
-                            required
-                            className="flex-1 p-2 border rounded-lg bg-gray-50 text-sm"
-                          />
+                        <p className="mb-3 text-sm font-semibold text-content">Novo Pagamento</p>
+                        <div className="mb-3 flex gap-2">
+                          <div className="w-[38%] min-w-0 space-y-1">
+                            <p className="text-xs font-medium text-content-muted">Data</p>
+                            <input
+                              type="date"
+                              value={paymentDate}
+                              onChange={(e) => setPaymentDate(e.target.value)}
+                              required
+                              className="min-h-10 w-full rounded-design-md border border-edge bg-surface-muted px-2 py-2 text-sm text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-xs font-medium text-content-muted">Valor (R$)</p>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={paymentAmount}
+                              onChange={(e) => setPaymentAmount(e.target.value)}
+                              placeholder="Valor (R$)"
+                              required
+                              className="min-h-10 w-full rounded-design-md border border-edge bg-surface-muted px-3 py-2 text-sm tabular-nums text-content placeholder:text-content-muted shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                            />
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => setPayingLoanId(null)}
-                            className="flex-1 py-2 bg-gray-100 rounded-lg text-sm font-bold"
+                            className="flex min-h-10 flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                           >
                             Cancelar
                           </button>
                           <button
                             type="submit"
-                            className="flex-1 py-2 bg-green-600 text-white rounded-lg text-sm font-bold"
+                            className="flex min-h-10 flex-1 items-center justify-center rounded-design-md bg-success px-2 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                           >
                             Confirmar
                           </button>
@@ -663,89 +730,115 @@ const ClientView = ({
 
                 {/* Lista de pagamentos */}
                 {loan.processedPayments.length > 0 && (
-                  <div className="mt-4 border-t border-gray-100 pt-3">
-                    <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Pagamentos:</p>
+                  <div className="mt-4 border-t border-edge pt-4">
+                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                      Pagamentos:
+                    </p>
                     <div className="space-y-2">
                       {[...loan.processedPayments].reverse().map((p) => (
-                        <div key={p.id} className="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                        <div
+                          key={p.id}
+                          className="rounded-design-md border border-edge bg-surface-muted p-3 shadow-design-sm"
+                        >
                           {editingPayment && editingPayment.id === p.id ? (
-                            <form onSubmit={handleSaveEditPayment} className="animate-fade-in">
-                              <div className="flex gap-2 mb-2">
-                                <input
-                                  type="date"
-                                  required
-                                  value={editingPayment.date}
-                                  onChange={(e) =>
-                                    setEditingPayment({ ...editingPayment, date: e.target.value })
-                                  }
-                                  className="w-1/3 p-1 border rounded text-xs"
-                                />
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  required
-                                  value={editingPayment.amount}
-                                  onChange={(e) =>
-                                    setEditingPayment({ ...editingPayment, amount: e.target.value })
-                                  }
-                                  className="flex-1 p-1 border rounded text-xs"
-                                />
+                            <form
+                              onSubmit={handleSaveEditPayment}
+                              className="animate-fade-in rounded-design-md border border-edge bg-surface p-3 shadow-design-sm"
+                            >
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                                Editar pagamento
+                              </p>
+                              <div className="mb-3 flex gap-2">
+                                <div className="w-[38%] min-w-0 space-y-1">
+                                  <p className="text-xs font-medium text-content-muted">Data</p>
+                                  <input
+                                    type="date"
+                                    required
+                                    value={editingPayment.date}
+                                    onChange={(e) =>
+                                      setEditingPayment({ ...editingPayment, date: e.target.value })
+                                    }
+                                    className="min-h-10 w-full rounded-design-md border border-edge bg-surface-muted px-2 py-2 text-sm text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                                  />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <p className="text-xs font-medium text-content-muted">Valor (R$)</p>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    required
+                                    value={editingPayment.amount}
+                                    onChange={(e) =>
+                                      setEditingPayment({ ...editingPayment, amount: e.target.value })
+                                    }
+                                    className="min-h-10 w-full rounded-design-md border border-edge bg-surface-muted px-2 py-2 text-sm tabular-nums text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                                  />
+                                </div>
                               </div>
                               <div className="flex gap-2">
                                 <button
                                   type="button"
                                   onClick={() => setEditingPayment(null)}
-                                  className="flex-1 bg-gray-200 rounded text-[10px] font-bold py-1"
+                                  className="flex min-h-10 flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-xs font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   Cancelar
                                 </button>
                                 <button
                                   type="submit"
-                                  className="flex-1 bg-blue-600 text-white rounded text-[10px] font-bold py-1"
+                                  className="flex min-h-10 flex-1 items-center justify-center rounded-design-md bg-primary px-2 text-xs font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   Salvar
                                 </button>
                               </div>
                             </form>
                           ) : confirmDeletePaymentId?.id === p.id ? (
-                            <div className="animate-fade-in flex flex-col gap-2">
-                              <p className="text-xs text-red-600 font-bold text-center">
+                            <div className="animate-fade-in flex flex-col gap-3 rounded-design-md border border-edge bg-danger-soft p-3">
+                              <p className="text-center text-sm font-semibold leading-snug text-danger">
                                 Apagar pagamento?
                               </p>
                               <div className="flex gap-2">
                                 <button
+                                  type="button"
                                   onClick={() => setConfirmDeletePaymentId(null)}
-                                  className="flex-1 bg-gray-200 rounded text-[10px] font-bold py-1"
+                                  className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-sm font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   Cancelar
                                 </button>
                                 <button
+                                  type="button"
                                   onClick={executeDeletePayment}
-                                  className="flex-1 bg-red-600 text-white rounded text-[10px] font-bold py-1"
+                                  className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-danger px-2 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   Apagar
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                  <span className="font-bold text-sm text-gray-700">
-                                    {displayMoney(p.amount)}
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1 space-y-1">
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                                  <span className="inline-flex items-center gap-1.5">
+                                    <span
+                                      className="h-1.5 w-1.5 shrink-0 rounded-full bg-success"
+                                      aria-hidden
+                                    />
+                                    <span className="text-sm font-semibold tabular-nums text-content">
+                                      {displayMoney(p.amount)}
+                                    </span>
                                   </span>
-                                  <span className="text-[10px] text-gray-400 ml-1">
-                                    ({formatDate(p.date)})
+                                  <span className="text-xs text-content-muted">
+                                    {formatDate(p.date)}
                                   </span>
                                 </div>
-                                <p className="text-[10px] text-gray-500 ml-3 mt-0.5">
+                                <p className="text-xs leading-relaxed text-content-muted">
                                   Juros: {displayMoney(p.interestPaid)} | Abateu:{' '}
                                   {displayMoney(p.amortized)}
                                 </p>
                               </div>
-                              <div className="flex gap-2 text-gray-400">
+                              <div className="flex shrink-0 gap-1">
                                 <button
+                                  type="button"
+                                  aria-label="Editar pagamento"
                                   onClick={() =>
                                     setEditingPayment({
                                       loanId: loan.id,
@@ -754,13 +847,15 @@ const ClientView = ({
                                       amount: p.amount,
                                     })
                                   }
-                                  className="hover:text-blue-600 p-1"
+                                  className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-design-md text-content-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   <IconEdit />
                                 </button>
                                 <button
+                                  type="button"
+                                  aria-label="Excluir pagamento"
                                   onClick={() => handleDeletePaymentClick(loan.id, p.id)}
-                                  className="hover:text-red-500 p-1"
+                                  className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-design-md text-content-muted transition-colors hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                                 >
                                   <IconDelete />
                                 </button>
@@ -777,7 +872,7 @@ const ClientView = ({
           );
         })}
         {clientData.loans.length === 0 && (
-          <p className="text-center text-gray-400 py-10">Nenhum contrato ativo.</p>
+          <p className="py-10 text-center text-sm text-content-muted">Nenhum contrato ativo.</p>
         )}
       </div>
     </div>

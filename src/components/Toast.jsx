@@ -10,7 +10,7 @@ const Toast = ({ message }) => {
   if (!message) return null;
 
   return (
-    <div className="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-3 rounded-full shadow-2xl z-50 font-medium text-sm toast-anim whitespace-nowrap">
+    <div className="fixed bottom-10 left-1/2 z-50 -translate-x-1/2 transform whitespace-nowrap rounded-design-pill bg-content px-5 py-3 font-medium text-sm text-content-inverse shadow-design-lg toast-anim">
       {message}
     </div>
   );

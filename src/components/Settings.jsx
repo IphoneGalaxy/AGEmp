@@ -6,20 +6,23 @@ import { getAutoBackupCount, getLastAutoBackup } from '../utils/autoBackup';
  * Toggle switch reutilizável.
  */
 const Toggle = ({ enabled, onToggle, label, description }) => (
-  <div className="flex items-center justify-between py-2.5">
-    <div className="flex-1 mr-4">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
-      {description && <p className="text-[11px] text-gray-400 mt-0.5">{description}</p>}
+  <div className="flex items-center justify-between gap-4 border-b border-edge/60 py-3 last:border-b-0">
+    <div className="min-w-0 flex-1">
+      <span className="text-sm font-medium text-content">{label}</span>
+      {description && (
+        <p className="mt-1 text-xs leading-relaxed text-content-muted">{description}</p>
+      )}
     </div>
     <button
       type="button"
       onClick={onToggle}
-      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors ${
-        enabled ? 'bg-blue-600' : 'bg-gray-300'
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+        enabled ? 'bg-primary' : 'bg-surface-muted ring-1 ring-inset ring-edge'
       }`}
+      aria-pressed={enabled}
     >
       <span
-        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-surface shadow-design-sm transition-transform ${
           enabled ? 'translate-x-5' : ''
         }`}
       />
@@ -31,14 +34,19 @@ const Toggle = ({ enabled, onToggle, label, description }) => (
  * Grupo de opções (botões segmentados).
  */
 const OptionGroup = ({ options, value, onChange }) => (
-  <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+  <div
+    className="flex gap-0.5 rounded-design-md bg-surface-muted p-1 ring-1 ring-inset ring-edge/50"
+    role="group"
+  >
     {options.map((opt) => (
       <button
-        key={opt.value}
+        key={String(opt.value)}
         type="button"
         onClick={() => onChange(opt.value)}
-        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-colors ${
-          value === opt.value ? 'bg-white shadow text-blue-600' : 'text-gray-500'
+        className={`flex min-h-10 flex-1 items-center justify-center rounded-design-sm px-2 text-xs font-semibold transition-colors ${
+          value === opt.value
+            ? 'bg-surface text-primary shadow-design-sm ring-1 ring-edge/40'
+            : 'text-content-muted hover:text-content-soft'
         }`}
       >
         {opt.label}
@@ -101,14 +109,17 @@ const Settings = ({
     }
   };
 
-  return (
-    <div className="p-4 space-y-4 pb-20">
-      {/* ===== APARÊNCIA ===== */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">🎨 Aparência</h3>
+  const sectionCardClass =
+    'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
 
-        <div className="mb-4">
-          <label className="text-sm font-medium text-gray-700 mb-2 block">Tema</label>
+  return (
+    <div className="space-y-6 p-4 pb-20">
+      {/* ===== APARÊNCIA ===== */}
+      <div className={sectionCardClass}>
+        <h3 className="mb-4 text-lg font-semibold tracking-tight text-content">🎨 Aparência</h3>
+
+        <div className="mb-5">
+          <label className="mb-2 block text-sm font-medium text-content-soft">Tema</label>
           <OptionGroup
             options={[
               { value: 'light', label: '☀️ Claro' },
@@ -120,39 +131,45 @@ const Settings = ({
           />
         </div>
 
-        <Toggle
-          label="Reduzir animações"
-          description="Desativa transições e efeitos visuais"
-          enabled={settings.reduceAnimations}
-          onToggle={() => updateSetting('reduceAnimations', !settings.reduceAnimations)}
-        />
+        <div className="-mx-1">
+          <Toggle
+            label="Reduzir animações"
+            description="Desativa transições e efeitos visuais"
+            enabled={settings.reduceAnimations}
+            onToggle={() => updateSetting('reduceAnimations', !settings.reduceAnimations)}
+          />
 
-        <Toggle
-          label="Ocultar valores monetários"
-          description="Esconde valores sensíveis por padrão (use o ícone 👁 no topo para revelar)"
-          enabled={settings.hideSensitiveValues}
-          onToggle={() => updateSetting('hideSensitiveValues', !settings.hideSensitiveValues)}
-        />
+          <Toggle
+            label="Ocultar valores monetários"
+            description="Esconde valores sensíveis por padrão (use o ícone 👁 no topo para revelar)"
+            enabled={settings.hideSensitiveValues}
+            onToggle={() => updateSetting('hideSensitiveValues', !settings.hideSensitiveValues)}
+          />
+        </div>
       </div>
 
       {/* ===== BACKUP E SEGURANÇA ===== */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-1">🔒 Backup e Segurança</h3>
-        <p className="text-xs text-gray-500 mb-4">
+      <div className={sectionCardClass}>
+        <h3 className="mb-1 text-lg font-semibold tracking-tight text-content">
+          🔒 Backup e Segurança
+        </h3>
+        <p className="mb-5 text-xs leading-relaxed text-content-muted">
           O backup automático salva uma cópia dos seus dados internamente no navegador a cada
           alteração importante.
         </p>
 
-        <Toggle
-          label="Backup automático"
-          description="Cria cópia interna a cada alteração importante"
-          enabled={settings.autoBackupEnabled}
-          onToggle={() => updateSetting('autoBackupEnabled', !settings.autoBackupEnabled)}
-        />
+        <div className="-mx-1">
+          <Toggle
+            label="Backup automático"
+            description="Cria cópia interna a cada alteração importante"
+            enabled={settings.autoBackupEnabled}
+            onToggle={() => updateSetting('autoBackupEnabled', !settings.autoBackupEnabled)}
+          />
+        </div>
 
         {settings.autoBackupEnabled && (
-          <div className="mt-2 mb-3">
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
+          <div className="mb-1 mt-4">
+            <label className="mb-2 block text-sm font-medium text-content-soft">
               Máximo de backups automáticos
             </label>
             <OptionGroup
@@ -168,14 +185,14 @@ const Settings = ({
         )}
 
         {/* Info de backups */}
-        <div className="bg-gray-50 rounded-xl p-3 border border-gray-100 mt-3 space-y-1.5">
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-500">Backups armazenados:</span>
-            <span className="font-bold text-gray-700">{backupInfo.count}</span>
+        <div className="mt-4 space-y-2 rounded-design-lg border border-edge bg-surface-muted p-4">
+          <div className="flex items-start justify-between gap-3 text-xs">
+            <span className="text-content-muted">Backups armazenados:</span>
+            <span className="shrink-0 font-semibold tabular-nums text-content">{backupInfo.count}</span>
           </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-gray-500">Último backup automático:</span>
-            <span className="font-bold text-gray-700">
+          <div className="flex items-start justify-between gap-3 text-xs">
+            <span className="text-content-muted">Último backup automático:</span>
+            <span className="max-w-[55%] shrink-0 text-right font-semibold text-content">
               {backupInfo.last ? formatDateTime(backupInfo.last.timestamp) : 'Nenhum'}
             </span>
           </div>
@@ -191,25 +208,28 @@ const Settings = ({
               }
               setConfirmRestore(true);
             }}
-            className="w-full mt-3 bg-orange-50 text-orange-800 py-2.5 rounded-xl font-bold text-sm border border-orange-200 active:bg-orange-100"
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-warning-soft text-sm font-semibold text-content-soft transition-colors active:bg-warning-soft/80"
           >
             🔄 Restaurar último backup automático
           </button>
         ) : (
-          <div className="mt-3 bg-orange-50 p-4 rounded-xl border border-orange-200 text-center animate-fade-in">
-            <p className="text-sm font-bold text-orange-800 mb-3">
+          <div
+            className="mt-4 rounded-design-lg border border-edge bg-warning-soft p-4 text-center animate-fade-in"
+            role="alert"
+          >
+            <p className="mb-4 text-sm font-semibold leading-snug text-content">
               ⚠️ Isso vai substituir todos os dados atuais pelo último backup automático. Continuar?
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmRestore(false)}
-                className="flex-1 py-2.5 bg-gray-200 text-gray-700 rounded-xl font-medium text-sm"
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface text-sm font-semibold text-content-soft transition-colors active:bg-surface-muted"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleRestore}
-                className="flex-1 py-2.5 bg-orange-600 text-white rounded-xl font-bold text-sm"
+                className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-warning text-sm font-semibold text-content-inverse shadow-design-sm transition-colors active:opacity-90"
               >
                 Sim, Restaurar
               </button>
@@ -218,18 +238,20 @@ const Settings = ({
         )}
 
         {/* Backup manual */}
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <p className="text-xs font-bold text-gray-400 mb-2 uppercase">Backup Manual (Arquivo)</p>
+        <div className="mt-6 border-t border-edge pt-6">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-muted">
+            Backup Manual (Arquivo)
+          </p>
           <div className="flex gap-2">
             <button
               onClick={onExport}
-              className="flex-1 bg-blue-50 text-blue-800 py-2.5 rounded-xl font-bold text-sm border border-blue-200 active:bg-blue-100"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-primary-soft text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80"
             >
               📥 Salvar Backup
             </button>
             <button
               onClick={() => fileInputRef.current.click()}
-              className="flex-1 bg-gray-50 text-gray-800 py-2.5 rounded-xl font-bold text-sm border border-gray-200 active:bg-gray-100"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge bg-surface-muted text-sm font-semibold text-content-soft transition-colors active:bg-surface-muted/80"
             >
               📤 Importar
             </button>
@@ -249,27 +271,29 @@ const Settings = ({
       </div>
 
       {/* ===== OPERAÇÃO ===== */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">⚙️ Operação</h3>
+      <div className={sectionCardClass}>
+        <h3 className="mb-4 text-lg font-semibold tracking-tight text-content">⚙️ Operação</h3>
 
-        <Toggle
-          label="Confirmar exclusão de cliente"
-          enabled={settings.confirmDeleteClient}
-          onToggle={() => updateSetting('confirmDeleteClient', !settings.confirmDeleteClient)}
-        />
-        <Toggle
-          label="Confirmar exclusão de contrato"
-          enabled={settings.confirmDeleteLoan}
-          onToggle={() => updateSetting('confirmDeleteLoan', !settings.confirmDeleteLoan)}
-        />
-        <Toggle
-          label="Confirmar exclusão de pagamento"
-          enabled={settings.confirmDeletePayment}
-          onToggle={() => updateSetting('confirmDeletePayment', !settings.confirmDeletePayment)}
-        />
+        <div className="-mx-1">
+          <Toggle
+            label="Confirmar exclusão de cliente"
+            enabled={settings.confirmDeleteClient}
+            onToggle={() => updateSetting('confirmDeleteClient', !settings.confirmDeleteClient)}
+          />
+          <Toggle
+            label="Confirmar exclusão de contrato"
+            enabled={settings.confirmDeleteLoan}
+            onToggle={() => updateSetting('confirmDeleteLoan', !settings.confirmDeleteLoan)}
+          />
+          <Toggle
+            label="Confirmar exclusão de pagamento"
+            enabled={settings.confirmDeletePayment}
+            onToggle={() => updateSetting('confirmDeletePayment', !settings.confirmDeletePayment)}
+          />
+        </div>
 
-        <div className="mt-4 pt-3 border-t border-gray-100">
-          <label className="text-sm font-medium text-gray-700 mb-2 block">Aba inicial padrão</label>
+        <div className="mt-5 border-t border-edge pt-5">
+          <label className="mb-2 block text-sm font-medium text-content-soft">Aba inicial padrão</label>
           <OptionGroup
             options={[
               { value: 'dashboard', label: 'Painel' },
@@ -283,18 +307,18 @@ const Settings = ({
       </div>
 
       {/* ===== FINANCEIRO ===== */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-1">💰 Financeiro</h3>
-        <p className="text-xs text-gray-500 mb-4">
+      <div className={sectionCardClass}>
+        <h3 className="mb-1 text-lg font-semibold tracking-tight text-content">💰 Financeiro</h3>
+        <p className="mb-5 text-xs leading-relaxed text-content-muted">
           A taxa padrão será preenchida automaticamente ao criar um novo empréstimo. Cada contrato
           pode ter sua própria taxa personalizada.
         </p>
 
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-2 block">
+          <label className="mb-2 block text-sm font-medium text-content-soft">
             Taxa de juros padrão (%)
           </label>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="number"
               step="0.1"
@@ -319,23 +343,23 @@ const Settings = ({
                   updateSetting('defaultInterestRate', 10);
                 }
               }}
-              className="w-24 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-center font-bold text-lg"
+              className="min-h-[44px] w-24 rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-center text-lg font-semibold text-content tabular-nums"
             />
-            <span className="text-gray-500 font-medium">% ao mês</span>
+            <span className="text-sm font-medium text-content-muted">% ao mês</span>
           </div>
         </div>
       </div>
 
       {/* ===== SOBRE ===== */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-2">ℹ️ Sobre</h3>
-        <div className="space-y-1 text-sm text-gray-500">
+      <div className={sectionCardClass}>
+        <h3 className="mb-3 text-lg font-semibold tracking-tight text-content">ℹ️ Sobre</h3>
+        <div className="space-y-2 text-sm leading-relaxed text-content-muted">
           <p>
-            <span className="font-medium text-gray-700">Finanças Pro</span> — Controle de
+            <span className="font-medium text-content">Finanças Pro</span> — Controle de
             empréstimos pessoais
           </p>
-          <p>Versão 2.0.0</p>
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="tabular-nums">Versão 2.0.0</p>
+          <p className="border-t border-edge/60 pt-3 text-xs leading-relaxed text-content-muted">
             Dados salvos localmente no navegador. Faça backups regulares para não perder informações.
           </p>
         </div>

@@ -226,19 +226,21 @@ function App() {
   // ==================== RENDERIZAÇÃO ====================
 
   return (
-    <div className="max-w-md mx-auto bg-gray-50 min-h-screen shadow-2xl relative overflow-hidden flex flex-col">
+    <div className="max-w-xl mx-auto bg-base min-h-screen shadow-design-md relative overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-white pt-10 pb-4 px-6 shadow-sm z-0 flex items-center justify-between">
-        <h1 className="text-2xl font-black text-gray-800 tracking-tight">
-          Finanças <span className="text-blue-600">Pro</span>
+      <div className="bg-surface pt-6 pb-3 px-4 sm:px-5 z-0 flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-content tracking-tight">
+          Finanças <span className="text-primary">Pro</span>
         </h1>
 
         {/* Botão olho: só aparece se ocultar valores estiver ativo */}
         {settings.hideSensitiveValues && (
           <button
+            type="button"
             onClick={() => setValuesRevealed((v) => !v)}
-            className="p-2 rounded-full text-gray-500 hover:bg-gray-100 active:bg-gray-200 transition-colors"
+            className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-full text-content-muted transition-colors hover:bg-surface-muted active:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
             title={valuesRevealed ? 'Ocultar valores' : 'Revelar valores'}
+            aria-label={valuesRevealed ? 'Ocultar valores monetários' : 'Revelar valores monetários'}
           >
             {valuesRevealed ? <IconEye /> : <IconEyeOff />}
           </button>
@@ -246,35 +248,44 @@ function App() {
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white px-4 border-b border-gray-200">
+      <div className="flex bg-surface px-3 sm:px-4 border-b border-edge">
         <button
-          className={`flex-1 py-3 text-center text-sm transition-colors ${
-            activeTab === 'dashboard' ? 'tab-active' : 'text-gray-500'
+          type="button"
+          className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+            activeTab === 'dashboard'
+              ? 'tab-active'
+              : 'border-b-2 border-transparent text-content-muted'
           }`}
           onClick={() => setActiveTab('dashboard')}
         >
           Painel
         </button>
         <button
-          className={`flex-1 py-3 text-center text-sm transition-colors ${
-            activeTab === 'clients' ? 'tab-active' : 'text-gray-500'
+          type="button"
+          className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+            activeTab === 'clients'
+              ? 'tab-active'
+              : 'border-b-2 border-transparent text-content-muted'
           }`}
           onClick={() => setActiveTab('clients')}
         >
           Clientes
         </button>
         <button
-          className={`flex-1 py-3 text-center text-sm transition-colors ${
-            activeTab === 'settings' ? 'tab-active' : 'text-gray-500'
+          type="button"
+          className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+            activeTab === 'settings'
+              ? 'tab-active'
+              : 'border-b-2 border-transparent text-content-muted'
           }`}
           onClick={() => setActiveTab('settings')}
         >
-          ⚙️ Config.
+          Config.
         </button>
       </div>
 
       {/* Conteúdo principal */}
-      <div className="flex-1 overflow-y-auto hide-scroll pb-10">
+      <div className="flex-1 overflow-y-auto hide-scroll pb-10 bg-base">
         {activeTab === 'dashboard' && (
           <Dashboard
             globalStats={globalStats}

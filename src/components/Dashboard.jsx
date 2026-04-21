@@ -51,46 +51,64 @@ const Dashboard = ({
   return (
     <div className="p-4 space-y-6 pb-20">
       {/* Cards Principais */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-blue-600 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
-          <p className="text-blue-100 text-sm font-medium relative z-10">Total Disponível</p>
-          <p className="text-2xl font-bold mt-1 relative z-10">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div className="relative overflow-hidden rounded-design-lg border border-edge bg-surface p-5 shadow-design-md">
+          <div
+            className="absolute inset-x-0 top-0 h-1 bg-primary"
+            aria-hidden
+          />
+          <p className="relative z-10 text-sm font-medium text-content-muted">
+            Total Disponível
+          </p>
+          <p className="relative z-10 mt-1 text-2xl font-bold tabular-nums tracking-tight text-content">
             {displayMoney(globalStats.availableMoney)}
           </p>
         </div>
-        <div className="bg-orange-500 text-white rounded-2xl p-5 shadow-lg relative overflow-hidden">
-          <p className="text-orange-100 text-sm font-medium relative z-10">Total na Rua</p>
-          <p className="text-2xl font-bold mt-1 relative z-10">
+        <div className="relative overflow-hidden rounded-design-lg border border-edge bg-surface-muted p-5 shadow-design-sm">
+          <div
+            className="absolute inset-x-0 top-0 h-0.5 bg-warning/50"
+            aria-hidden
+          />
+          <p className="relative z-10 text-sm font-medium text-content-muted">
+            Total na Rua
+          </p>
+          <p className="relative z-10 mt-1 text-xl font-semibold tabular-nums tracking-tight text-content-soft">
             {displayMoney(globalStats.totalLent)}
           </p>
         </div>
       </div>
 
       {/* Recebimentos do Mês */}
-      <div className="bg-white rounded-2xl p-5 shadow-md border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-bold text-gray-800 text-lg">Mês de {globalStats.dashMonthStr}</h3>
+      <div className="rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6">
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-content">
+            Mês de {globalStats.dashMonthStr}
+          </h3>
         </div>
 
-        <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-center mb-4">
-          <p className="text-red-700 text-xs font-black uppercase tracking-widest mb-1">
+        <div className="mb-5 rounded-design-md border border-edge bg-danger-soft px-4 py-5 text-center">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-danger">
             Falta Receber (Pendentes)
           </p>
-          <p className="text-4xl font-black text-red-600">
+          <p className="text-4xl font-bold tabular-nums tracking-tight text-danger">
             {displayMoney(globalStats.dashPending)}
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div className="bg-green-50 p-3 rounded-xl border border-green-100 text-center">
-            <p className="text-[10px] text-green-700 font-bold uppercase mb-1">Já Recebido</p>
-            <p className="font-bold text-green-800 text-sm">
+          <div className="rounded-design-md border border-edge bg-success-soft px-3 py-4 text-center">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted">
+              Já Recebido
+            </p>
+            <p className="text-lg font-bold tabular-nums text-success">
               {displayMoney(globalStats.dashPaid)}
             </p>
           </div>
-          <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 text-center">
-            <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Meta do Mês</p>
-            <p className="font-bold text-gray-700 text-sm">
+          <div className="rounded-design-md border border-edge bg-surface-muted px-3 py-4 text-center">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted">
+              Meta do Mês
+            </p>
+            <p className="text-lg font-bold tabular-nums text-content">
               {displayMoney(globalStats.dashExpected)}
             </p>
           </div>
@@ -98,13 +116,15 @@ const Dashboard = ({
       </div>
 
       {/* Movimentar Caixa */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-        <h3 className="text-lg font-bold text-gray-800 mb-3">Movimentar Caixa Pessoal</h3>
+      <div className="rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm">
+        <h3 className="mb-4 text-lg font-semibold text-content">
+          Movimentar Caixa Pessoal
+        </h3>
         <div className="flex flex-col gap-3">
           <input
             type="number"
             step="0.01"
-            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
+            className="w-full min-h-[44px] rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content placeholder:text-content-muted"
             placeholder="Valor (R$)"
             value={addAmount}
             onChange={(e) => setAddAmount(e.target.value)}
@@ -112,13 +132,13 @@ const Dashboard = ({
           <div className="flex gap-2">
             <button
               onClick={() => handleFund('add')}
-              className="flex-1 bg-gray-800 text-white py-3 rounded-xl font-bold"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-edge-strong bg-surface-muted font-semibold text-content transition-colors hover:bg-surface"
             >
               + Adicionar
             </button>
             <button
               onClick={() => handleFund('remove')}
-              className="flex-1 bg-red-100 text-red-700 py-3 rounded-xl font-bold shadow-sm"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md border border-danger/25 bg-danger-soft font-semibold text-danger"
             >
               - Retirar
             </button>
@@ -126,35 +146,41 @@ const Dashboard = ({
         </div>
 
         {fundsTransactions.length > 0 && (
-          <div className="mt-4 border-t border-gray-100 pt-4">
-            <h3 className="text-xs font-bold text-gray-400 mb-2 uppercase">Histórico do Caixa:</h3>
+          <div className="mt-5 border-t border-edge pt-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-muted">
+              Histórico do Caixa:
+            </h3>
             <div className="space-y-2">
               {fundsTransactions.map((t) => (
                 <div
                   key={t.id}
-                  className="bg-gray-50 p-2 rounded-lg flex justify-between items-center border border-gray-100"
+                  className="flex items-center justify-between rounded-design-md border border-edge bg-surface-muted px-3 py-2.5"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`w-6 h-6 text-xs rounded-full flex items-center justify-center font-bold ${
-                        t.amount > 0 ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                        t.amount > 0
+                          ? 'bg-primary-soft text-primary'
+                          : 'bg-danger-soft text-danger'
                       }`}
                     >
                       {t.amount > 0 ? '+' : '-'}
                     </div>
-                    <div>
-                      <p className="font-bold text-sm text-gray-800">
+                    <div className="min-w-0 text-left">
+                      <p className="text-base font-bold tabular-nums text-content">
                         {displayMoney(Math.abs(t.amount))}
                       </p>
-                      <p className="text-[10px] text-gray-400">{formatDate(t.date)}</p>
+                      <p className="text-xs text-content-muted">{formatDate(t.date)}</p>
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => {
                       onDeleteFundTransaction(t.id);
                       showToast('🗑️ Registro apagado.');
                     }}
-                    className="p-2 text-gray-400 hover:text-red-600"
+                    className="inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-design-md p-2 text-content-muted transition-colors hover:bg-danger-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                    aria-label="Excluir registro do histórico de caixa"
                   >
                     <IconDelete />
                   </button>

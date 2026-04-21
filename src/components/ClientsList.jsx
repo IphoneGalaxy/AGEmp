@@ -37,18 +37,21 @@ const ClientsList = ({
 
   return (
     <div className="p-4 space-y-6 pb-20">
-      <form onSubmit={handleAddClient} className="flex gap-2 mb-6">
+      <form
+        onSubmit={handleAddClient}
+        className="mb-6 flex gap-2 rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm"
+      >
         <input
           type="text"
           required
-          className="flex-1 bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-3"
+          className="min-h-[44px] flex-1 rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content placeholder:text-content-muted shadow-none"
           placeholder="Nome do novo cliente"
           value={newClientName}
           onChange={(e) => setNewClientName(e.target.value)}
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-5 py-3 rounded-xl font-medium shadow-md"
+          className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-design-md bg-primary px-5 font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover"
         >
           Criar
         </button>
@@ -59,23 +62,25 @@ const ClientsList = ({
           <div
             key={client.id}
             onClick={() => onSelectClient(client)}
-            className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-95 transition-transform"
+            className="flex cursor-pointer items-start justify-between gap-4 rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm transition-colors hover:bg-surface-muted"
           >
-            <div className="flex-1">
-              <p className="font-bold text-gray-800 text-lg">{client.name}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold leading-snug text-content">
+                {client.name}
+              </p>
 
               {client.currentDebt > 0 ? (
-                <div className="mt-1 flex items-center gap-2">
+                <div className="mt-2">
                   {client.dashPending <= 0 ? (
-                    <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-0.5 rounded uppercase">
+                    <span className="inline-flex max-w-full items-center rounded-design-sm bg-success-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-success">
                       OK ({client.dashMonthStr}) ✅
                     </span>
                   ) : (
                     <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                      className={`inline-flex max-w-full items-center rounded-design-sm px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${
                         client.isNextMonth
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'bg-red-100 text-red-700'
+                          ? 'bg-info-soft text-info'
+                          : 'bg-danger-soft text-danger'
                       }`}
                     >
                       Falta {client.dashMonthStr}: {displayMoney(client.dashPending)}
@@ -83,14 +88,14 @@ const ClientsList = ({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 mt-1">Sem dívidas ativas</p>
+                <p className="mt-2 text-xs text-content-muted">Sem dívidas ativas</p>
               )}
             </div>
-            <div className="text-right">
-              <p className="text-xs text-gray-500">Dívida Total</p>
+            <div className="shrink-0 border-l border-edge pl-4 text-right">
+              <p className="text-xs font-medium text-content-muted">Dívida Total</p>
               <p
-                className={`font-bold ${
-                  client.currentDebt > 0 ? 'text-red-500' : 'text-green-600'
+                className={`mt-0.5 text-base font-bold tabular-nums tracking-tight ${
+                  client.currentDebt > 0 ? 'text-danger' : 'text-success'
                 }`}
               >
                 {displayMoney(client.currentDebt)}
@@ -99,7 +104,9 @@ const ClientsList = ({
           </div>
         ))}
         {clientsCount === 0 && (
-          <p className="text-center text-gray-500 mt-10">Nenhum cliente cadastrado.</p>
+          <div className="mt-10 rounded-design-lg border border-dashed border-edge bg-surface-muted/60 px-5 py-12 text-center">
+            <p className="text-sm text-content-muted">Nenhum cliente cadastrado.</p>
+          </div>
         )}
       </div>
     </div>
