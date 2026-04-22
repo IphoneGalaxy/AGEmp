@@ -27,7 +27,40 @@ service cloud.firestore {
     }
 
     function allowedUserFields() {
-      return ['displayName', 'createdAt', 'updatedAt', 'role', 'roleSetAt'];
+      return ['displayName', 'createdAt', 'updatedAt', 'role', 'roleSetAt', 'accountRoles'];
+    }
+
+    function hasAccountRolesField(data) {
+      return data.keys().hasAny(['accountRoles']);
+    }
+
+    function accountRolesListIsValid(list) {
+      return list is list &&
+        list.size() >= 1 &&
+        list.size() <= 2 &&
+        list[0] is string &&
+        isValidUserRole(list[0]) &&
+        (
+          list.size() == 1 ||
+          (
+            list[1] is string &&
+            isValidUserRole(list[1]) &&
+            list[0] != list[1]
+          )
+        );
+    }
+
+    function userAccountRolesShapeValid(data) {
+      return !hasAccountRolesField(data) || accountRolesListIsValid(data.accountRoles);
+    }
+
+    function userAccountRolesConsistentWithLegacyRole(data) {
+      return !hasRoleField(data) ||
+        !hasAccountRolesField(data) ||
+        (
+          data.accountRoles is list &&
+          data.accountRoles.hasAll([data.role])
+        );
     }
 
     function requiredUserFields() {
@@ -58,14 +91,18 @@ service cloud.firestore {
     }
 
     function userRoleFieldsAreValid(data) {
-      return (!hasRoleField(data) && !hasRoleSetAtField(data)) ||
-        (
-          hasRoleField(data) &&
-          hasRoleSetAtField(data) &&
-          data.role is string &&
-          isValidUserRole(data.role) &&
-          data.roleSetAt is timestamp
-        );
+      return (
+          (!hasRoleField(data) && !hasRoleSetAtField(data)) ||
+          (
+            hasRoleField(data) &&
+            hasRoleSetAtField(data) &&
+            data.role is string &&
+            isValidUserRole(data.role) &&
+            data.roleSetAt is timestamp
+          )
+        ) &&
+        userAccountRolesShapeValid(data) &&
+        userAccountRolesConsistentWithLegacyRole(data);
     }
 
     function userRoleCreateIsValid() {
@@ -89,8 +126,49 @@ service cloud.firestore {
         request.resource.data.role is string &&
         isValidUserRole(request.resource.data.role) &&
         request.resource.data.roleSetAt == request.time &&
+        (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['role', 'roleSetAt', 'updatedAt']) ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['role', 'roleSetAt', 'updatedAt', 'accountRoles']) &&
+            accountRolesListIsValid(request.resource.data.accountRoles) &&
+            request.resource.data.accountRoles.size() == 1 &&
+            request.resource.data.accountRoles[0] == request.resource.data.role
+          )
+        );
+    }
+
+    function userProfileAccountRolesInitialWrite() {
+      return resource.data.keys().hasAny(['role']) &&
+        resource.data.keys().hasAny(['roleSetAt']) &&
+        !resource.data.keys().hasAny(['accountRoles']) &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['role', 'roleSetAt', 'updatedAt']);
+          .hasOnly(['accountRoles', 'updatedAt']) &&
+        request.resource.data.displayName == resource.data.displayName &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.roleSetAt == resource.data.roleSetAt &&
+        request.resource.data.updatedAt == request.time &&
+        accountRolesListIsValid(request.resource.data.accountRoles) &&
+        request.resource.data.accountRoles.hasAll([resource.data.role]);
+    }
+
+    function userProfileAccountRolesAddSecond() {
+      return resource.data.keys().hasAny(['accountRoles']) &&
+        resource.data.accountRoles is list &&
+        resource.data.accountRoles.size() == 1 &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['accountRoles', 'updatedAt']) &&
+        request.resource.data.displayName == resource.data.displayName &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.roleSetAt == resource.data.roleSetAt &&
+        request.resource.data.updatedAt == request.time &&
+        accountRolesListIsValid(request.resource.data.accountRoles) &&
+        request.resource.data.accountRoles.size() == 2 &&
+        request.resource.data.accountRoles.hasAll(resource.data.accountRoles) &&
+        userAccountRolesConsistentWithLegacyRole(request.resource.data);
     }
 
     function allowedLinkFields() {
@@ -110,9 +188,24 @@ service cloud.firestore {
         (request.auth.uid == data.supplierId || request.auth.uid == data.clientId);
     }
 
-    function userHasRole(userId, role) {
-      return exists(userDocPath(userId)) &&
-        get(userDocPath(userId)).data.role == role;
+    function userHasEffectiveAccountRole(userId, role) {
+      let d = get(userDocPath(userId)).data;
+      return exists(userDocPath(userId)) && (
+        (
+          hasAccountRolesField(d) &&
+          d.accountRoles is list &&
+          accountRolesListIsValid(d.accountRoles) &&
+          d.accountRoles.hasAll([role])
+        ) ||
+        (
+          (
+            !hasAccountRolesField(d) ||
+            !(d.accountRoles is list) ||
+            !accountRolesListIsValid(d.accountRoles)
+          ) &&
+          d.role == role
+        )
+      );
     }
 
     function linkDataIsValid(data) {
@@ -133,8 +226,8 @@ service cloud.firestore {
         request.resource.data.requestedBy == 'client' &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.updatedAt == request.time &&
-        userHasRole(request.resource.data.clientId, 'client') &&
-        userHasRole(request.resource.data.supplierId, 'supplier');
+        userHasEffectiveAccountRole(request.resource.data.clientId, 'client') &&
+        userHasEffectiveAccountRole(request.resource.data.supplierId, 'supplier');
     }
 
     function supplierStatusTransitionIsValid() {
@@ -185,6 +278,7 @@ service cloud.firestore {
         userProfileBaseDataIsValid(request.resource.data) &&
         userRoleFieldsAreValid(request.resource.data) &&
         userRoleCreateIsValid() &&
+        !hasAccountRolesField(request.resource.data) &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.updatedAt == request.time;
 
@@ -197,7 +291,9 @@ service cloud.firestore {
         request.resource.data.updatedAt == request.time &&
         (
           userProfileUpdateChangesOnlyDisplayAndUpdatedAt() ||
-          userProfileRoleSetOnce()
+          userProfileRoleSetOnce() ||
+          userProfileAccountRolesInitialWrite() ||
+          userProfileAccountRolesAddSecond()
         );
 
       allow delete: if false;

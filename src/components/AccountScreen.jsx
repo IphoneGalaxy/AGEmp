@@ -12,8 +12,14 @@ import {
   listUserLinks,
   transitionLinkStatus,
 } from '../firebase/links';
-import { USER_ROLES } from '../firebase/roles';
 import {
+  USER_ROLES,
+  getEffectiveAccountRoles,
+  hasAnyEffectiveAccountRole,
+  profileHasEffectiveAccountRole,
+} from '../firebase/roles';
+import {
+  addAccountRole,
   ensureUserProfileExists,
   getUserProfile,
   setUserRole,
@@ -92,6 +98,9 @@ function AccountScreen({ onBack, showToast }) {
   const [roleDraft, setRoleDraft] = useState(USER_ROLES.SUPPLIER);
   const [roleSaving, setRoleSaving] = useState(false);
   const [roleError, setRoleError] = useState('');
+  /** Contexto de UI apenas: alterna textos/ações globais de vínculo quando a conta tem os dois papéis. */
+  const [accountView, setAccountView] = useState(USER_ROLES.CLIENT);
+  const [addRoleSaving, setAddRoleSaving] = useState(false);
 
   const [links, setLinks] = useState([]);
   const [linksLoading, setLinksLoading] = useState(false);
@@ -149,6 +158,18 @@ function AccountScreen({ onBack, showToast }) {
     };
     // user é lido no fechamento; user?.uid e profileLoadToken disparam recargas necessárias.
   }, [user?.uid, authAvailable, profileLoadToken]);
+
+  useEffect(() => {
+    const roles = getEffectiveAccountRoles(remoteProfile);
+    if (roles.length === 0) {
+      return;
+    }
+    if (roles.length === 1) {
+      setAccountView(roles[0]);
+      return;
+    }
+    setAccountView((prev) => (roles.includes(prev) ? prev : roles[0]));
+  }, [remoteProfile]);
 
   useEffect(() => {
     if (!user?.uid || !authAvailable) {
@@ -328,6 +349,37 @@ function AccountScreen({ onBack, showToast }) {
     }
   };
 
+  const handleAddSecondAccountRole = async () => {
+    if (!user?.uid) return;
+
+    const roles = getEffectiveAccountRoles(remoteProfile);
+    if (roles.length !== 1) return;
+
+    const roleToAdd =
+      roles[0] === USER_ROLES.CLIENT ? USER_ROLES.SUPPLIER : USER_ROLES.CLIENT;
+
+    setAddRoleSaving(true);
+    try {
+      const result = await addAccountRole(user.uid, roleToAdd);
+      if (result.ok) {
+        const data = await getUserProfile(user.uid);
+        setRemoteProfile(data);
+        showToast?.(
+          roleToAdd === USER_ROLES.SUPPLIER
+            ? 'Papel Fornecedor (conta) habilitado na nuvem.'
+            : 'Papel Cliente (conta) habilitado na nuvem.'
+        );
+        bumpLinksReload();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setAddRoleSaving(false);
+    }
+  };
+
   const handleCreateLinkRequest = async () => {
     if (!user?.uid) return;
 
@@ -424,11 +476,16 @@ function AccountScreen({ onBack, showToast }) {
   };
 
   const profileExtrasReady = !profileLoading && !profileError;
-  const remoteRole = remoteProfile?.role;
-  const hasPlatformRole =
-    remoteRole === USER_ROLES.SUPPLIER || remoteRole === USER_ROLES.CLIENT;
+  const effectiveAccountRoles = getEffectiveAccountRoles(remoteProfile);
+  const hasPlatformRole = hasAnyEffectiveAccountRole(remoteProfile);
+  const canActAsClient = profileHasEffectiveAccountRole(remoteProfile, USER_ROLES.CLIENT);
+  const canActAsSupplier = profileHasEffectiveAccountRole(remoteProfile, USER_ROLES.SUPPLIER);
+  const dualAccountCapabilities = canActAsClient && canActAsSupplier;
   const linkGlobalBusy =
-    linkActionId !== null || linkRequestSubmitting || roleSaving;
+    linkActionId !== null ||
+    linkRequestSubmitting ||
+    roleSaving ||
+    addRoleSaving;
 
   return (
     <div className="space-y-6 p-4 pb-20">
@@ -559,16 +616,38 @@ function AccountScreen({ onBack, showToast }) {
                 </p>
 
                 {hasPlatformRole ? (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <p className="text-sm font-medium text-content">
-                      Papel:{' '}
-                      {remoteRole === USER_ROLES.SUPPLIER
-                        ? 'Fornecedor (conta)'
-                        : 'Cliente (conta)'}
+                      Papéis habilitados (conta):{' '}
+                      {effectiveAccountRoles
+                        .map((r) =>
+                          r === USER_ROLES.SUPPLIER
+                            ? 'Fornecedor (conta)'
+                            : 'Cliente (conta)'
+                        )
+                        .join(' · ')}
                     </p>
                     <p className="text-xs leading-relaxed text-content-muted">
-                      Definido uma única vez pelas regras do servidor. Não é possível alterar depois.
+                      A primeira escolha na nuvem continua registrada no campo legado{' '}
+                      <span className="font-medium">role</span> (imutável). Quando existir, a lista{' '}
+                      <span className="font-medium">accountRoles</span> é a fonte principal dos papéis
+                      habilitados. Você pode acrescentar o outro papel de forma aditiva — não há troca
+                      destrutiva nesta etapa.
                     </p>
+                    {effectiveAccountRoles.length === 1 && (
+                      <button
+                        type="button"
+                        onClick={handleAddSecondAccountRole}
+                        disabled={addRoleSaving || roleSaving}
+                        className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                      >
+                        {addRoleSaving
+                          ? 'Salvando…'
+                          : effectiveAccountRoles[0] === USER_ROLES.CLIENT
+                            ? 'Habilitar também Fornecedor (conta)'
+                            : 'Habilitar também Cliente (conta)'}
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -641,7 +720,51 @@ function AccountScreen({ onBack, showToast }) {
                   </p>
                 )}
 
-                {hasPlatformRole && remoteRole === USER_ROLES.CLIENT && (
+                {dualAccountCapabilities && (
+                  <div
+                    className="mb-4 flex gap-0.5 rounded-design-md bg-surface-muted p-1 ring-1 ring-inset ring-edge/50"
+                    role="tablist"
+                    aria-label="Visão na conta (somente interface)"
+                  >
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={accountView === USER_ROLES.CLIENT}
+                      onClick={() => setAccountView(USER_ROLES.CLIENT)}
+                      disabled={linkGlobalBusy}
+                      className={`flex min-h-10 flex-1 items-center justify-center rounded-design-sm px-2 text-xs font-semibold transition-colors ${
+                        accountView === USER_ROLES.CLIENT
+                          ? 'bg-surface text-primary shadow-design-sm ring-1 ring-edge/40'
+                          : 'text-content-muted hover:text-content-soft'
+                      } disabled:opacity-60`}
+                    >
+                      Ver como cliente (conta)
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={accountView === USER_ROLES.SUPPLIER}
+                      onClick={() => setAccountView(USER_ROLES.SUPPLIER)}
+                      disabled={linkGlobalBusy}
+                      className={`flex min-h-10 flex-1 items-center justify-center rounded-design-sm px-2 text-xs font-semibold transition-colors ${
+                        accountView === USER_ROLES.SUPPLIER
+                          ? 'bg-surface text-primary shadow-design-sm ring-1 ring-edge/40'
+                          : 'text-content-muted hover:text-content-soft'
+                      } disabled:opacity-60`}
+                    >
+                      Ver como fornecedor (conta)
+                    </button>
+                  </div>
+                )}
+
+                {dualAccountCapabilities && (
+                  <p className="mb-4 text-xs leading-relaxed text-content-muted">
+                    A alternância acima só muda textos e atalhos desta tela. Quem você é em cada
+                    vínculo continua definido pelo documento na nuvem (fornecedor/cliente da relação).
+                  </p>
+                )}
+
+                {hasPlatformRole && canActAsClient && accountView === USER_ROLES.CLIENT && (
                   <div className="mb-4 space-y-3">
                     <p className="text-xs leading-relaxed text-content-muted">
                       Peça ao fornecedor o UID da conta dele (Conta → Seu identificador). Confirme
@@ -687,7 +810,7 @@ function AccountScreen({ onBack, showToast }) {
                   </div>
                 )}
 
-                {hasPlatformRole && remoteRole === USER_ROLES.SUPPLIER && (
+                {hasPlatformRole && canActAsSupplier && accountView === USER_ROLES.SUPPLIER && (
                   <p className="mb-4 text-xs leading-relaxed text-content-muted">
                     Envie para quem for <span className="font-medium">cliente (conta)</span> o UID em{' '}
                     <span className="font-medium">Seu identificador (UID)</span> nesta tela. A outra
@@ -733,7 +856,8 @@ function AccountScreen({ onBack, showToast }) {
                           </p>
 
                           {hasPlatformRole &&
-                            remoteRole === USER_ROLES.CLIENT &&
+                            link.clientId === user.uid &&
+                            canActAsClient &&
                             link.status === LINK_STATUSES.PENDING && (
                               <button
                                 type="button"
@@ -752,7 +876,8 @@ function AccountScreen({ onBack, showToast }) {
                             )}
 
                           {hasPlatformRole &&
-                            remoteRole === USER_ROLES.SUPPLIER &&
+                            link.supplierId === user.uid &&
+                            canActAsSupplier &&
                             link.status === LINK_STATUSES.PENDING && (
                               <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                                 <button
@@ -787,7 +912,8 @@ function AccountScreen({ onBack, showToast }) {
                             )}
 
                           {hasPlatformRole &&
-                            remoteRole === USER_ROLES.SUPPLIER &&
+                            link.supplierId === user.uid &&
+                            canActAsSupplier &&
                             link.status === LINK_STATUSES.APPROVED && (
                               <button
                                 type="button"

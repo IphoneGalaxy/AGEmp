@@ -11,7 +11,12 @@ import {
 import { mapFirebaseAuthError } from '../auth/authErrors';
 import { mapFirestoreError } from './firestoreErrors';
 import { auth, db } from './index';
-import { USER_ROLE_VALUES, isValidUserRole } from './roles';
+import {
+  USER_ROLE_VALUES,
+  getEffectiveAccountRoles,
+  isValidUserRole,
+  sortAccountRoles,
+} from './roles';
 
 const USERS_COLLECTION = 'users';
 const DISPLAY_NAME_MAX_LEN = 80;
@@ -112,8 +117,68 @@ export async function setUserRole(uid, role) {
       role,
       roleSetAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
+      accountRoles: [role],
     });
     return { ok: true };
+  } catch (e) {
+    return { ok: false, message: mapFirestoreError(e) };
+  }
+}
+
+/**
+ * Adiciona um papel à conta de forma aditiva (`accountRoles`), sem remover papéis existentes
+ * nem alterar o `role` legado. Idempotente se o papel já estiver nos papéis efetivos.
+ *
+ * @param {string} uid
+ * @param {'supplier' | 'client'} roleToAdd
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function addAccountRole(uid, roleToAdd) {
+  if (!db || !uid) {
+    return { ok: false, message: REMOTE_PROFILE_UNAVAILABLE_MESSAGE };
+  }
+
+  if (!isValidUserRole(roleToAdd)) {
+    return {
+      ok: false,
+      message: `Papel inválido. Use ${USER_ROLE_VALUES.join(' ou ')}.`,
+    };
+  }
+
+  const profileRef = getUserProfileRef(uid);
+
+  try {
+    return await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(profileRef);
+      if (!snapshot.exists()) {
+        return { ok: false, message: 'Perfil remoto não encontrado.' };
+      }
+
+      const data = snapshot.data();
+      if (!isValidUserRole(data.role)) {
+        return {
+          ok: false,
+          message: 'Defina primeiro seu papel na plataforma (uma única vez) antes de habilitar outro papel.',
+        };
+      }
+
+      const effective = getEffectiveAccountRoles(data);
+      if (effective.includes(roleToAdd)) {
+        return { ok: true };
+      }
+
+      const next = sortAccountRoles([...effective, roleToAdd]);
+      if (next.length > 2) {
+        return { ok: false, message: 'Esta conta já possui os dois papéis habilitados.' };
+      }
+
+      transaction.update(profileRef, {
+        accountRoles: next,
+        updatedAt: serverTimestamp(),
+      });
+
+      return { ok: true };
+    });
   } catch (e) {
     return { ok: false, message: mapFirestoreError(e) };
   }

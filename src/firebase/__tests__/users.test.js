@@ -40,6 +40,7 @@ vi.mock('../index', () => ({
 const usersModule = await import('../users');
 
 const {
+  addAccountRole,
   buildUserProfileData,
   createUserProfile,
   ensureUserProfileExists,
@@ -166,7 +167,7 @@ describe('firebase/users', () => {
       expect(mockUpdateDoc).not.toHaveBeenCalled();
     });
 
-    it('salva role, roleSetAt e updatedAt', async () => {
+    it('salva role, roleSetAt, accountRoles e updatedAt', async () => {
       mockUpdateDoc.mockResolvedValue(undefined);
 
       await expect(setUserRole('uid-1', 'supplier')).resolves.toEqual({ ok: true });
@@ -176,6 +177,83 @@ describe('firebase/users', () => {
         {
           role: 'supplier',
           roleSetAt: 'SERVER_TIMESTAMP',
+          updatedAt: 'SERVER_TIMESTAMP',
+          accountRoles: ['supplier'],
+        }
+      );
+    });
+  });
+
+  describe('addAccountRole', () => {
+    it('retorna ok sem gravar quando o papel já está nos efetivos', async () => {
+      const transactionUpdate = vi.fn();
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              role: 'client',
+              accountRoles: ['client'],
+            }),
+          }),
+          update: transactionUpdate,
+        };
+        return callback(transaction);
+      });
+
+      await expect(addAccountRole('uid-1', 'client')).resolves.toEqual({ ok: true });
+      expect(transactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('acrescenta o segundo papel quando há apenas um efetivo', async () => {
+      const transactionUpdate = vi.fn();
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              role: 'client',
+              accountRoles: ['client'],
+            }),
+          }),
+          update: transactionUpdate,
+        };
+        return callback(transaction);
+      });
+
+      await expect(addAccountRole('uid-1', 'supplier')).resolves.toEqual({ ok: true });
+
+      expect(transactionUpdate).toHaveBeenCalledWith(
+        { database: { name: 'mock-db' }, path: 'users/uid-1' },
+        {
+          accountRoles: ['client', 'supplier'],
+          updatedAt: 'SERVER_TIMESTAMP',
+        }
+      );
+    });
+
+    it('inicializa accountRoles a partir do legado quando o campo ainda não existe', async () => {
+      const transactionUpdate = vi.fn();
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              role: 'client',
+              roleSetAt: 't0',
+            }),
+          }),
+          update: transactionUpdate,
+        };
+        return callback(transaction);
+      });
+
+      await expect(addAccountRole('uid-1', 'supplier')).resolves.toEqual({ ok: true });
+
+      expect(transactionUpdate).toHaveBeenCalledWith(
+        { database: { name: 'mock-db' }, path: 'users/uid-1' },
+        {
+          accountRoles: ['client', 'supplier'],
           updatedAt: 'SERVER_TIMESTAMP',
         }
       );

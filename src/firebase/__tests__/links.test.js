@@ -339,7 +339,7 @@ describe('firebase/links', () => {
         createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
       ).resolves.toMatchObject({
         ok: false,
-        message: expect.stringMatching(/não está como Fornecedor/i),
+        message: expect.stringMatching(/Fornecedor \(conta\)/i),
       });
       expect(mockRunTransaction).not.toHaveBeenCalled();
     });
@@ -358,6 +358,27 @@ describe('firebase/links', () => {
         message: expect.stringMatching(/Cliente \(conta\)/i),
       });
       expect(mockRunTransaction).not.toHaveBeenCalled();
+    });
+
+    it('aceita fornecedor só com accountRoles válido (sem depender do legado)', async () => {
+      mockGetUserProfile.mockImplementation(async (uid) => {
+        if (uid === 'client-1') return { role: 'client', accountRoles: ['client'] };
+        if (uid === 'supplier-1') return { accountRoles: ['supplier'] };
+        return null;
+      });
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => false,
+          }),
+          set: vi.fn(),
+        };
+        return callback(transaction);
+      });
+
+      await expect(
+        createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
+      ).resolves.toEqual({ ok: true, id: 'supplier-1__client-1' });
     });
   });
 

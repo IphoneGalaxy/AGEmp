@@ -12,7 +12,7 @@ import {
 
 import { mapLinkFirestoreError, normalizeFirestoreErrorCode } from './firestoreErrors';
 import { db } from './index';
-import { USER_ROLES } from './roles';
+import { USER_ROLES, profileHasEffectiveAccountRole } from './roles';
 import { getUserProfile } from './users';
 
 export const LINKS_COLLECTION = 'links';
@@ -218,12 +218,14 @@ async function preflightUsersForLinkCreate(clientId, supplierId) {
     };
   }
 
-  if (clientProfile.role !== USER_ROLES.CLIENT) {
+  if (!profileHasEffectiveAccountRole(clientProfile, USER_ROLES.CLIENT)) {
     const r =
       clientProfile.role != null ? String(clientProfile.role) : 'não definido';
+    const ar = clientProfile.accountRoles;
+    const arHint = Array.isArray(ar) ? JSON.stringify(ar) : 'ausente';
     return {
       ok: false,
-      message: `Para solicitar vínculo você precisa estar como Cliente (conta). No servidor seu papel está: "${r}". Confirme em Conta.`,
+      message: `Para solicitar vínculo você precisa ter o papel Cliente (conta) habilitado na nuvem. Papéis efetivos do seu perfil não incluem cliente (legado role: "${r}", accountRoles: ${arHint}). Confirme em Conta.`,
     };
   }
 
@@ -235,12 +237,14 @@ async function preflightUsersForLinkCreate(clientId, supplierId) {
     };
   }
 
-  if (supplierProfile.role !== USER_ROLES.SUPPLIER) {
+  if (!profileHasEffectiveAccountRole(supplierProfile, USER_ROLES.SUPPLIER)) {
     const r =
       supplierProfile.role != null ? String(supplierProfile.role) : 'não definido';
+    const ar = supplierProfile.accountRoles;
+    const arHint = Array.isArray(ar) ? JSON.stringify(ar) : 'ausente';
     return {
       ok: false,
-      message: `Esta conta existe, mas não está como Fornecedor (conta) na nuvem. Papel atual: "${r}". O outro usuário precisa confirmar Fornecedor (conta) em Conta.`,
+      message: `Esta conta existe, mas não tem o papel Fornecedor (conta) habilitado na nuvem (legado role: "${r}", accountRoles: ${arHint}). A outra pessoa precisa habilitar Fornecedor (conta) em Conta.`,
     };
   }
 
