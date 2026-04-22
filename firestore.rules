@@ -2,6 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function userDocPath(userId) {
+      return /databases/$(database)/documents/users/$(userId);
+    }
+
     function isSignedIn() {
       return request.auth != null;
     }
@@ -10,23 +14,63 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isValidUserRole(role) {
+      return role == 'supplier' || role == 'client';
+    }
+
+    function isValidLinkStatus(status) {
+      return status == 'pending' ||
+        status == 'approved' ||
+        status == 'rejected' ||
+        status == 'cancelled_by_client' ||
+        status == 'revoked_by_supplier';
+    }
+
     function allowedUserFields() {
+      return ['displayName', 'createdAt', 'updatedAt', 'role', 'roleSetAt'];
+    }
+
+    function requiredUserFields() {
       return ['displayName', 'createdAt', 'updatedAt'];
     }
 
     function hasRequiredUserFields() {
-      return request.resource.data.keys().hasAll(allowedUserFields());
+      return request.resource.data.keys().hasAll(requiredUserFields());
     }
 
     function hasOnlyAllowedUserFields() {
       return request.resource.data.keys().hasOnly(allowedUserFields());
     }
 
-    function userProfileDataIsValid() {
-      return request.resource.data.displayName is string &&
-        request.resource.data.displayName.size() <= 80 &&
-        request.resource.data.createdAt is timestamp &&
-        request.resource.data.updatedAt is timestamp;
+    function hasRoleField(data) {
+      return data.keys().hasAny(['role']);
+    }
+
+    function hasRoleSetAtField(data) {
+      return data.keys().hasAny(['roleSetAt']);
+    }
+
+    function userProfileBaseDataIsValid(data) {
+      return data.displayName is string &&
+        data.displayName.size() <= 80 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function userRoleFieldsAreValid(data) {
+      return (!hasRoleField(data) && !hasRoleSetAtField(data)) ||
+        (
+          hasRoleField(data) &&
+          hasRoleSetAtField(data) &&
+          data.role is string &&
+          isValidUserRole(data.role) &&
+          data.roleSetAt is timestamp
+        );
+    }
+
+    function userRoleCreateIsValid() {
+      return !hasRoleField(request.resource.data) ||
+        request.resource.data.roleSetAt == request.time;
     }
 
     function userProfileUpdateChangesOnlyDisplayAndUpdatedAt() {
@@ -34,23 +78,147 @@ service cloud.firestore {
         .hasOnly(['displayName', 'updatedAt']);
     }
 
+    function userRoleIsUnset() {
+      return !hasRoleField(resource.data) && !hasRoleSetAtField(resource.data);
+    }
+
+    function userProfileRoleSetOnce() {
+      return userRoleIsUnset() &&
+        hasRoleField(request.resource.data) &&
+        hasRoleSetAtField(request.resource.data) &&
+        request.resource.data.role is string &&
+        isValidUserRole(request.resource.data.role) &&
+        request.resource.data.roleSetAt == request.time &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['role', 'roleSetAt', 'updatedAt']);
+    }
+
+    function allowedLinkFields() {
+      return ['supplierId', 'clientId', 'status', 'requestedBy', 'createdAt', 'updatedAt'];
+    }
+
+    function linkParticipantsAreValid(data) {
+      return data.supplierId is string &&
+        data.supplierId.size() > 0 &&
+        data.clientId is string &&
+        data.clientId.size() > 0 &&
+        data.supplierId != data.clientId;
+    }
+
+    function isLinkParticipant(data) {
+      return isSignedIn() &&
+        (request.auth.uid == data.supplierId || request.auth.uid == data.clientId);
+    }
+
+    function userHasRole(userId, role) {
+      return exists(userDocPath(userId)) &&
+        get(userDocPath(userId)).data.role == role;
+    }
+
+    function linkDataIsValid(data) {
+      return data.keys().hasAll(allowedLinkFields()) &&
+        data.keys().hasOnly(allowedLinkFields()) &&
+        linkParticipantsAreValid(data) &&
+        data.status is string &&
+        isValidLinkStatus(data.status) &&
+        data.requestedBy is string &&
+        data.requestedBy == 'client' &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isPendingLinkCreate() {
+      return request.auth.uid == request.resource.data.clientId &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.requestedBy == 'client' &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time &&
+        userHasRole(request.resource.data.clientId, 'client') &&
+        userHasRole(request.resource.data.supplierId, 'supplier');
+    }
+
+    function supplierStatusTransitionIsValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        (
+          request.resource.data.status == 'approved' ||
+          request.resource.data.status == 'rejected'
+        ) &&
+        resource.data.status == 'pending';
+    }
+
+    function clientStatusTransitionIsValid() {
+      return request.auth.uid == resource.data.clientId &&
+        request.resource.data.status == 'cancelled_by_client' &&
+        resource.data.status == 'pending';
+    }
+
+    function supplierRevocationIsValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        request.resource.data.status == 'revoked_by_supplier' &&
+        resource.data.status == 'approved';
+    }
+
+    function linkStatusTransitionIsValid() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+        request.resource.data.supplierId == resource.data.supplierId &&
+        request.resource.data.clientId == resource.data.clientId &&
+        request.resource.data.requestedBy == resource.data.requestedBy &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        request.resource.data.updatedAt == request.time &&
+        (
+          supplierStatusTransitionIsValid() ||
+          clientStatusTransitionIsValid() ||
+          supplierRevocationIsValid()
+        );
+    }
+
+    // Leitura por documento (get) liberada para qualquer usuário autenticado, para
+    // validar papel na etapa de vínculo sem Cloud Function. list permanece bloqueado
+    // para evitar varredura da coleção.
     match /users/{userId} {
-      allow read: if isOwner(userId);
+      allow get: if isSignedIn();
+      allow list: if false;
 
       allow create: if isOwner(userId) &&
         hasRequiredUserFields() &&
         hasOnlyAllowedUserFields() &&
-        userProfileDataIsValid() &&
+        userProfileBaseDataIsValid(request.resource.data) &&
+        userRoleFieldsAreValid(request.resource.data) &&
+        userRoleCreateIsValid() &&
         request.resource.data.createdAt == request.time &&
         request.resource.data.updatedAt == request.time;
 
       allow update: if isOwner(userId) &&
         hasRequiredUserFields() &&
         hasOnlyAllowedUserFields() &&
-        userProfileDataIsValid() &&
+        userProfileBaseDataIsValid(request.resource.data) &&
+        userRoleFieldsAreValid(request.resource.data) &&
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.updatedAt == request.time &&
-        userProfileUpdateChangesOnlyDisplayAndUpdatedAt();
+        (
+          userProfileUpdateChangesOnlyDisplayAndUpdatedAt() ||
+          userProfileRoleSetOnce()
+        );
+
+      allow delete: if false;
+    }
+
+    match /links/{linkId} {
+      // `get` em documento ainda inexistente (ex.: transação antes do primeiro `set`)
+      // precisa ser permitido: nesse caso o alvo não existe e `resource.data` não aplica.
+      allow read: if isSignedIn() &&
+        (
+          !exists(/databases/$(database)/documents/links/$(linkId)) ||
+          isLinkParticipant(resource.data)
+        );
+
+      allow create: if isSignedIn() &&
+        linkDataIsValid(request.resource.data) &&
+        isPendingLinkCreate();
+
+      allow update: if isLinkParticipant(resource.data) &&
+        linkDataIsValid(request.resource.data) &&
+        linkStatusTransitionIsValid();
 
       allow delete: if false;
     }

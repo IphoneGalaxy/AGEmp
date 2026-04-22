@@ -11,8 +11,11 @@ import {
 import { mapFirebaseAuthError } from '../auth/authErrors';
 import { mapFirestoreError } from './firestoreErrors';
 import { auth, db } from './index';
+import { USER_ROLE_VALUES, isValidUserRole } from './roles';
 
 const USERS_COLLECTION = 'users';
+const DISPLAY_NAME_MAX_LEN = 80;
+const REMOTE_PROFILE_UNAVAILABLE_MESSAGE = 'Perfil remoto indisponível neste ambiente.';
 
 /**
  * @param {string} uid
@@ -55,8 +58,6 @@ export async function getUserProfile(uid) {
   return snapshot.data();
 }
 
-const DISPLAY_NAME_MAX_LEN = 80;
-
 /**
  * Atualização parcial alinhada a `firestore.rules`: só `displayName` e `updatedAt` mudam;
  * `createdAt` permanece intacto no servidor.
@@ -67,7 +68,7 @@ const DISPLAY_NAME_MAX_LEN = 80;
  */
 export async function updateUserDisplayName(uid, rawDisplayName) {
   if (!db || !uid) {
-    return { ok: false, message: 'Perfil remoto indisponível neste ambiente.' };
+    return { ok: false, message: REMOTE_PROFILE_UNAVAILABLE_MESSAGE };
   }
 
   const displayName = String(rawDisplayName ?? '').trim();
@@ -78,6 +79,38 @@ export async function updateUserDisplayName(uid, rawDisplayName) {
   try {
     await updateDoc(getUserProfileRef(uid), {
       displayName,
+      updatedAt: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, message: mapFirestoreError(e) };
+  }
+}
+
+/**
+ * Define o papel remoto do usuário.
+ * As rules impedem trocas arbitrárias depois da primeira escolha.
+ *
+ * @param {string} uid
+ * @param {'supplier' | 'client'} role
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function setUserRole(uid, role) {
+  if (!db || !uid) {
+    return { ok: false, message: REMOTE_PROFILE_UNAVAILABLE_MESSAGE };
+  }
+
+  if (!isValidUserRole(role)) {
+    return {
+      ok: false,
+      message: `Papel inválido. Use ${USER_ROLE_VALUES.join(' ou ')}.`,
+    };
+  }
+
+  try {
+    await updateDoc(getUserProfileRef(uid), {
+      role,
+      roleSetAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
     return { ok: true };

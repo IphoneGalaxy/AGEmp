@@ -45,6 +45,7 @@ const {
   ensureUserProfileExists,
   getUserProfile,
   getUserProfileRef,
+  setUserRole,
   updateUserDisplayName,
   updateUserDisplayNameWithAuthMirror,
 } = usersModule;
@@ -142,6 +143,39 @@ describe('firebase/users', () => {
         { database: { name: 'mock-db' }, path: 'users/uid-1' },
         {
           displayName: 'Gui',
+          updatedAt: 'SERVER_TIMESTAMP',
+        }
+      );
+    });
+  });
+
+  describe('setUserRole', () => {
+    it('retorna erro quando uid está vazio', async () => {
+      await expect(setUserRole('', 'supplier')).resolves.toEqual({
+        ok: false,
+        message: 'Perfil remoto indisponível neste ambiente.',
+      });
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
+    });
+
+    it('rejeita papel fora do enum', async () => {
+      await expect(setUserRole('uid-1', 'admin')).resolves.toEqual({
+        ok: false,
+        message: 'Papel inválido. Use supplier ou client.',
+      });
+      expect(mockUpdateDoc).not.toHaveBeenCalled();
+    });
+
+    it('salva role, roleSetAt e updatedAt', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+
+      await expect(setUserRole('uid-1', 'supplier')).resolves.toEqual({ ok: true });
+
+      expect(mockUpdateDoc).toHaveBeenCalledWith(
+        { database: { name: 'mock-db' }, path: 'users/uid-1' },
+        {
+          role: 'supplier',
+          roleSetAt: 'SERVER_TIMESTAMP',
           updatedAt: 'SERVER_TIMESTAMP',
         }
       );
