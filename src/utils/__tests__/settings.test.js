@@ -10,12 +10,15 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { loadSettings, saveSettings, getEffectiveTheme, DEFAULT_SETTINGS } from '../settings';
+import { SCOPE_ANONYMOUS, getScopedSettingsKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
 
-const SETTINGS_KEY = 'loanManagerSettings';
+const DEVICE_KEY = 'financasPro_deviceSettings';
+const scopedKey = getScopedSettingsKey(SCOPE_ANONYMOUS);
 
 describe('settings', () => {
   beforeEach(() => {
     localStorage.clear();
+    migrateLegacyKeysToAnonymousScope();
   });
 
   // ==================== DEFAULT_SETTINGS ====================
@@ -48,7 +51,7 @@ describe('settings', () => {
     });
 
     it('faz merge com dados parciais do localStorage', () => {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      localStorage.setItem(scopedKey, JSON.stringify({
         theme: 'dark',
         defaultInterestRate: 8,
       }));
@@ -64,7 +67,7 @@ describe('settings', () => {
     });
 
     it('retorna defaults quando dados estão corrompidos', () => {
-      localStorage.setItem(SETTINGS_KEY, 'não é JSON!!!');
+      localStorage.setItem(scopedKey, 'não é JSON!!!');
 
       const result = loadSettings();
       expect(result).toEqual(DEFAULT_SETTINGS);
@@ -72,7 +75,7 @@ describe('settings', () => {
 
     it('novos campos adicionados aos defaults são incluídos no merge', () => {
       // Simula settings salvos antes de existir "defaultTab"
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+      localStorage.setItem(scopedKey, JSON.stringify({
         theme: 'dark',
       }));
 
@@ -86,11 +89,12 @@ describe('settings', () => {
   describe('saveSettings', () => {
     it('persiste configurações no localStorage', () => {
       const settings = { ...DEFAULT_SETTINGS, theme: 'dark', defaultInterestRate: 15 };
-      saveSettings(settings);
+      saveSettings(settings, SCOPE_ANONYMOUS);
 
-      const stored = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-      expect(stored.theme).toBe('dark');
+      const stored = JSON.parse(localStorage.getItem(scopedKey));
       expect(stored.defaultInterestRate).toBe(15);
+      const device = JSON.parse(localStorage.getItem(DEVICE_KEY) || '{}');
+      expect(device.theme).toBe('dark');
     });
 
     it('loadSettings recupera dados salvos por saveSettings', () => {

@@ -17,12 +17,14 @@ import {
   restoreAutoBackup,
   getAutoBackupCount,
 } from '../autoBackup';
-
-const AUTO_BACKUP_KEY = 'loanManagerAutoBackups';
+import { SCOPE_ANONYMOUS, getScopedAutoBackupsKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
 
 describe('autoBackup', () => {
+  const backupKey = () => getScopedAutoBackupsKey(SCOPE_ANONYMOUS);
+
   beforeEach(() => {
     localStorage.clear();
+    migrateLegacyKeysToAnonymousScope();
   });
 
   // ==================== getAutoBackups ====================
@@ -36,14 +38,14 @@ describe('autoBackup', () => {
       const backups = [
         { timestamp: '2025-03-15T10:00:00.000Z', data: { fundsTransactions: [], clients: [] } },
       ];
-      localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(backups));
+      localStorage.setItem(backupKey(), JSON.stringify(backups));
 
       expect(getAutoBackups()).toHaveLength(1);
       expect(getAutoBackups()[0].timestamp).toBe('2025-03-15T10:00:00.000Z');
     });
 
     it('retorna array vazio quando dados estão corrompidos', () => {
-      localStorage.setItem(AUTO_BACKUP_KEY, 'não é JSON válido {{{');
+      localStorage.setItem(backupKey(), 'não é JSON válido {{{');
       expect(getAutoBackups()).toEqual([]);
     });
   });
@@ -87,7 +89,7 @@ describe('autoBackup', () => {
     it('persiste no localStorage', () => {
       createAutoBackup([], [{ id: 'c1', name: 'Test', loans: [] }], 3);
 
-      const stored = JSON.parse(localStorage.getItem(AUTO_BACKUP_KEY));
+      const stored = JSON.parse(localStorage.getItem(backupKey()));
       expect(stored).toHaveLength(1);
     });
 

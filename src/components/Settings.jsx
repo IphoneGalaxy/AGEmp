@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { formatDateTime } from '../utils/format';
 import { getAutoBackupCount, getLastAutoBackup } from '../utils/autoBackup';
 import AccountScreen from './AccountScreen';
@@ -73,6 +73,8 @@ const OptionGroup = ({ options, value, onChange }) => (
  * @param {Function} props.onImport - Callback para importar backup manual (recebe event).
  * @param {Function} props.onRestoreAutoBackup - Callback para restaurar backup automático.
  * @param {Function} props.showToast - Callback para exibir toast.
+ * @param {string} [props.localStorageScope] - Escopo ativo (anonymous / account:uid) para backups.
+ * @param {string} [props.localDataContextLine] - Linha discreta de contexto local.
  */
 const Settings = ({
   settings,
@@ -81,6 +83,8 @@ const Settings = ({
   onImport,
   onRestoreAutoBackup,
   showToast,
+  localStorageScope = 'anonymous',
+  localDataContextLine,
 }) => {
   const fileInputRef = useRef(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
@@ -89,14 +93,21 @@ const Settings = ({
 
   // Info de backups automáticos (lida direto do localStorage)
   const [backupInfo, setBackupInfo] = useState(() => ({
-    count: getAutoBackupCount(),
-    last: getLastAutoBackup(),
+    count: getAutoBackupCount(localStorageScope),
+    last: getLastAutoBackup(localStorageScope),
   }));
+
+  useEffect(() => {
+    setBackupInfo({
+      count: getAutoBackupCount(localStorageScope),
+      last: getLastAutoBackup(localStorageScope),
+    });
+  }, [localStorageScope]);
 
   const refreshBackupInfo = () => {
     setBackupInfo({
-      count: getAutoBackupCount(),
-      last: getLastAutoBackup(),
+      count: getAutoBackupCount(localStorageScope),
+      last: getLastAutoBackup(localStorageScope),
     });
   };
 
@@ -158,6 +169,11 @@ const Settings = ({
       {/* ===== CONTA (opcional, Firebase Auth) ===== */}
       <div className={sectionCardClass}>
         <h3 className="mb-1 text-lg font-semibold tracking-tight text-content">Conta</h3>
+        {localDataContextLine && (
+          <p className="mb-3 rounded-design-md border border-edge/60 bg-surface-muted px-3 py-2 text-xs leading-relaxed text-content-muted">
+            {localDataContextLine}
+          </p>
+        )}
         <p className="mb-5 text-xs leading-relaxed text-content-muted">
           Entre ou crie uma conta com e-mail. Opcional: o app continua funcionando com dados
           apenas neste aparelho.

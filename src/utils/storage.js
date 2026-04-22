@@ -4,7 +4,7 @@
  * normalização de dados e operações de backup.
  */
 
-const STORAGE_KEY = 'loanManagerData';
+import { SCOPE_ANONYMOUS, getScopedDataKey } from './storageScope';
 
 /**
  * Normaliza um empréstimo individual, garantindo que possua interestRate.
@@ -80,8 +80,13 @@ export const normalizeClients = (clients, defaultRate = 10) => {
  * @param {number} defaultRate - Taxa padrão para empréstimos antigos.
  * @returns {{ fundsTransactions: Array, clients: Array } | null}
  */
-export const loadData = (defaultRate = 10) => {
-  const savedData = localStorage.getItem(STORAGE_KEY);
+/**
+ * @param {number} [defaultRate]
+ * @param {string} [scope] - padrão: escopo anônimo
+ */
+export const loadData = (defaultRate = 10, scope = SCOPE_ANONYMOUS) => {
+  const key = getScopedDataKey(scope);
+  const savedData = localStorage.getItem(key);
   if (!savedData) return null;
 
   const parsed = JSON.parse(savedData);
@@ -96,8 +101,18 @@ export const loadData = (defaultRate = 10) => {
  * @param {Array} fundsTransactions - Transações do caixa pessoal.
  * @param {Array} clients - Lista de clientes.
  */
-export const saveData = (fundsTransactions, clients) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ fundsTransactions, clients }));
+/**
+ * @param {Array} fundsTransactions
+ * @param {Array} clients
+ * @param {string} [scope] - padrão: escopo anônimo
+ */
+export const saveData = (fundsTransactions, clients, scope = SCOPE_ANONYMOUS) => {
+  const key = getScopedDataKey(scope);
+  try {
+    localStorage.setItem(key, JSON.stringify({ fundsTransactions, clients }));
+  } catch (e) {
+    console.warn('[storage] Falha ao salvar:', key, e);
+  }
 };
 
 /**

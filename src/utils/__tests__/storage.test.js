@@ -10,6 +10,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { normalizeClients, loadData, saveData, parseBackupFile } from '../storage';
+import { SCOPE_ANONYMOUS, getScopedDataKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
 
 // ==================== NORMALIZE CLIENTS ====================
 
@@ -225,8 +226,11 @@ describe('normalizeClients', () => {
 // ==================== LOAD DATA / SAVE DATA ====================
 
 describe('loadData / saveData', () => {
+  const scopedDataKey = () => getScopedDataKey(SCOPE_ANONYMOUS);
+
   beforeEach(() => {
     localStorage.clear();
+    migrateLegacyKeysToAnonymousScope();
   });
 
   it('retorna null quando localStorage está vazio', () => {
@@ -241,7 +245,7 @@ describe('loadData / saveData', () => {
         { id: 'c1', name: 'Ana', loans: [{ id: 'l1', date: '2025-01-01', amount: 1000, payments: [] }] },
       ],
     };
-    localStorage.setItem('loanManagerData', JSON.stringify(data));
+    localStorage.setItem(scopedDataKey(), JSON.stringify(data));
 
     const result = loadData();
 
@@ -257,14 +261,14 @@ describe('loadData / saveData', () => {
         { id: 'c1', name: 'Ana', loans: [{ id: 'l1', date: '2025-01-01', amount: 1000, payments: [] }] },
       ],
     };
-    localStorage.setItem('loanManagerData', JSON.stringify(data));
+    localStorage.setItem(scopedDataKey(), JSON.stringify(data));
 
-    const result = loadData(7);
+    const result = loadData(7, SCOPE_ANONYMOUS);
     expect(result.clients[0].loans[0].interestRate).toBe(7);
   });
 
   it('retorna fundsTransactions vazio se ausente nos dados', () => {
-    localStorage.setItem('loanManagerData', JSON.stringify({ clients: [] }));
+    localStorage.setItem(scopedDataKey(), JSON.stringify({ clients: [] }));
     const result = loadData();
 
     expect(result.fundsTransactions).toEqual([]);

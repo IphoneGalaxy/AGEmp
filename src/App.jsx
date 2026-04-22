@@ -2,13 +2,22 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { calculateGlobalStats } from './utils/calculations';
 import { loadData, saveData, exportBackup, parseBackupFile, normalizeClients } from './utils/storage';
 import { loadSettings, saveSettings, getEffectiveTheme } from './utils/settings';
-import { createAutoBackup, restoreAutoBackup, getAutoBackupCount } from './utils/autoBackup';
+import { createAutoBackup, restoreAutoBackup } from './utils/autoBackup';
 import { formatMoney } from './utils/format';
+import {
+  migrateLegacyKeysToAnonymousScope,
+  getActiveStorageScope,
+  shouldPromptLegacyOnLogin,
+  associateAnonymousDataWithAccount,
+  markKeepLegacySeparate,
+} from './utils/storageScope';
+import { useAuth } from './auth/AuthContext';
 import Dashboard from './components/Dashboard';
 import ClientsList from './components/ClientsList';
 import ClientView from './components/ClientView';
 import Settings from './components/Settings';
 import Toast from './components/Toast';
+import LegacyDataChoiceModal from './components/LegacyDataChoiceModal';
 import { IconEye, IconEyeOff } from './components/Icons';
 import './app.css';
 
@@ -17,7 +26,7 @@ import './app.css';
  *
  * Responsabilidades:
  * - Gerenciar estado global (clientes, transações, configurações)
- * - Carregar/salvar dados no localStorage
+ * - Carregar/salvar dados no localStorage por escopo (anonymous / account:uid)
  * - Computar estatísticas globais via motor de cálculos
  * - Orquestrar navegação entre Dashboard, ClientsList, ClientView e Settings
  * - Gerenciar tema (claro/escuro/auto)
@@ -25,34 +34,44 @@ import './app.css';
  * - Controlar exibição/ocultação de valores monetários
  */
 function App() {
-  // ==================== CONFIGURAÇÕES ====================
-  const [settings, setSettings] = useState(() => loadSettings());
-
-  // ==================== ESTADO GLOBAL ====================
-  const [activeTab, setActiveTab] = useState(settings.defaultTab || 'dashboard');
+  const { user, authReady } = useAuth();
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const [settings, setSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      migrateLegacyKeysToAnonymousScope();
+    }
+    return loadSettings();
+  });
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [fundsTransactions, setFundsTransactions] = useState([]);
   const [clients, setClients] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [legacyModalOpen, setLegacyModalOpen] = useState(false);
 
-  // Controle de visibilidade de valores monetários
   const [valuesRevealed, setValuesRevealed] = useState(false);
-  const shouldHideMoney = settings.hideSensitiveValues && !valuesRevealed;
+  const shouldHideMoney = settings?.hideSensitiveValues && !valuesRevealed;
 
-  // Ref para controle de auto-backup (evita backup no carregamento inicial)
   const pendingAutoBackup = useRef(false);
+  const lastScopeRef = useRef(null);
+  const fundsRef = useRef([]);
+  const clientsRef = useRef([]);
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    fundsRef.current = fundsTransactions;
+  }, [fundsTransactions]);
+  useEffect(() => {
+    clientsRef.current = clients;
+  }, [clients]);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
-  // ==================== TOAST ====================
   const showToast = (message) => {
     setToastMessage(message);
     setTimeout(() => setToastMessage(''), 3000);
   };
 
-  // ==================== DISPLAY MONEY ====================
-  /**
-   * Formata valores monetários ou os oculta se a configuração estiver ativa.
-   * Componentes usam esta função em vez de formatMoney diretamente para display.
-   */
   const displayMoney = useCallback(
     (value) => {
       if (shouldHideMoney) return 'R$ •••••';
@@ -61,69 +80,113 @@ function App() {
     [shouldHideMoney]
   );
 
-  // ==================== TEMA ====================
+  const storageScope = getActiveStorageScope(user);
+  const isAccountEmpty =
+    bootstrapped &&
+    user?.uid &&
+    !legacyModalOpen &&
+    clients.length === 0 &&
+    fundsTransactions.length === 0;
+
   useEffect(() => {
+    if (!settings) return;
     const applyTheme = () => {
       const effective = getEffectiveTheme(settings.theme);
       document.documentElement.setAttribute('data-theme', effective);
     };
-
     applyTheme();
-
-    // Listener para mudança de preferência do sistema (modo auto)
     if (settings.theme === 'auto') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)');
       mq.addEventListener('change', applyTheme);
       return () => mq.removeEventListener('change', applyTheme);
     }
-  }, [settings.theme]);
+  }, [settings?.theme, settings]);
 
-  // ==================== REDUZIR ANIMAÇÕES ====================
   useEffect(() => {
+    if (!settings) return;
     if (settings.reduceAnimations) {
       document.documentElement.classList.add('reduce-animations');
     } else {
       document.documentElement.classList.remove('reduce-animations');
     }
-  }, [settings.reduceAnimations]);
+  }, [settings?.reduceAnimations, settings]);
 
-  // ==================== PERSISTÊNCIA DE SETTINGS ====================
+  // Reidratação: migra legado, troca de conta, legado anônimo x conta
+  useEffect(() => {
+    if (!authReady) return;
+    migrateLegacyKeysToAnonymousScope();
+    const newScope = getActiveStorageScope(user);
+    const oldScope = lastScopeRef.current;
+
+    if (oldScope != null && oldScope !== newScope && settingsRef.current) {
+      try {
+        saveData(fundsRef.current, clientsRef.current, oldScope);
+        saveSettings(settingsRef.current, oldScope);
+      } catch (e) {
+        console.warn('[App] Falha ao persistir escopo anterior:', e);
+      }
+    }
+
+    const uid = user?.uid;
+    const needLegacy = Boolean(uid && shouldPromptLegacyOnLogin(uid));
+
+    if (needLegacy) {
+      const s = loadSettings(newScope);
+      setSettings(s);
+      setActiveTab(s.defaultTab || 'dashboard');
+      setFundsTransactions([]);
+      setClients([]);
+      setSelectedClient(null);
+      setValuesRevealed(false);
+      setLegacyModalOpen(true);
+      lastScopeRef.current = newScope;
+      setBootstrapped(true);
+      return;
+    }
+
+    setLegacyModalOpen(false);
+    const s = loadSettings(newScope);
+    setSettings(s);
+    setActiveTab(s.defaultTab || 'dashboard');
+    const rate = s.defaultInterestRate || 10;
+    const d = loadData(rate, newScope);
+    if (d) {
+      setFundsTransactions(d.fundsTransactions);
+      setClients(d.clients);
+    } else {
+      setFundsTransactions([]);
+      setClients([]);
+    }
+    setSelectedClient(null);
+    setValuesRevealed(false);
+    lastScopeRef.current = newScope;
+    setBootstrapped(true);
+  }, [authReady, user?.uid]);
+
   const handleUpdateSettings = (newSettings) => {
     setSettings(newSettings);
-    saveSettings(newSettings);
+    if (!bootstrapped) return;
+    const scope = getActiveStorageScope(user);
+    saveSettings(newSettings, scope);
   };
 
-  // ==================== PERSISTÊNCIA DE DADOS ====================
-
-  // Carregar dados iniciais (com migração automática)
   useEffect(() => {
-    const data = loadData(settings.defaultInterestRate || 10);
-    if (data) {
-      setFundsTransactions(data.fundsTransactions);
-      setClients(data.clients);
+    if (!bootstrapped || !settings) return;
+    const scope = getActiveStorageScope(user);
+    saveData(fundsTransactions, clients, scope);
+    if (legacyModalOpen) {
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Salvar dados + auto-backup a cada mudança de estado
-  useEffect(() => {
-    saveData(fundsTransactions, clients);
-
     if (pendingAutoBackup.current && settings.autoBackupEnabled) {
-      createAutoBackup(fundsTransactions, clients, settings.maxAutoBackups);
+      createAutoBackup(fundsTransactions, clients, settings.maxAutoBackups, scope);
       pendingAutoBackup.current = false;
     }
-  }, [fundsTransactions, clients, settings.autoBackupEnabled, settings.maxAutoBackups]);
+  }, [fundsTransactions, clients, settings, user?.uid, bootstrapped, legacyModalOpen]);
 
-  /**
-   * Marca que o próximo save deve criar um auto-backup.
-   * Chamado por todos os handlers de ações "importantes".
-   */
   const triggerAutoBackup = () => {
     pendingAutoBackup.current = true;
   };
 
-  // ==================== CONTROLE DE TEMPO ====================
   const today = new Date();
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
@@ -133,14 +196,10 @@ function App() {
 
   const timeInfo = { currentMonth, currentYear, nextMonth, nextYear, today, nextMonthDate };
 
-  // ==================== MOTOR DE CÁLCULOS ====================
   const globalStats = useMemo(
     () => calculateGlobalStats(clients, fundsTransactions, timeInfo),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [clients, fundsTransactions, currentMonth, currentYear, nextMonth, nextYear]
   );
-
-  // ==================== HANDLERS DE BACKUP ====================
 
   const handleExportBackup = () => {
     exportBackup(fundsTransactions, clients);
@@ -150,6 +209,10 @@ function App() {
   const handleImportBackup = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (!settings) {
+      e.target.value = '';
+      return;
+    }
 
     parseBackupFile(file)
       .then((parsed) => {
@@ -179,15 +242,14 @@ function App() {
   };
 
   const handleRestoreAutoBackup = () => {
-    const backup = restoreAutoBackup(0);
+    if (!settings) return false;
+    const scope = getActiveStorageScope(user);
+    const backup = restoreAutoBackup(0, scope);
     if (!backup) {
       showToast('❌ Nenhum backup automático disponível.');
       return false;
     }
-    const normalizedClients = normalizeClients(
-      backup.clients,
-      settings.defaultInterestRate || 10
-    );
+    const normalizedClients = normalizeClients(backup.clients, settings.defaultInterestRate || 10);
     setFundsTransactions(backup.fundsTransactions || []);
     setClients(normalizedClients);
     triggerAutoBackup();
@@ -195,7 +257,40 @@ function App() {
     return true;
   };
 
-  // ==================== HANDLERS DE CAIXA ====================
+  const handleLegacyAssociate = useCallback(() => {
+    if (!user?.uid) return;
+    try {
+      associateAnonymousDataWithAccount(user.uid);
+      setLegacyModalOpen(false);
+      const sc = getActiveStorageScope(user);
+      const s = loadSettings(sc);
+      setSettings(s);
+      const d = loadData(s.defaultInterestRate || 10, sc);
+      if (d) {
+        setFundsTransactions(d.fundsTransactions);
+        setClients(d.clients);
+      } else {
+        setFundsTransactions([]);
+        setClients([]);
+      }
+      showToast('✅ Dados associados a esta conta (neste aparelho).');
+    } catch (e) {
+      console.warn(e);
+      showToast('❌ Não foi possível associar os dados agora. Tente de novo.');
+    }
+  }, [user]);
+
+  const handleLegacyKeep = useCallback(() => {
+    if (!user?.uid) return;
+    markKeepLegacySeparate(user.uid);
+    setLegacyModalOpen(false);
+    const sc = getActiveStorageScope(user);
+    const s = loadSettings(sc);
+    setSettings(s);
+    setFundsTransactions([]);
+    setClients([]);
+    showToast('Dados anteriores permanecem acessíveis após sair da conta.');
+  }, [user]);
 
   const handleAddFundTransaction = (transaction) => {
     setFundsTransactions((prev) => [transaction, ...prev]);
@@ -207,34 +302,45 @@ function App() {
     triggerAutoBackup();
   };
 
-  // ==================== HANDLERS DE CLIENTES ====================
-
   const handleAddClient = (client) => {
     setClients((prev) => [client, ...prev]);
     triggerAutoBackup();
   };
 
-  /**
-   * Recebe uma função updater que transforma o array de clientes.
-   * Usado pelo ClientView para operações de CRUD em empréstimos e pagamentos.
-   */
   const handleUpdateClients = (updater) => {
     setClients(updater);
     triggerAutoBackup();
   };
 
-  // ==================== RENDERIZAÇÃO ====================
+  if (!authReady || !bootstrapped) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base text-content-muted p-4">
+        <p className="text-sm">Carregando…</p>
+      </div>
+    );
+  }
+
+  const scopeLine =
+    user?.uid == null
+      ? 'Dados locais: modo sem conta (neste aparelho)'
+      : 'Dados locais: conta conectada (neste aparelho)';
 
   return (
     <div className="max-w-xl mx-auto bg-base min-h-screen shadow-design-md relative overflow-hidden flex flex-col">
-      {/* Header */}
+      {legacyModalOpen && user?.uid && user?.email && (
+        <LegacyDataChoiceModal
+          email={user.email}
+          onAssociate={handleLegacyAssociate}
+          onKeepOnDevice={handleLegacyKeep}
+        />
+      )}
+
       <div className="bg-surface pt-6 pb-3 px-4 sm:px-5 z-0 flex items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-content tracking-tight">
           Finanças <span className="text-primary">Pro</span>
         </h1>
 
-        {/* Botão olho: só aparece se ocultar valores estiver ativo */}
-        {settings.hideSensitiveValues && (
+        {settings.hideSensitiveValues && !legacyModalOpen && (
           <button
             type="button"
             onClick={() => setValuesRevealed((v) => !v)}
@@ -247,7 +353,18 @@ function App() {
         )}
       </div>
 
-      {/* Tabs */}
+      {isAccountEmpty && (
+        <div
+          className="border-b border-edge bg-surface-muted/80 px-4 py-2.5 sm:px-5"
+          role="status"
+        >
+          <p className="text-center text-xs leading-relaxed text-content-muted">
+            Nenhum dado financeiro local para esta conta neste aparelho. Os dados de empréstimos e
+            caixa continuam só no dispositivo (não sincronizam com a nuvem).
+          </p>
+        </div>
+      )}
+
       <div className="flex bg-surface px-3 sm:px-4 border-b border-edge">
         <button
           type="button"
@@ -284,7 +401,6 @@ function App() {
         </button>
       </div>
 
-      {/* Conteúdo principal */}
       <div className="flex-1 overflow-y-auto hide-scroll pb-10 bg-base">
         {activeTab === 'dashboard' && (
           <Dashboard
@@ -314,12 +430,13 @@ function App() {
             onImport={handleImportBackup}
             onRestoreAutoBackup={handleRestoreAutoBackup}
             showToast={showToast}
+            localStorageScope={storageScope}
+            localDataContextLine={scopeLine}
           />
         )}
       </div>
 
-      {/* Overlay: visão do cliente selecionado */}
-      {selectedClient && (
+      {selectedClient && !legacyModalOpen && (
         <ClientView
           clientData={globalStats.processedClients.find((c) => c.id === selectedClient.id)}
           availableMoney={globalStats.availableMoney}
@@ -331,7 +448,6 @@ function App() {
         />
       )}
 
-      {/* Toast de notificações */}
       <Toast message={toastMessage} />
     </div>
   );

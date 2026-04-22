@@ -3,7 +3,14 @@
  * Persiste preferências do usuário no localStorage.
  */
 
-const SETTINGS_KEY = 'loanManagerSettings';
+import {
+  SCOPE_ANONYMOUS,
+  getScopedSettingsKey,
+  loadDeviceUiSettings,
+  saveDeviceUiFromFullSettings,
+} from './storageScope';
+
+const DEVICE_UI_KEYS = ['theme', 'reduceAnimations', 'hideSensitiveValues'];
 
 /** Configurações padrão da aplicação */
 export const DEFAULT_SETTINGS = {
@@ -22,25 +29,45 @@ export const DEFAULT_SETTINGS = {
 /**
  * Carrega configurações do localStorage.
  * Faz merge com os defaults para garantir que campos novos existam.
+ * @param {string} [scope] - padrão: anônimo; preferências de aparência vêm do dispositivo
  * @returns {Object} Configurações completas.
  */
-export const loadSettings = () => {
+export const loadSettings = (scope = SCOPE_ANONYMOUS) => {
+  const device = loadDeviceUiSettings();
+  let scoped = {};
   try {
-    const saved = localStorage.getItem(SETTINGS_KEY);
-    if (!saved) return { ...DEFAULT_SETTINGS };
-    const parsed = JSON.parse(saved);
-    return { ...DEFAULT_SETTINGS, ...parsed };
+    const saved = localStorage.getItem(getScopedSettingsKey(scope));
+    if (saved) {
+      scoped = JSON.parse(saved);
+    }
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    scoped = {};
   }
+  const base = { ...DEFAULT_SETTINGS, ...scoped };
+  for (const k of DEVICE_UI_KEYS) {
+    if (k in device) {
+      base[k] = device[k];
+    }
+  }
+  return base;
 };
 
 /**
  * Salva configurações no localStorage.
  * @param {Object} settings - Objeto completo de configurações.
+ * @param {string} [scope] - padrão: anônimo
  */
-export const saveSettings = (settings) => {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+export const saveSettings = (settings, scope = SCOPE_ANONYMOUS) => {
+  saveDeviceUiFromFullSettings(settings);
+  const scoped = { ...settings };
+  for (const k of DEVICE_UI_KEYS) {
+    delete scoped[k];
+  }
+  try {
+    localStorage.setItem(getScopedSettingsKey(scope), JSON.stringify(scoped));
+  } catch (e) {
+    console.warn('[settings] Falha ao salvar escopo:', scope, e);
+  }
 };
 
 /**
