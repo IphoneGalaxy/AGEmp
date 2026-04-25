@@ -24,6 +24,7 @@ const normalizeLoan = (loan, defaultRate) => ({
  * Migrações:
  * - v1: client.transactions → client.loans (formato antigo com type 'loan'/'payment')
  * - v2: loan sem interestRate → adiciona interestRate com valor padrão
+ * - linkContext: metadado opcional; preservado em todas as rotas de migração
  *
  * @param {Object} client - Objeto do cliente.
  * @param {number} defaultRate - Taxa de juros padrão.
@@ -48,7 +49,11 @@ const normalizeClient = (client, defaultRate) => {
     if (newLoans.length > 0 && oldPayments.length > 0) {
       newLoans[0].payments = oldPayments;
     }
-    return { id: client.id, name: client.name, loans: newLoans };
+    const migrated = { id: client.id, name: client.name, loans: newLoans };
+    if (client.linkContext != null) {
+      migrated.linkContext = client.linkContext;
+    }
+    return migrated;
   }
 
   // Migração v2: adiciona interestRate a empréstimos que não possuem

@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatMoney, formatDate, formatRate } from '../utils/format';
 import { generateId } from '../utils/ids';
+import { buildLocalLinkContext } from '../utils/linkContext';
+import {
+  getLink,
+  getLinkId,
+  listUserLinks,
+  LINK_STATUSES,
+} from '../firebase/links';
 import { IconEdit, IconDelete, IconBack } from './Icons';
 
 /**
@@ -16,7 +23,7 @@ import { IconEdit, IconDelete, IconBack } from './Icons';
  * @param {Function} props.onClose - Callback para fechar a visão.
  * @param {Function} props.showToast - Callback para exibir toast.
  * @param {Function} props.displayMoney - Função para formatar/ocultar valores monetários.
- * @param {Object}   props.settings - Configurações da aplicação.
+ * @param {Object}   [props.user] - Usuário autenticado (Firebase); ausente no modo sem conta.
  */
 const ClientView = ({
   clientData,
@@ -26,6 +33,7 @@ const ClientView = ({
   showToast,
   displayMoney,
   settings,
+  user,
 }) => {
   // --- Estado local de formulários ---
   const [showNewLoanForm, setShowNewLoanForm] = useState(false);
@@ -45,6 +53,46 @@ const ClientView = ({
   const [confirmDeleteLoanId, setConfirmDeleteLoanId] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
   const [confirmDeletePaymentId, setConfirmDeletePaymentId] = useState(null);
+
+  const [platformLinks, setPlatformLinks] = useState([]);
+  const [platformLinksLoading, setPlatformLinksLoading] = useState(false);
+  const [platformLinksError, setPlatformLinksError] = useState(null);
+  const [pendingLinkId, setPendingLinkId] = useState('');
+  const [linkContextBusy, setLinkContextBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.uid) {
+      setPlatformLinks([]);
+      setPlatformLinksError(null);
+      setPlatformLinksLoading(false);
+      return;
+    }
+    setPlatformLinksLoading(true);
+    setPlatformLinksError(null);
+    listUserLinks(user.uid)
+      .then((all) => {
+        if (cancelled) return;
+        const approved = (all || []).filter(
+          (l) =>
+            l &&
+            l.status === LINK_STATUSES.APPROVED &&
+            (l.supplierId === user.uid || l.clientId === user.uid)
+        );
+        setPlatformLinks(approved);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPlatformLinksError('Não foi possível carregar os vínculos agora.');
+        setPlatformLinks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setPlatformLinksLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   // ==================== HANDLERS ====================
 
@@ -318,6 +366,61 @@ const ClientView = ({
     document.body.removeChild(textArea);
   };
 
+  const handleRemoveLocalLinkContext = () => {
+    onUpdateClients((clients) =>
+      clients.map((c) => {
+        if (c.id !== clientData.id) return c;
+        const next = { ...c };
+        delete next.linkContext;
+        return next;
+      })
+    );
+    setPendingLinkId('');
+    showToast('Anotação local de vínculo removida.');
+  };
+
+  const handleAssociateLocalLinkContext = async () => {
+    if (!user?.uid || !pendingLinkId) return;
+    const link = platformLinks.find((l) => l.id === pendingLinkId);
+    if (!link) return;
+    setLinkContextBusy(true);
+    try {
+      const fresh = await getLink(link.supplierId, link.clientId);
+      if (!fresh || fresh.status !== LINK_STATUSES.APPROVED) {
+        showToast('❌ O vínculo não está mais aprovado. Veja em Conta e tente de novo.');
+        return;
+      }
+      if (fresh.supplierId !== user.uid && fresh.clientId !== user.uid) {
+        showToast('❌ Sua conta não participa deste vínculo.');
+        return;
+      }
+      if (getLinkId(fresh.supplierId, fresh.clientId) !== link.id) {
+        showToast('❌ Dados do vínculo não conferem.');
+        return;
+      }
+      const nextCtx = buildLocalLinkContext(fresh.supplierId, fresh.clientId);
+      onUpdateClients((clients) =>
+        clients.map((c) => (c.id === clientData.id ? { ...c, linkContext: nextCtx } : c))
+      );
+      setPendingLinkId('');
+      showToast('Vínculo anotado neste cliente (só neste aparelho; não envia financeiro).');
+    } catch {
+      showToast('❌ Não foi possível confirmar o vínculo. Tente de novo.');
+    } finally {
+      setLinkContextBusy(false);
+    }
+  };
+
+  const localLink = clientData.linkContext;
+  const otherPartyLabel =
+    localLink && user?.uid
+      ? user.uid === localLink.supplierId
+        ? localLink.clientId
+        : localLink.supplierId
+      : localLink
+        ? `${localLink.supplierId} · ${localLink.clientId}`
+        : null;
+
   // ==================== RENDERIZAÇÃO ====================
 
   return (
@@ -408,6 +511,107 @@ const ClientView = ({
             </button>
           </div>
         </div>
+      </div>
+
+      <div className="mb-6 rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm sm:p-5">
+        <h3 className="mb-1 text-base font-semibold text-content">Vínculo na plataforma (opcional)</h3>
+        <p className="mb-4 text-xs leading-relaxed text-content-muted">
+          Só neste aparelho: anotar qual vínculo aprovado na sua conta corresponde a este cliente. Não envia
+          empréstimos, caixa ou dashboard para a nuvem.
+        </p>
+
+        {!user?.uid && !localLink && (
+          <p className="text-sm text-content-muted">
+            Com conta, em Config., você pode fazer essa anotação. O financeiro continua local neste aparelho.
+          </p>
+        )}
+
+        {user?.uid && !localLink && platformLinksLoading && (
+          <p className="text-sm text-content-muted">Carregando vínculos…</p>
+        )}
+
+        {user?.uid && !localLink && !platformLinksLoading && platformLinksError && (
+          <p className="text-sm text-danger" role="alert">
+            {platformLinksError}
+          </p>
+        )}
+
+        {user?.uid && !localLink && !platformLinksLoading && !platformLinksError && platformLinks.length === 0 && (
+          <p className="text-sm text-content-muted">
+            Não há vínculos aprovados na sua conta. Acompanhe pedidos e aprovações em Conta.
+          </p>
+        )}
+
+        {user?.uid && localLink && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-content-muted">Anotado (outra parte — UID)</p>
+              <p className="mt-0.5 break-all text-sm font-medium text-content">{otherPartyLabel}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRemoveLocalLinkContext}
+              disabled={linkContextBusy}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+            >
+              Remover anotação
+            </button>
+            {platformLinks.length > 0 && (
+              <p className="text-xs text-content-muted">Para trocar, remova a anotação e escolha de novo.</p>
+            )}
+          </div>
+        )}
+
+        {user?.uid && !localLink && !platformLinksLoading && !platformLinksError && platformLinks.length > 0 && (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="link-context-select" className="mb-1.5 block text-xs font-medium text-content-muted">
+                Vínculo aprovado
+              </label>
+              <select
+                id="link-context-select"
+                value={pendingLinkId}
+                onChange={(e) => setPendingLinkId(e.target.value)}
+                className="w-full min-h-[44px] rounded-design-md border border-edge bg-surface-muted px-3 text-sm text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              >
+                <option value="">Escolher…</option>
+                {platformLinks.map((l) => {
+                  const other = l.supplierId === user.uid ? l.clientId : l.supplierId;
+                  return (
+                    <option key={l.id} value={l.id}>
+                      {other}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={handleAssociateLocalLinkContext}
+              disabled={linkContextBusy || !pendingLinkId}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md bg-primary px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+            >
+              {linkContextBusy ? 'Verificando…' : 'Anotar neste cliente'}
+            </button>
+          </div>
+        )}
+
+        {!user?.uid && localLink && (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-content-muted">Anotado (só neste aparelho)</p>
+              <p className="mt-0.5 break-all text-sm font-medium text-content">{otherPartyLabel}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleRemoveLocalLinkContext}
+              disabled={linkContextBusy}
+              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+            >
+              Remover anotação
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Formulário de novo empréstimo */}

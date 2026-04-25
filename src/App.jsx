@@ -445,6 +445,7 @@ function App() {
           showToast={showToast}
           displayMoney={displayMoney}
           settings={settings}
+          user={user}
         />
       )}
 

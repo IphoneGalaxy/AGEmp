@@ -88,6 +88,23 @@ describe('normalizeClients', () => {
       expect(result[0].loans[0].interestRate).toBe(8.5);
     });
 
+    it('preserva linkContext na migração v1', () => {
+      const oldClient = {
+        id: 'c1',
+        name: 'Com metadado',
+        transactions: [{ id: 't1', type: 'loan', date: '2024-01-10', amount: 1000 }],
+        linkContext: {
+          version: 1,
+          linkId: 'a__b',
+          supplierId: 'a',
+          clientId: 'b',
+          associatedAt: '2026-01-01T00:00:00.000Z',
+        },
+      };
+      const result = normalizeClients([oldClient]);
+      expect(result[0].linkContext).toEqual(oldClient.linkContext);
+    });
+
     it('migração ordena transações por data', () => {
       const oldClient = {
         id: 'c1',
