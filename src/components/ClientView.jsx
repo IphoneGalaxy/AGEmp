@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { formatMoney, formatDate, formatRate } from '../utils/format';
+import { formatMoney, formatDate, formatDateTime, formatRate } from '../utils/format';
+import { formatLocalVinculoLineFromContext } from '../utils/localLinkContextOrganize';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -412,14 +413,11 @@ const ClientView = ({
   };
 
   const localLink = clientData.linkContext;
-  const otherPartyLabel =
-    localLink && user?.uid
-      ? user.uid === localLink.supplierId
-        ? localLink.clientId
-        : localLink.supplierId
-      : localLink
-        ? `${localLink.supplierId} · ${localLink.clientId}`
-        : null;
+  const vinculoLineLocal = localLink ? formatLocalVinculoLineFromContext(localLink) : '';
+  const anotadoEmLine =
+    localLink?.associatedAt && typeof localLink.associatedAt === 'string'
+      ? `Anotado em ${formatDateTime(localLink.associatedAt)}`
+      : null;
 
   // ==================== RENDERIZAÇÃO ====================
 
@@ -544,10 +542,16 @@ const ClientView = ({
 
         {user?.uid && localLink && (
           <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-content-muted">Anotado (outra parte — UID)</p>
-              <p className="mt-0.5 break-all text-sm font-medium text-content">{otherPartyLabel}</p>
-            </div>
+            <p className="text-xs leading-relaxed text-content-muted">
+              Este cliente está anotado, só neste aparelho, a um par de contas (vínculo) da plataforma. Não
+              envia dívida nem extrato.
+            </p>
+            {vinculoLineLocal && (
+              <p className="break-words text-sm font-medium text-content">{vinculoLineLocal}</p>
+            )}
+            {anotadoEmLine && (
+              <p className="text-xs text-content-muted">{anotadoEmLine}</p>
+            )}
             <button
               type="button"
               onClick={handleRemoveLocalLinkContext}
@@ -598,10 +602,13 @@ const ClientView = ({
 
         {!user?.uid && localLink && (
           <div className="space-y-3">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-content-muted">Anotado (só neste aparelho)</p>
-              <p className="mt-0.5 break-all text-sm font-medium text-content">{otherPartyLabel}</p>
-            </div>
+            <p className="text-xs leading-relaxed text-content-muted">
+              Anotação local neste aparelho (sem login não dá trocar pelo menu de vínculos).
+            </p>
+            {vinculoLineLocal && (
+              <p className="break-words text-sm font-medium text-content">{vinculoLineLocal}</p>
+            )}
+            {anotadoEmLine && <p className="text-xs text-content-muted">{anotadoEmLine}</p>}
             <button
               type="button"
               onClick={handleRemoveLocalLinkContext}

@@ -1,9 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { generateId } from '../utils/ids';
 import {
   filterClientsByLinkContextPresence,
   LINK_LIST_FILTER,
 } from '../utils/clientLinkListFilter';
+import {
+  listDistinctLocalLinkOptions,
+  filterClientsByLocalLinkId,
+  formatLocalVinculoLineFromContext,
+} from '../utils/localLinkContextOrganize';
 
 /**
  * Componente Lista de Clientes.
@@ -11,6 +16,7 @@ import {
  * Exibe:
  * - Formulário para adicionar novo cliente
  * - Filtro local opcional por presença de anotação de vínculo (linkContext)
+ * - Refino opcional por vínculo específico (chave local linkId) derivado do dataset
  * - Lista de clientes com status de pagamento e dívida total
  * - Badges de status (OK, Falta, Sem dívidas)
  *
@@ -32,6 +38,7 @@ const ClientsList = ({
 }) => {
   const [newClientName, setNewClientName] = useState('');
   const [linkFilter, setLinkFilter] = useState(LINK_LIST_FILTER.ALL);
+  const [localLinkIdFilter, setLocalLinkIdFilter] = useState('');
 
   const linkedCount = useMemo(
     () => processedClients.filter((c) => c?.linkContext).length,
@@ -42,10 +49,31 @@ const ClientsList = ({
     [processedClients, linkedCount]
   );
 
-  const visibleClients = useMemo(
+  const distinctLocalLinks = useMemo(
+    () => listDistinctLocalLinkOptions(processedClients),
+    [processedClients]
+  );
+
+  const baseFiltered = useMemo(
     () => filterClientsByLinkContextPresence(processedClients, linkFilter),
     [processedClients, linkFilter]
   );
+
+  const visibleClients = useMemo(
+    () => filterClientsByLocalLinkId(baseFiltered, localLinkIdFilter),
+    [baseFiltered, localLinkIdFilter]
+  );
+
+  useEffect(() => {
+    if (linkFilter === LINK_LIST_FILTER.UNLINKED) {
+      setLocalLinkIdFilter('');
+    }
+  }, [linkFilter]);
+
+  const clearAllFilters = () => {
+    setLinkFilter(LINK_LIST_FILTER.ALL);
+    setLocalLinkIdFilter('');
+  };
 
   const handleAddClient = (e) => {
     e.preventDefault();
@@ -61,6 +89,16 @@ const ClientsList = ({
         ? 'bg-surface text-info shadow-design-sm ring-1 ring-inset ring-info/35'
         : 'bg-transparent text-content-muted hover:bg-surface/80'
     }`;
+
+  const emptyStateMessage = () => {
+    if (linkFilter === LINK_LIST_FILTER.LINKED && linkedCount === 0) {
+      return 'Nenhum cliente com anotação de vínculo neste escopo local de dados.';
+    }
+    if (localLinkIdFilter) {
+      return 'Nenhum cliente anotado para este vínculo neste escopo local de dados.';
+    }
+    return 'Nenhum cliente corresponde a este filtro neste escopo local de dados.';
+  };
 
   return (
     <div className="p-4 space-y-6 pb-20">
@@ -116,6 +154,35 @@ const ClientsList = ({
               Sem anotação ({unlinkedCount})
             </button>
           </div>
+
+          {distinctLocalLinks.length > 0 && linkFilter !== LINK_LIST_FILTER.UNLINKED && (
+            <div className="mt-3">
+              <label
+                htmlFor="client-list-link-id-filter"
+                className="mb-1.5 block text-xs font-medium text-content-muted"
+              >
+                Refinar por vínculo anotado (chave local do par de contas)
+              </label>
+              <select
+                id="client-list-link-id-filter"
+                value={localLinkIdFilter}
+                onChange={(e) => setLocalLinkIdFilter(e.target.value)}
+                className="w-full min-h-[44px] rounded-design-md border border-edge bg-surface-muted px-3 text-sm text-content shadow-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                aria-label="Refinar por vínculo anotado"
+              >
+                <option value="">
+                  Qualquer — {distinctLocalLinks.length} vínculo
+                  {distinctLocalLinks.length === 1 ? '' : 's'} distinto
+                  {distinctLocalLinks.length === 1 ? '' : 's'} neste aparelho
+                </option>
+                {distinctLocalLinks.map((opt) => (
+                  <option key={opt.linkId} value={opt.linkId}>
+                    {opt.label} — {opt.count} cliente{opt.count === 1 ? '' : 's'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       )}
 
@@ -132,8 +199,11 @@ const ClientsList = ({
               </p>
 
               {client.linkContext && (
-                <p className="mt-1.5 text-xs font-medium text-info" title="Anotação local; não indica saldo">
-                  Vínculo anotado (local)
+                <p
+                  className="mt-1.5 line-clamp-2 text-xs text-info"
+                  title="Anotação local; não indica situação de pagamento"
+                >
+                  {formatLocalVinculoLineFromContext(client.linkContext)}
                 </p>
               )}
 
@@ -174,16 +244,25 @@ const ClientsList = ({
 
         {clientsCount > 0 && visibleClients.length === 0 && (
           <div className="mt-2 rounded-design-lg border border-dashed border-edge bg-surface-muted/60 px-5 py-10 text-center">
-            <p className="text-sm text-content-muted">
-              Nenhum cliente corresponde a este filtro neste escopo local de dados.
-            </p>
-            <button
-              type="button"
-              onClick={() => setLinkFilter(LINK_LIST_FILTER.ALL)}
-              className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-design-md border border-edge bg-surface px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
-            >
-              Ver todos
-            </button>
+            <p className="text-sm text-content-muted">{emptyStateMessage()}</p>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-design-md border border-edge bg-surface px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              >
+                Limpar filtros
+              </button>
+              {localLinkIdFilter && linkFilter !== LINK_LIST_FILTER.UNLINKED && (
+                <button
+                  type="button"
+                  onClick={() => setLocalLinkIdFilter('')}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-design-md border border-edge border-info/30 bg-info-soft/40 px-4 text-sm font-semibold text-info transition-colors hover:bg-info-soft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                >
+                  Só o refinamento de vínculo
+                </button>
+              )}
+            </div>
           </div>
         )}
 
