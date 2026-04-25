@@ -502,8 +502,8 @@ function AccountScreen({ onBack, showToast }) {
       </div>
 
       <p className="text-xs leading-relaxed text-content-muted">
-        Login opcional. Seus dados no aparelho continuam apenas locais até futuras etapas de
-        sincronização.
+        Login opcional. A conta identifica você e seus vínculos; empréstimos, caixa e backups
+        continuam locais neste aparelho.
       </p>
 
       {!authReady ? (
@@ -517,8 +517,8 @@ function AccountScreen({ onBack, showToast }) {
         <div className={sectionCardClass}>
           <h3 className="mb-2 text-base font-semibold text-content">Conta indisponível</h3>
           <p className="text-sm leading-relaxed text-content-muted">
-            Este ambiente não tem o Firebase configurado. O app continua funcionando normalmente
-            no modo local.
+            Este ambiente não tem o Firebase configurado. O app continua funcionando no modo local,
+            sem conta.
           </p>
         </div>
       ) : user ? (
@@ -526,11 +526,8 @@ function AccountScreen({ onBack, showToast }) {
           <div className={sectionCardClass}>
             <h3 className="mb-1 text-base font-semibold text-content">Seu identificador (UID)</h3>
             <p className="mb-4 text-xs leading-relaxed text-content-muted">
-              Código único da sua conta na nuvem (não é o e-mail). Para vínculos: quem for{' '}
-              <span className="font-medium">cliente (conta)</span> precisa do UID de quem for{' '}
-              <span className="font-medium">fornecedor (conta)</span> para colar no pedido; quem for
-              fornecedor pode enviar <span className="font-medium">este</span> UID para a outra
-              pessoa solicitar.
+              Código da sua conta para criar vínculos com outras contas. Ele não é o e-mail e não dá
+              acesso aos seus dados financeiros locais.
             </p>
             <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-muted">
               Seu UID
@@ -550,9 +547,10 @@ function AccountScreen({ onBack, showToast }) {
           </div>
 
           <div className={sectionCardClass}>
-            <h3 className="mb-1 text-base font-semibold text-content">Perfil remoto</h3>
+            <h3 className="mb-1 text-base font-semibold text-content">Identidade da conta</h3>
             <p className="mb-5 text-xs leading-relaxed text-content-muted">
-              Nome exibido na sua conta na nuvem. Não altera dados financeiros neste aparelho.
+              Nome usado na sua conta online. Não altera empréstimos, caixa ou backups deste
+              aparelho.
             </p>
 
             {profileLoading ? (
@@ -611,8 +609,8 @@ function AccountScreen({ onBack, showToast }) {
               <div className={sectionCardClass}>
                 <h3 className="mb-1 text-base font-semibold text-content">Papel na plataforma</h3>
                 <p className="mb-5 text-xs leading-relaxed text-content-muted">
-                  Fornecedor ou cliente da <span className="font-medium">conta</span> na nuvem — não
-                  confunde com os clientes cadastrados no app local.
+                  Define como esta conta pode participar de vínculos. Isso não muda os clientes
+                  cadastrados no financeiro local.
                 </p>
 
                 {hasPlatformRole ? (
@@ -709,8 +707,8 @@ function AccountScreen({ onBack, showToast }) {
               <div className={sectionCardClass}>
                 <h3 className="mb-1 text-base font-semibold text-content">Vínculos</h3>
                 <p className="mb-5 text-xs leading-relaxed text-content-muted">
-                  Liga duas contas na nuvem (fornecedor ↔ cliente da plataforma). Os papéis precisam
-                  estar definidos em Conta antes do pedido ser aceito pelas regras do servidor.
+                  Vínculos ligam duas contas para relacionamento fornecedor ↔ cliente. Eles não
+                  sincronizam empréstimos nem caixa.
                 </p>
 
                 {!hasPlatformRole && (
@@ -759,8 +757,8 @@ function AccountScreen({ onBack, showToast }) {
 
                 {dualAccountCapabilities && (
                   <p className="mb-4 text-xs leading-relaxed text-content-muted">
-                    A alternância acima só muda textos e atalhos desta tela. Quem você é em cada
-                    vínculo continua definido pelo documento na nuvem (fornecedor/cliente da relação).
+                    Essa alternância só muda a visualização desta tela. O papel em cada vínculo é
+                    definido pelo registro online do vínculo.
                   </p>
                 )}
 

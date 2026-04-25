@@ -16,15 +16,15 @@ function LegacyDataChoiceModal({ email, onAssociate, onKeepOnDevice }) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="legacy-modal-title" className="text-lg font-semibold text-content">
-          Dados locais antigos
+          Dados locais sem conta
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-content-muted">
-          Há empréstimos e caixa salvos <strong>neste aparelho</strong> (sem conta) antes de você
-          entrar como <span className="text-content font-medium tabular-nums">{email}</span>.
+          Há empréstimos e caixa salvos <strong>neste aparelho</strong> no modo sem conta, antes de
+          você entrar como <span className="text-content font-medium tabular-nums">{email}</span>.
         </p>
         <p className="mt-2 text-sm leading-relaxed text-content-muted">
-          O <strong>domínio financeiro continua só local</strong> e não é sincronizado com a
-          internet. O que deseja fazer com esses dados?
+          Esses dados financeiros não serão enviados para a internet. Escolha como eles devem ficar
+          neste aparelho.
         </p>
         <div className="mt-5 space-y-2">
           <button
@@ -32,7 +32,7 @@ function LegacyDataChoiceModal({ email, onAssociate, onKeepOnDevice }) {
             onClick={onAssociate}
             className="inline-flex min-h-[48px] w-full items-center justify-center rounded-design-md bg-primary text-sm font-semibold text-content-inverse shadow-design-sm transition-colors active:opacity-90"
           >
-            Associar estes dados a esta conta (neste aparelho)
+            Associar a esta conta neste aparelho
           </button>
           <button
             type="button"
@@ -42,7 +42,7 @@ function LegacyDataChoiceModal({ email, onAssociate, onKeepOnDevice }) {
             Manter no modo sem conta
           </button>
         </div>
-        <p className="mt-3 text-center text-xs text-content-muted">Esta pergunta não aparece de novo após a escolha.</p>
+        <p className="mt-3 text-center text-xs text-content-muted">Essa definição será mantida neste aparelho.</p>
       </div>
     </div>
   );

@@ -322,8 +322,8 @@ function App() {
 
   const scopeLine =
     user?.uid == null
-      ? 'Dados locais: modo sem conta (neste aparelho)'
-      : 'Dados locais: conta conectada (neste aparelho)';
+      ? 'Dados financeiros locais: modo sem conta neste aparelho.'
+      : 'Dados financeiros locais: com conta neste aparelho.';
 
   return (
     <div className="max-w-xl mx-auto bg-base min-h-screen shadow-design-md relative overflow-hidden flex flex-col">
@@ -359,8 +359,8 @@ function App() {
           role="status"
         >
           <p className="text-center text-xs leading-relaxed text-content-muted">
-            Nenhum dado financeiro local para esta conta neste aparelho. Os dados de empréstimos e
-            caixa continuam só no dispositivo (não sincronizam com a nuvem).
+            Esta conta ainda não tem dados financeiros locais neste aparelho. Empréstimos e caixa
+            continuam salvos somente no dispositivo.
           </p>
         </div>
       )}

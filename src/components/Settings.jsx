@@ -175,8 +175,8 @@ const Settings = ({
           </p>
         )}
         <p className="mb-5 text-xs leading-relaxed text-content-muted">
-          Entre ou crie uma conta com e-mail. Opcional: o app continua funcionando com dados
-          apenas neste aparelho.
+          Entre com e-mail para usar identidade e vínculos entre contas. Seus empréstimos e caixa
+          continuam locais neste aparelho.
         </p>
         <button
           type="button"
@@ -193,7 +193,7 @@ const Settings = ({
           🔒 Backup e Segurança
         </h3>
         <p className="mb-5 text-xs leading-relaxed text-content-muted">
-          O backup automático salva uma cópia dos seus dados internamente no navegador a cada
+          O backup automático salva cópias locais dos dados financeiros deste escopo a cada
           alteração importante.
         </p>
 
@@ -399,7 +399,8 @@ const Settings = ({
           </p>
           <p className="tabular-nums">Versão 2.0.0</p>
           <p className="border-t border-edge/60 pt-3 text-xs leading-relaxed text-content-muted">
-            Dados salvos localmente no navegador. Faça backups regulares para não perder informações.
+            Dados financeiros salvos localmente neste aparelho. Faça backups regulares para não
+            perder informações.
           </p>
         </div>
       </div>
