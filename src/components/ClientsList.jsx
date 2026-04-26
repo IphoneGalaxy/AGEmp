@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { generateId } from '../utils/ids';
 import {
   filterClientsByLinkContextPresence,
@@ -13,6 +13,12 @@ import {
   getLinkContextTemplateForInheritFromClients,
   buildNewClientWithOptionalLinkContext,
 } from '../utils/newClientLinkInherit';
+import {
+  isBatchLinkAnnotateEligible,
+  isTemplateConsistentWithLinkId,
+  applyLinkContextToClientsBatch,
+  removeLinkContextFromClientsBatch,
+} from '../utils/clientLinkContextBatch';
 
 /**
  * Componente Lista de Clientes.
@@ -22,29 +28,39 @@ import {
  * - Filtro local opcional por presença de anotação de vínculo (linkContext)
  * - Refino opcional por vínculo específico (chave local linkId) derivado do dataset
  * - Opcional: ao criar cliente com filtro de vínculo ativo, herdar anotação local (reversível antes de salvar)
+ * - Modo de seleção em lote: anotar com o vínculo ativo do refinamento ou remover anotação (local, sem nuvem)
  * - Lista de clientes com status de pagamento e dívida total
  * - Badges de status (OK, Falta, Sem dívidas)
  *
  * @param {Object} props
+ * @param {Array}    props.clients - Clientes brutos (estado; mesmos ids que processedClients).
  * @param {Array}    props.processedClients - Clientes com dados processados.
- * @param {number}   props.clientsCount - Quantidade total de clientes.
  * @param {Function} props.onAddClient - Callback para adicionar novo cliente.
+ * @param {Function} props.onUpdateClients - Callback (updater) => void para atualizar o array de clientes.
  * @param {Function} props.onSelectClient - Callback para selecionar/abrir um cliente.
  * @param {Function} props.showToast - Callback para exibir notificação toast.
  * @param {Function} props.displayMoney - Função para formatar/ocultar valores monetários.
  */
 const ClientsList = ({
-  processedClients,
-  clientsCount,
+  clients = [],
+  processedClients = [],
   onAddClient,
+  onUpdateClients,
   onSelectClient,
   showToast,
   displayMoney,
 }) => {
+  const clientsCount = clients.length;
+
   const [newClientName, setNewClientName] = useState('');
   const [inheritVinculoOnCreate, setInheritVinculoOnCreate] = useState(true);
   const [linkFilter, setLinkFilter] = useState(LINK_LIST_FILTER.ALL);
   const [localLinkIdFilter, setLocalLinkIdFilter] = useState('');
+
+  const [batchSelectMode, setBatchSelectMode] = useState(false);
+  const [selectedIdList, setSelectedIdList] = useState([]);
+
+  const selectedSet = useMemo(() => new Set(selectedIdList), [selectedIdList]);
 
   const linkedCount = useMemo(
     () => processedClients.filter((c) => c?.linkContext).length,
@@ -81,6 +97,27 @@ const ClientsList = ({
   );
   const showVinculoInheritOption = Boolean(inheritTemplate);
 
+  const batchAnnotateTemplateOk = useMemo(
+    () =>
+      Boolean(
+        inheritTemplate &&
+          isTemplateConsistentWithLinkId(
+            inheritTemplate.supplierId,
+            inheritTemplate.clientId,
+            localLinkIdFilter
+          )
+      ),
+    [inheritTemplate, localLinkIdFilter]
+  );
+
+  const canShowBatchAnnotate = useMemo(
+    () =>
+      batchSelectMode &&
+      isBatchLinkAnnotateEligible(linkFilter, localLinkIdFilter) &&
+      batchAnnotateTemplateOk,
+    [batchSelectMode, linkFilter, localLinkIdFilter, batchAnnotateTemplateOk]
+  );
+
   useEffect(() => {
     if (linkFilter === LINK_LIST_FILTER.UNLINKED) {
       setLocalLinkIdFilter('');
@@ -94,10 +131,32 @@ const ClientsList = ({
     }
   }, [linkFilter, localLinkIdFilter]);
 
+  useEffect(() => {
+    setSelectedIdList([]);
+  }, [linkFilter, localLinkIdFilter]);
+
   const clearAllFilters = () => {
     setLinkFilter(LINK_LIST_FILTER.ALL);
     setLocalLinkIdFilter('');
   };
+
+  const toggleClientSelected = useCallback((id) => {
+    if (!id) return;
+    setSelectedIdList((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }, []);
+
+  const selectAllVisible = useCallback(() => {
+    setSelectedIdList(visibleClients.map((c) => c.id).filter(Boolean));
+  }, [visibleClients]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIdList([]);
+  }, []);
+
+  const exitBatchMode = useCallback(() => {
+    setBatchSelectMode(false);
+    setSelectedIdList([]);
+  }, []);
 
   const handleAddClient = (e) => {
     e.preventDefault();
@@ -118,6 +177,56 @@ const ClientsList = ({
         : '👤 Cliente criado!'
     );
   };
+
+  const handleBatchAnnotate = useCallback(() => {
+    if (!onUpdateClients || !canShowBatchAnnotate || !inheritTemplate) {
+      showToast('❌ Ajuste o filtro: escolha um vínculo no refinamento para anotar em lote.');
+      return;
+    }
+    if (selectedIdList.length === 0) {
+      showToast('Selecione ao menos um cliente para anotar.');
+      return;
+    }
+    const { nextClients, applied, alreadySame, skippedOther } = applyLinkContextToClientsBatch({
+      allClients: clients,
+      selectedIds: selectedIdList,
+      targetSupplierId: inheritTemplate.supplierId,
+      targetClientId: inheritTemplate.clientId,
+    });
+    onUpdateClients(() => nextClients);
+    const parts = [];
+    if (applied > 0) parts.push(`anotados: ${applied}`);
+    if (alreadySame > 0) parts.push(`já com este vínculo: ${alreadySame}`);
+    if (skippedOther > 0) parts.push(`outro vínculo (não alterado): ${skippedOther}`);
+    showToast(
+      parts.length
+        ? `Anotação local: ${parts.join(' · ')}. Não envia financeiro.`
+        : 'Nada a alterar: todos selecionados já tinham este vínculo ou outro anotado.'
+    );
+    setSelectedIdList([]);
+  }, [onUpdateClients, canShowBatchAnnotate, inheritTemplate, selectedIdList, clients, showToast]);
+
+  const handleBatchRemove = useCallback(() => {
+    if (!onUpdateClients) return;
+    if (selectedIdList.length === 0) {
+      showToast('Selecione ao menos um cliente para remover a anotação.');
+      return;
+    }
+    const { nextClients, removed, hadNone } = removeLinkContextFromClientsBatch({
+      allClients: clients,
+      selectedIds: selectedIdList,
+    });
+    onUpdateClients(() => nextClients);
+    const parts = [];
+    if (removed > 0) parts.push(`anotação removida: ${removed}`);
+    if (hadNone > 0) parts.push(`sem anotação: ${hadNone}`);
+    showToast(
+      parts.length
+        ? `Remoção local (só anotação): ${parts.join(' · ')}.`
+        : 'Nada a remover na seleção.'
+    );
+    setSelectedIdList([]);
+  }, [onUpdateClients, selectedIdList, clients, showToast]);
 
   const filterButtonClass = (active) =>
     `inline-flex min-h-[40px] flex-1 items-center justify-center rounded-design-md px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:text-sm ${
@@ -240,64 +349,199 @@ const ClientsList = ({
               </select>
             </div>
           )}
+
+          <div className="mt-3">
+            {!batchSelectMode ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setBatchSelectMode(true);
+                  setSelectedIdList([]);
+                }}
+                className="inline-flex min-h-[40px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto"
+              >
+                Selecionar clientes
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={exitBatchMode}
+                className="inline-flex min-h-[40px] w-full items-center justify-center rounded-design-md border border-info/30 bg-info-soft/30 px-3 text-sm font-semibold text-info transition-colors hover:bg-info-soft/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto"
+              >
+                Concluir seleção
+              </button>
+            )}
+            <p className="mt-1.5 text-xs text-content-muted">
+              {batchSelectMode
+                ? 'Modo seleção: toque no cliente para marcar. Anotação continua local neste aparelho; não cria vínculo novo na plataforma nem envia dinheiro.'
+                : 'Opcional: marque vários clientes e anote ou remova anotação de vínculo (apenas rótulo local).'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {batchSelectMode && clientsCount > 0 && (
+        <div
+          className="sticky top-0 z-20 -mx-4 space-y-2 border-b border-edge bg-base/95 px-4 py-2.5 backdrop-blur sm:mx-0 sm:rounded-design-md sm:border sm:shadow-design-sm"
+          role="region"
+          aria-label="Ações em lote (anotação local)"
+        >
+          <p className="text-xs font-medium text-content">
+            {selectedIdList.length} selecionado{selectedIdList.length === 1 ? '' : 's'}
+            {localLinkIdFilter && inheritTemplate
+              ? ` · vínculo ativo: ${formatLocalVinculoLineFromContext(inheritTemplate)}`
+              : localLinkIdFilter
+                ? ` · refinamento: ${localLinkIdFilter}`
+                : ''}
+          </p>
+          <p className="text-[11px] leading-snug text-content-muted">
+            Não cria vínculo remoto novo nem altera o financeiro.
+          </p>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {visibleClients.length > 0 && (
+              <button
+                type="button"
+                onClick={selectAllVisible}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              >
+                Marcar visíveis ({visibleClients.length})
+              </button>
+            )}
+            {selectedIdList.length > 0 && (
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              >
+                Limpar marcação
+              </button>
+            )}
+            {canShowBatchAnnotate && onUpdateClients && (
+              <button
+                type="button"
+                onClick={handleBatchAnnotate}
+                disabled={selectedIdList.length === 0}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-design-md bg-primary px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+              >
+                Anotar selecionados com este vínculo
+              </button>
+            )}
+            {onUpdateClients && (
+              <button
+                type="button"
+                onClick={handleBatchRemove}
+                disabled={selectedIdList.length === 0}
+                className="inline-flex min-h-[44px] items-center justify-center rounded-design-md border border-edge border-danger/30 bg-danger-soft/30 px-3 text-sm font-semibold text-danger transition-colors hover:bg-danger-soft/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+              >
+                Remover anotação (selecionados)
+              </button>
+            )}
+          </div>
+          {!localLinkIdFilter && batchSelectMode && linkFilter !== LINK_LIST_FILTER.UNLINKED && (
+            <p className="text-xs text-content-muted">
+              Para anotar em lote, escolha um vínculo no refinamento &quot;Refinar por vínculo anotado&quot;.
+            </p>
+          )}
         </div>
       )}
 
       <div className="space-y-3">
-        {visibleClients.map((client) => (
-          <div
-            key={client.id}
-            onClick={() => onSelectClient(client)}
-            className="flex cursor-pointer items-start justify-between gap-4 rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm transition-colors hover:bg-surface-muted"
-          >
-            <div className="min-w-0 flex-1">
-              <p className="text-lg font-semibold leading-snug text-content">
-                {client.name}
-              </p>
-
-              {client.linkContext && (
-                <p
-                  className="mt-1.5 line-clamp-2 text-xs text-info"
-                  title="Anotação local; não indica situação de pagamento"
+        {visibleClients.map((client) => {
+          const isSelected = selectedSet.has(client.id);
+          return (
+            <div
+              key={client.id}
+              onClick={() => {
+                if (batchSelectMode) {
+                  toggleClientSelected(client.id);
+                } else {
+                  onSelectClient(client);
+                }
+              }}
+              className={`flex cursor-pointer items-start justify-between gap-3 rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm transition-colors sm:p-5 ${
+                batchSelectMode && isSelected ? 'ring-1 ring-inset ring-info/50 bg-info-soft/15' : 'hover:bg-surface-muted'
+              }`}
+            >
+              {batchSelectMode && (
+                <div
+                  className="shrink-0 pt-0.5"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
                 >
-                  {formatLocalVinculoLineFromContext(client.linkContext)}
-                </p>
-              )}
-
-              {client.currentDebt > 0 ? (
-                <div className="mt-2">
-                  {client.dashPending <= 0 ? (
-                    <span className="inline-flex max-w-full items-center rounded-design-sm bg-success-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-success">
-                      OK ({client.dashMonthStr}) ✅
-                    </span>
-                  ) : (
-                    <span
-                      className={`inline-flex max-w-full items-center rounded-design-sm px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${
-                        client.isNextMonth
-                          ? 'bg-info-soft text-info'
-                          : 'bg-danger-soft text-danger'
-                      }`}
-                    >
-                      Falta {client.dashMonthStr}: {displayMoney(client.dashPending)}
-                    </span>
-                  )}
+                  <input
+                    type="checkbox"
+                    id={`client-select-${client.id}`}
+                    checked={isSelected}
+                    onChange={() => toggleClientSelected(client.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 rounded border-edge text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                    aria-label={`Selecionar ${client.name} para anotação em lote`}
+                  />
                 </div>
-              ) : (
-                <p className="mt-2 text-xs text-content-muted">Sem dívidas ativas</p>
               )}
+              <div className="min-w-0 flex-1">
+                <p className="text-lg font-semibold leading-snug text-content">
+                  {client.name}
+                </p>
+
+                {client.linkContext && (
+                  <p
+                    className="mt-1.5 line-clamp-2 text-xs text-info"
+                    title="Anotação local; não indica situação de pagamento"
+                  >
+                    {formatLocalVinculoLineFromContext(client.linkContext)}
+                  </p>
+                )}
+
+                {client.currentDebt > 0 ? (
+                  <div className="mt-2">
+                    {client.dashPending <= 0 ? (
+                      <span className="inline-flex max-w-full items-center rounded-design-sm bg-success-soft px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-success">
+                        OK ({client.dashMonthStr}) ✅
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-flex max-w-full items-center rounded-design-sm px-2.5 py-1 text-xs font-semibold uppercase tracking-wide ${
+                          client.isNextMonth
+                            ? 'bg-info-soft text-info'
+                            : 'bg-danger-soft text-danger'
+                        }`}
+                      >
+                        Falta {client.dashMonthStr}: {displayMoney(client.dashPending)}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-xs text-content-muted">Sem dívidas ativas</p>
+                )}
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">
+                {batchSelectMode && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelectClient(client);
+                    }}
+                    className="inline-flex min-h-[40px] min-w-[5rem] items-center justify-center rounded-design-md border border-edge bg-surface px-2 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                  >
+                    Abrir ficha
+                  </button>
+                )}
+                <div className="shrink-0 border-l border-edge pl-3 text-right sm:pl-4">
+                  <p className="text-xs font-medium text-content-muted">Dívida Total</p>
+                  <p
+                    className={`mt-0.5 text-base font-bold tabular-nums tracking-tight ${
+                      client.currentDebt > 0 ? 'text-danger' : 'text-success'
+                    }`}
+                  >
+                    {displayMoney(client.currentDebt)}
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="shrink-0 border-l border-edge pl-4 text-right">
-              <p className="text-xs font-medium text-content-muted">Dívida Total</p>
-              <p
-                className={`mt-0.5 text-base font-bold tabular-nums tracking-tight ${
-                  client.currentDebt > 0 ? 'text-danger' : 'text-success'
-                }`}
-              >
-                {displayMoney(client.currentDebt)}
-              </p>
-            </div>
-          </div>
-        ))}
+          );
+        })}
 
         {clientsCount > 0 && visibleClients.length === 0 && (
           <div className="mt-2 rounded-design-lg border border-dashed border-edge bg-surface-muted/60 px-5 py-10 text-center">

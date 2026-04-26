@@ -414,9 +414,10 @@ function App() {
         )}
         {activeTab === 'clients' && (
           <ClientsList
+            clients={clients}
             processedClients={globalStats.processedClients}
-            clientsCount={clients.length}
             onAddClient={handleAddClient}
+            onUpdateClients={handleUpdateClients}
             onSelectClient={setSelectedClient}
             showToast={showToast}
             displayMoney={displayMoney}
