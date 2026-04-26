@@ -9,6 +9,10 @@ import {
   filterClientsByLocalLinkId,
   formatLocalVinculoLineFromContext,
 } from '../utils/localLinkContextOrganize';
+import {
+  getLinkContextTemplateForInheritFromClients,
+  buildNewClientWithOptionalLinkContext,
+} from '../utils/newClientLinkInherit';
 
 /**
  * Componente Lista de Clientes.
@@ -17,6 +21,7 @@ import {
  * - Formulário para adicionar novo cliente
  * - Filtro local opcional por presença de anotação de vínculo (linkContext)
  * - Refino opcional por vínculo específico (chave local linkId) derivado do dataset
+ * - Opcional: ao criar cliente com filtro de vínculo ativo, herdar anotação local (reversível antes de salvar)
  * - Lista de clientes com status de pagamento e dívida total
  * - Badges de status (OK, Falta, Sem dívidas)
  *
@@ -37,6 +42,7 @@ const ClientsList = ({
   displayMoney,
 }) => {
   const [newClientName, setNewClientName] = useState('');
+  const [inheritVinculoOnCreate, setInheritVinculoOnCreate] = useState(true);
   const [linkFilter, setLinkFilter] = useState(LINK_LIST_FILTER.ALL);
   const [localLinkIdFilter, setLocalLinkIdFilter] = useState('');
 
@@ -64,11 +70,29 @@ const ClientsList = ({
     [baseFiltered, localLinkIdFilter]
   );
 
+  const inheritTemplate = useMemo(
+    () =>
+      getLinkContextTemplateForInheritFromClients(
+        processedClients,
+        linkFilter,
+        localLinkIdFilter
+      ),
+    [processedClients, linkFilter, localLinkIdFilter]
+  );
+  const showVinculoInheritOption = Boolean(inheritTemplate);
+
   useEffect(() => {
     if (linkFilter === LINK_LIST_FILTER.UNLINKED) {
       setLocalLinkIdFilter('');
     }
   }, [linkFilter]);
+
+  useEffect(() => {
+    if (linkFilter === LINK_LIST_FILTER.UNLINKED) return;
+    if (localLinkIdFilter) {
+      setInheritVinculoOnCreate(true);
+    }
+  }, [linkFilter, localLinkIdFilter]);
 
   const clearAllFilters = () => {
     setLinkFilter(LINK_LIST_FILTER.ALL);
@@ -78,9 +102,21 @@ const ClientsList = ({
   const handleAddClient = (e) => {
     e.preventDefault();
     if (!newClientName.trim()) return;
-    onAddClient({ id: generateId(), name: newClientName, loans: [] });
+    const include = showVinculoInheritOption && inheritVinculoOnCreate;
+    const newClient = buildNewClientWithOptionalLinkContext({
+      id: generateId(),
+      name: newClientName.trim(),
+      loans: [],
+      includeLinkContext: include,
+      templateLinkContext: inheritTemplate,
+    });
+    onAddClient(newClient);
     setNewClientName('');
-    showToast('👤 Cliente criado!');
+    showToast(
+      include
+        ? '👤 Cliente criado (anotação de vínculo local incluída).'
+        : '👤 Cliente criado!'
+    );
   };
 
   const filterButtonClass = (active) =>
@@ -104,22 +140,43 @@ const ClientsList = ({
     <div className="p-4 space-y-6 pb-20">
       <form
         onSubmit={handleAddClient}
-        className="mb-6 flex gap-2 rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm"
+        className="mb-6 flex flex-col gap-3 rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm"
       >
-        <input
-          type="text"
-          required
-          className="min-h-[44px] flex-1 rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content placeholder:text-content-muted shadow-none"
-          placeholder="Nome do novo cliente"
-          value={newClientName}
-          onChange={(e) => setNewClientName(e.target.value)}
-        />
-        <button
-          type="submit"
-          className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-design-md bg-primary px-5 font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover"
-        >
-          Criar
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2">
+          <input
+            type="text"
+            required
+            className="min-h-[44px] w-full flex-1 rounded-design-md border border-edge bg-surface-muted px-4 py-2 text-content placeholder:text-content-muted shadow-none sm:min-w-0"
+            placeholder="Nome do novo cliente"
+            value={newClientName}
+            onChange={(e) => setNewClientName(e.target.value)}
+            autoComplete="off"
+          />
+          <button
+            type="submit"
+            className="inline-flex min-h-[44px] w-full shrink-0 items-center justify-center rounded-design-md bg-primary px-5 font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover sm:w-auto"
+          >
+            Criar
+          </button>
+        </div>
+        {showVinculoInheritOption && (
+          <label
+            htmlFor="client-inherit-vinculo"
+            className="flex cursor-pointer items-start gap-3 rounded-design-md border border-info/30 bg-info-soft/30 px-3 py-2.5"
+          >
+            <input
+              id="client-inherit-vinculo"
+              type="checkbox"
+              checked={inheritVinculoOnCreate}
+              onChange={(e) => setInheritVinculoOnCreate(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            />
+            <span className="text-xs leading-relaxed text-content-soft">
+              Criar já com a mesma anotação de vínculo do filtro (só neste aparelho; não muda a nuvem nem o
+              financeiro). Desmarque para criar sem anotação.
+            </span>
+          </label>
+        )}
       </form>
 
       {clientsCount > 0 && (
