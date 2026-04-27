@@ -12,6 +12,11 @@ import {
   countLoansWithoutLinkContext,
   shouldShowLoanLinkContextFilter,
 } from '../utils/loanLinkContextFilter';
+import {
+  annotateLoanFromClientContext,
+  getLoanLinkContextActionState,
+  removeLoanLinkContext,
+} from '../utils/loanLinkContextManage';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -75,6 +80,7 @@ const ClientView = ({
   const [pendingLinkId, setPendingLinkId] = useState('');
   const [linkContextBusy, setLinkContextBusy] = useState(false);
   const [loanLinkFilter, setLoanLinkFilter] = useState(LOAN_LINK_LIST_FILTER.ALL);
+  const [confirmRemoveLoanLinkContextId, setConfirmRemoveLoanLinkContextId] = useState(null);
 
   const allLoans = clientData.loans || [];
   const linkedLoanCount = countLoansWithLinkContext(allLoans);
@@ -94,6 +100,7 @@ const ClientView = ({
 
   useEffect(() => {
     setLoanLinkFilter(LOAN_LINK_LIST_FILTER.ALL);
+    setConfirmRemoveLoanLinkContextId(null);
   }, [clientData.id]);
 
   useEffect(() => {
@@ -103,6 +110,14 @@ const ClientView = ({
       setEditingLoan(null);
     }
   }, [clientData.loans, loanLinkFilter, editingLoan?.id]);
+
+  useEffect(() => {
+    if (!confirmRemoveLoanLinkContextId) return;
+    const visible = filterLoansByLinkContextPresence(clientData.loans || [], loanLinkFilter);
+    if (!visible.some((l) => l.id === confirmRemoveLoanLinkContextId)) {
+      setConfirmRemoveLoanLinkContextId(null);
+    }
+  }, [clientData.loans, loanLinkFilter, confirmRemoveLoanLinkContextId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -215,6 +230,7 @@ const ClientView = ({
   };
 
   const handleDeleteLoanClick = (loanId) => {
+    setConfirmRemoveLoanLinkContextId(null);
     if (settings.confirmDeleteLoan) {
       setConfirmDeleteLoanId(loanId);
     } else {
@@ -267,6 +283,35 @@ const ClientView = ({
     );
     setEditingLoan(null);
     showToast('✅ Contrato editado!');
+  };
+
+  const handleAnnotateLoanWithClientContext = (loanId) => {
+    onUpdateClients((clients) =>
+      clients.map((c) => {
+        if (c.id !== clientData.id) return c;
+        return {
+          ...c,
+          loans: c.loans.map((l) =>
+            l.id === loanId ? annotateLoanFromClientContext(l, c.linkContext) : l
+          ),
+        };
+      })
+    );
+    showToast('✅ Anotação local adicionada ao contrato.');
+  };
+
+  const executeRemoveLoanLinkContext = (loanId) => {
+    onUpdateClients((clients) =>
+      clients.map((c) => {
+        if (c.id !== clientData.id) return c;
+        return {
+          ...c,
+          loans: c.loans.map((l) => (l.id === loanId ? removeLoanLinkContext(l) : l)),
+        };
+      })
+    );
+    setConfirmRemoveLoanLinkContextId(null);
+    showToast('✅ Anotação local removida do contrato.');
   };
 
   const handleAddPayment = (e) => {
@@ -959,20 +1004,81 @@ const ClientView = ({
                         )}
                       </div>
                     )}
+
+                    {(() => {
+                      const { canAdd, canRemove } = getLoanLinkContextActionState(
+                        loan,
+                        clientData.linkContext
+                      );
+                      const showBlock =
+                        canAdd || canRemove || confirmRemoveLoanLinkContextId === loan.id;
+                      if (!showBlock) return null;
+
+                      if (confirmRemoveLoanLinkContextId === loan.id) {
+                        return (
+                          <div className="mt-2 rounded-design-md border border-edge bg-surface/90 p-2.5">
+                            <p className="text-xs leading-relaxed text-content-muted">
+                              Remover a anotação local deste contrato? Valores, saldo e pagamentos não
+                              mudam; a alteração fica neste aparelho.
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmRemoveLoanLinkContextId(null)}
+                                className="min-h-10 min-w-[5rem] rounded-design-md border border-edge bg-surface px-2 text-xs font-semibold text-content transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                              >
+                                Cancelar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => executeRemoveLoanLinkContext(loan.id)}
+                                className="min-h-10 min-w-[5rem] rounded-design-md border border-info/30 bg-info-soft/40 px-2 text-xs font-semibold text-content transition-colors hover:bg-info-soft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                              >
+                                Remover
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="mt-2 flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3 sm:gap-y-1">
+                          {canAdd && (
+                            <button
+                              type="button"
+                              onClick={() => handleAnnotateLoanWithClientContext(loan.id)}
+                              className="min-h-10 w-full text-left text-xs font-semibold text-info underline decoration-info/30 underline-offset-2 transition-colors hover:text-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:min-w-0 sm:w-auto"
+                            >
+                              Anotar com o vínculo atual do cliente
+                            </button>
+                          )}
+                          {canRemove && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmRemoveLoanLinkContextId(loan.id)}
+                              className="min-h-10 w-full text-left text-xs font-semibold text-content-muted underline decoration-content-muted/40 underline-offset-2 transition-colors hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:min-w-0 sm:w-auto"
+                            >
+                              Remover anotação
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex shrink-0 gap-2 text-content-muted">
                     <button
                       type="button"
                       aria-label="Editar contrato"
-                      onClick={() =>
+                      onClick={() => {
+                        setConfirmRemoveLoanLinkContextId(null);
                         setEditingLoan({
                           id: loan.id,
                           date: loan.date,
                           amount: loan.amount,
                           interestRate: loan.interestRate != null ? loan.interestRate : 10,
-                        })
-                      }
+                        });
+                      }}
                       className="inline-flex min-h-10 min-w-10 items-center justify-center rounded-design-md text-content-muted transition-colors hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                     >
                       <IconEdit />
