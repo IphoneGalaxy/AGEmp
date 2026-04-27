@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { formatMoney, formatDate, formatDateTime, formatRate } from '../utils/format';
 import { formatLocalVinculoLineFromContext } from '../utils/localLinkContextOrganize';
 import {
   canInheritLinkContextToLoan,
   buildLoanWithOptionalLinkContext,
 } from '../utils/loanLinkContextInherit';
+import {
+  LOAN_LINK_LIST_FILTER,
+  filterLoansByLinkContextPresence,
+  countLoansWithLinkContext,
+  countLoansWithoutLinkContext,
+  shouldShowLoanLinkContextFilter,
+} from '../utils/loanLinkContextFilter';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -67,6 +74,35 @@ const ClientView = ({
   const [platformLinksError, setPlatformLinksError] = useState(null);
   const [pendingLinkId, setPendingLinkId] = useState('');
   const [linkContextBusy, setLinkContextBusy] = useState(false);
+  const [loanLinkFilter, setLoanLinkFilter] = useState(LOAN_LINK_LIST_FILTER.ALL);
+
+  const allLoans = clientData.loans || [];
+  const linkedLoanCount = countLoansWithLinkContext(allLoans);
+  const unlinkedLoanCount = countLoansWithoutLinkContext(allLoans);
+  const showLoanLinkFilter = shouldShowLoanLinkContextFilter(allLoans);
+  const visibleLoans = useMemo(
+    () => filterLoansByLinkContextPresence(clientData.loans || [], loanLinkFilter),
+    [clientData.loans, loanLinkFilter]
+  );
+
+  const loanFilterButtonClass = (active) =>
+    `inline-flex min-h-[40px] flex-1 items-center justify-center rounded-design-md px-2 text-xs font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:text-sm ${
+      active
+        ? 'bg-surface text-info shadow-design-sm ring-1 ring-inset ring-info/35'
+        : 'bg-transparent text-content-muted hover:bg-surface/80'
+    }`;
+
+  useEffect(() => {
+    setLoanLinkFilter(LOAN_LINK_LIST_FILTER.ALL);
+  }, [clientData.id]);
+
+  useEffect(() => {
+    if (!editingLoan) return;
+    const visible = filterLoansByLinkContextPresence(clientData.loans || [], loanLinkFilter);
+    if (!visible.some((l) => l.id === editingLoan.id)) {
+      setEditingLoan(null);
+    }
+  }, [clientData.loans, loanLinkFilter, editingLoan?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -739,18 +775,72 @@ const ClientView = ({
 
       <h3 className="mb-3 text-lg font-semibold text-content">Contratos em Aberto</h3>
 
-      {/* Lista de contratos */}
-      <div className="space-y-4">
-        {clientData.loans.map((loan) => {
-          const loanRateDisplay = formatRate(loan.interestRate != null ? loan.interestRate : 10);
-
-          return (
-            <div
-              key={loan.id}
-              className={`overflow-hidden rounded-design-lg border bg-surface shadow-design-sm ${
-                loan.isPaidOff ? 'border-success/40 opacity-80' : 'border-edge'
-              }`}
+      {showLoanLinkFilter && (
+        <div className="mb-3 rounded-design-lg border border-edge bg-surface-muted/40 p-3 shadow-design-sm">
+          <p className="mb-2 text-xs leading-relaxed text-content-muted">
+            Filtro visual dos contratos; totais e dívida acima consideram o cliente inteiro.
+          </p>
+          <div
+            className="flex flex-col gap-2 sm:flex-row sm:gap-1"
+            role="group"
+            aria-label="Filtro por anotação no contrato"
+          >
+            <button
+              type="button"
+              onClick={() => setLoanLinkFilter(LOAN_LINK_LIST_FILTER.ALL)}
+              className={loanFilterButtonClass(loanLinkFilter === LOAN_LINK_LIST_FILTER.ALL)}
             >
+              Todos ({allLoans.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoanLinkFilter(LOAN_LINK_LIST_FILTER.LINKED)}
+              className={loanFilterButtonClass(loanLinkFilter === LOAN_LINK_LIST_FILTER.LINKED)}
+            >
+              Com anotação ({linkedLoanCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoanLinkFilter(LOAN_LINK_LIST_FILTER.UNLINKED)}
+              className={loanFilterButtonClass(loanLinkFilter === LOAN_LINK_LIST_FILTER.UNLINKED)}
+            >
+              Sem anotação ({unlinkedLoanCount})
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de contratos (filtrada só na tela) */}
+      <div className="space-y-4">
+        {allLoans.length > 0 &&
+        visibleLoans.length === 0 &&
+        loanLinkFilter !== LOAN_LINK_LIST_FILTER.ALL ? (
+          <div
+            className="rounded-design-lg border border-dashed border-edge bg-surface-muted/30 p-6 text-center"
+            role="status"
+          >
+            <p className="text-sm text-content-muted">
+              Nenhum contrato corresponde a este filtro.
+            </p>
+            <button
+              type="button"
+              onClick={() => setLoanLinkFilter(LOAN_LINK_LIST_FILTER.ALL)}
+              className="mt-3 min-h-10 cursor-pointer text-sm font-semibold text-info underline decoration-info/30 underline-offset-2 transition-colors hover:text-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            >
+              Ver todos os contratos
+            </button>
+          </div>
+        ) : (
+          visibleLoans.map((loan) => {
+            const loanRateDisplay = formatRate(loan.interestRate != null ? loan.interestRate : 10);
+
+            return (
+              <div
+                key={loan.id}
+                className={`overflow-hidden rounded-design-lg border bg-surface shadow-design-sm ${
+                  loan.isPaidOff ? 'border-success/40 opacity-80' : 'border-edge'
+                }`}
+              >
               {/* Cabeçalho: edição / exclusão / normal */}
               {editingLoan && editingLoan.id === loan.id ? (
                 <form
@@ -1133,8 +1223,9 @@ const ClientView = ({
               </div>
             </div>
           );
-        })}
-        {clientData.loans.length === 0 && (
+        })
+        )}
+        {allLoans.length === 0 && (
           <p className="py-10 text-center text-sm text-content-muted">Nenhum contrato ativo.</p>
         )}
       </div>
