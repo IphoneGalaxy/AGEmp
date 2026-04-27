@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { formatMoney, formatDate, formatDateTime, formatRate } from '../utils/format';
 import { formatLocalVinculoLineFromContext } from '../utils/localLinkContextOrganize';
+import {
+  canInheritLinkContextToLoan,
+  buildLoanWithOptionalLinkContext,
+} from '../utils/loanLinkContextInherit';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -42,6 +46,9 @@ const ClientView = ({
   const [newLoanDate, setNewLoanDate] = useState(new Date().toISOString().split('T')[0]);
   const [newLoanRate, setNewLoanRate] = useState(
     settings.defaultInterestRate !== '' ? settings.defaultInterestRate : 10
+  );
+  const [inheritLinkContextOnNewLoan, setInheritLinkContextOnNewLoan] = useState(
+    canInheritLinkContextToLoan(clientData.linkContext)
   );
 
   const [payingLoanId, setPayingLoanId] = useState(null);
@@ -95,6 +102,10 @@ const ClientView = ({
     };
   }, [user?.uid]);
 
+  useEffect(() => {
+    setInheritLinkContextOnNewLoan(canInheritLinkContextToLoan(clientData.linkContext));
+  }, [clientData.linkContext]);
+
   // ==================== HANDLERS ====================
 
   const handleDeleteClientClick = () => {
@@ -127,19 +138,28 @@ const ClientView = ({
       return;
     }
 
+    const includeLoanLinkContext =
+      inheritLinkContextOnNewLoan && canInheritLinkContextToLoan(clientData.linkContext);
+
     onUpdateClients((clients) =>
       clients.map((c) => {
         if (c.id === clientData.id) {
+          const newLoan = buildLoanWithOptionalLinkContext({
+            loan: {
+              id: generateId(),
+              date: newLoanDate,
+              amount: amountToLend,
+              interestRate: rate,
+              payments: [],
+            },
+            clientLinkContext: c.linkContext,
+            includeLinkContext: includeLoanLinkContext,
+          });
+
           return {
             ...c,
             loans: [
-              {
-                id: generateId(),
-                date: newLoanDate,
-                amount: amountToLend,
-                interestRate: rate,
-                payments: [],
-              },
+              newLoan,
               ...c.loans,
             ],
           };
@@ -149,8 +169,13 @@ const ClientView = ({
     );
     setNewLoanAmount('');
     setNewLoanRate(settings.defaultInterestRate !== '' ? settings.defaultInterestRate : 10);
+    setInheritLinkContextOnNewLoan(canInheritLinkContextToLoan(clientData.linkContext));
     setShowNewLoanForm(false);
-    showToast('💸 Empréstimo registrado!');
+    showToast(
+      includeLoanLinkContext
+        ? '💸 Empréstimo registrado com anotação local de vínculo.'
+        : '💸 Empréstimo registrado!'
+    );
   };
 
   const handleDeleteLoanClick = (loanId) => {
@@ -414,6 +439,7 @@ const ClientView = ({
 
   const localLink = clientData.linkContext;
   const vinculoLineLocal = localLink ? formatLocalVinculoLineFromContext(localLink) : '';
+  const canInheritLoanLinkContext = canInheritLinkContextToLoan(localLink);
   const anotadoEmLine =
     localLink?.associatedAt && typeof localLink.associatedAt === 'string'
       ? `Anotado em ${formatDateTime(localLink.associatedAt)}`
@@ -673,6 +699,24 @@ const ClientView = ({
                 <span className="text-sm font-medium text-content-muted">%</span>
               </div>
             </div>
+            {canInheritLoanLinkContext && (
+              <label
+                htmlFor="inherit-link-context-on-loan"
+                className="flex cursor-pointer items-start gap-3 rounded-design-md border border-info/30 bg-info-soft/30 px-3 py-2.5"
+              >
+                <input
+                  id="inherit-link-context-on-loan"
+                  type="checkbox"
+                  checked={inheritLinkContextOnNewLoan}
+                  onChange={(e) => setInheritLinkContextOnNewLoan(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-info focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                />
+                <span className="text-xs leading-relaxed text-content-soft">
+                  Herdar anotação de vínculo deste cliente neste contrato (só neste aparelho; não
+                  envia financeiro nem cria vínculo novo na plataforma).
+                </span>
+              </label>
+            )}
           </div>
 
           <div className="mt-5 flex gap-2">
@@ -804,6 +848,14 @@ const ClientView = ({
                       {displayMoney(loan.amount)}
                     </p>
                     <p className="mt-0.5 text-xs text-content-muted">Taxa {loanRateDisplay}</p>
+                    {loan.linkContext && (
+                      <p
+                        className="mt-1.5 line-clamp-2 text-xs text-info"
+                        title="Anotação local do contrato; não indica situação de pagamento"
+                      >
+                        Contrato anotado: {formatLocalVinculoLineFromContext(loan.linkContext)}
+                      </p>
+                    )}
                     {!loan.isPaidOff && (
                       <div className="mt-2">
                         {loan.isLoanOK ? (

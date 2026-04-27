@@ -163,6 +163,32 @@ describe('normalizeClients', () => {
       expect(result[0].loans[0].interestRate).toBe(8.5);
     });
 
+    it('preserva linkContext opcional no empréstimo', () => {
+      const client = {
+        id: 'c1',
+        name: 'Com contrato anotado',
+        loans: [
+          {
+            id: 'l1',
+            date: '2025-01-01',
+            amount: 1000,
+            interestRate: 8.5,
+            payments: [],
+            linkContext: {
+              version: 1,
+              linkId: 'supplier-1__client-1',
+              supplierId: 'supplier-1',
+              clientId: 'client-1',
+              associatedAt: '2026-04-26T12:00:00.000Z',
+            },
+          },
+        ],
+      };
+      const result = normalizeClients([client]);
+
+      expect(result[0].loans[0].linkContext).toEqual(client.loans[0].linkContext);
+    });
+
     it('preserva interestRate = 0 (sem juros)', () => {
       const client = {
         id: 'c1',
