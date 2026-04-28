@@ -17,6 +17,7 @@ import {
   getLoanLinkContextActionState,
   removeLoanLinkContext,
 } from '../utils/loanLinkContextManage';
+import { getLoanLinkContextForPaymentDisplay } from '../utils/paymentLinkContextDisplay';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -1293,6 +1294,18 @@ const ClientView = ({
                                   Juros: {displayMoney(p.interestPaid)} | Abateu:{' '}
                                   {displayMoney(p.amortized)}
                                 </p>
+                                {(() => {
+                                  const plc = getLoanLinkContextForPaymentDisplay(loan);
+                                  if (!plc) return null;
+                                  return (
+                                    <p
+                                      className="mt-1 line-clamp-2 text-[11px] leading-snug text-info/90"
+                                      title="Anotação local do contrato; não indica situação do pagamento"
+                                    >
+                                      Vínculo do contrato: {formatLocalVinculoLineFromContext(plc)}
+                                    </p>
+                                  );
+                                })()}
                               </div>
                               <div className="flex shrink-0 gap-1">
                                 <button
