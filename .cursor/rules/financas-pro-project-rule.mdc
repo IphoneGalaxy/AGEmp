@@ -8,6 +8,10 @@ alwaysApply: true
 
 # Project Rule — AGEmp / Finanças Pro
 
+## Handoff mestre (contexto vivo)
+
+Antes de assumir trechos históricos de “estado atual” nesta rule, consultar **`docs/HANDOFF_MASTER.md`** — continuidade entre chats, após limite de contexto e entre fases. Em divergência, prevalecem o **código no repositório** e o **HANDOFF** mais recente (commit/tag indicados lá).
+
 ## Identidade do projeto
 Este projeto é um app web/PWA de controle de empréstimos pessoais chamado **Finanças Pro**.
 
