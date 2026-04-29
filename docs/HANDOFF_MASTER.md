@@ -139,7 +139,7 @@ A diretriz central do projeto continua sendo:
 
 A trilha de `linkContext` já foi consolidada em:
 
-**cliente → contrato → exibição derivada no pagamento**
+**cliente → contrato → exibição derivada no pagamento** (mais contagens operacionais locais derivadas por `linkId` no refinamento da lista de clientes, sem novo campo persistente nem alteração em `calculations.js`)
 
 sempre como:
 
@@ -163,14 +163,15 @@ sempre como:
 - `lkg-2026-04-26-loan-linkcontext-inherit`
 - `lkg-2026-04-26-loan-linkcontext-consumption`
 - `lkg-2026-04-27-loan-linkcontext-manual`
-- **`lkg-2026-04-27-payment-linkcontext-display`** ← base estável principal atual.
+- `lkg-2026-04-27-payment-linkcontext-display` (antecessor imediato; commit `e0de30c`)
+- **`lkg-2026-04-28-link-operational-view`** ← base estável principal atual.
 
 ### Base estável principal atual
 
 A base estável principal recomendada neste momento é:
 
-- **`lkg-2026-04-27-payment-linkcontext-display`**
-- **commit:** `e0de30c`
+- **`lkg-2026-04-28-link-operational-view`**
+- **commit:** `28f7936`
 
 ### Até onde a trilha já foi consolidada
 
@@ -178,6 +179,7 @@ A trilha consolidada atual vai:
 
 - da associação local no cliente;
 - até a visibilidade do vínculo na lista de pagamentos;
+- e, a partir da base atual, até **visão operacional derivada por vínculo** no refinamento da lista de clientes (contagens locais por `linkId` em [`linkOperationalDerive.js`](../src/utils/linkOperationalDerive.js)); ver [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md);
 - sempre sem sync financeiro remoto;
 - e sem `payment.linkContext` persistido.
 
@@ -223,9 +225,11 @@ Existe validação manual prática recorrente ao longo das fases recentes e prom
 
 ### Observação importante
 
-O que **não** está formalizado de forma única neste momento é uma **matriz QA manual consolidada** em um só documento.
+O que **não** está formalizado de forma única neste momento é uma **matriz QA manual única** cobrindo **todo** o produto ponta a ponta.
 
-Isso **não** significa ausência de validação prática, apenas ausência de registro formal único. Essa nuance deve ser preservada para não rebaixar a leitura do estado do projeto.
+Já existe, para a fatia de **visão operacional por vínculo**, o checklist específico em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md), alinhado ao LKG base atual — isso não substitui uma matriz geral quando for definida.
+
+Isso **não** significa ausência de validação prática, apenas ausência de registro formal único abrangendo tudo.
 
 ---
 
@@ -260,7 +264,8 @@ Continuam fora do escopo atual:
 #### Cliente — `client.linkContext`
 
 - primeiro portador do contexto;
-- usado na lista, refinamento, lote e heranças.
+- usado na lista, refinamento, lote e heranças;
+- onde implementado (`linkOperationalDerive`), contagens operacionais locais derivadas por `linkId` no refinamento da lista (sem novo campo persistido em pagamento).
 
 #### Contrato — `loan.linkContext`
 
@@ -292,7 +297,7 @@ O próximo passo natural **não** deve ser assumido automaticamente como impleme
 
 ### Caminho mais conservador e correto
 
-- consolidar um QA guiado curto cobrindo:
+- consolidar QA guiado (incluída a fatia de vínculo em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md)); quando útil, unificar numa futura **matriz geral única** cobrindo também:
   - cliente
   - contrato
   - pagamento
@@ -356,6 +361,10 @@ Afeta partição:
 ### `src/components/ClientView.jsx`
 
 Maior superfície de UX e fluxos financeiros do projeto.
+
+### `src/utils/linkOperationalDerive.js`
+
+Deriva apenas leitura operacional/local por vínculo; não substitui o motor nem o storage financeiro central.
 
 ### `public/sw.js`
 
@@ -424,3 +433,4 @@ Ele funciona como:
 | Data | Nota |
 |------|------|
 | 2026-04-28 | Substituição do conteúdo pelo handoff master oficial (seção Status + ordem de fontes + seções 1–13 revisadas). |
+| 2026-04-29 | Base estável atual: LKG `lkg-2026-04-28-link-operational-view` · commit `28f7936`; trilha e QA parcial atualizados (visão operacional local por vínculo). |

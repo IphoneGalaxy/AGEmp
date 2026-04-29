@@ -37,8 +37,8 @@ Sem prometer financeiro na nuvem, sem alterar [`src/utils/calculations.js`](../s
 ## 3. Mini-ADR
 
 | Campo | Conteúdo |
-|-------|------------|
-| **Status** | Aceito para implementação incremental |
+|-------|----------|
+| **Status** | Implementado; base estável `lkg-2026-04-28-link-operational-view` · commit `28f7936` |
 | **Contexto** | `linkContext` v1 consolidado por camada conforme HANDOFF/CHECKPOINT; pagamento apenas derivado do contrato. |
 | **Decisão** | Implementar primeiro a **visão operacional local por vínculo** como derivações puras + microcopy sobre a lista já existente. |
 | **Consequências** | Mais valor operacional por baixo risco; dados antigos continuam válidos (`linkContext` opcional); `calculations.js` intocado; sem novo campo persistente em pagamento. |
@@ -49,3 +49,4 @@ Sem prometer financeiro na nuvem, sem alterar [`src/utils/calculations.js`](../s
 | Data | Nota |
 |------|------|
 | 2026-04-29 | Decisão de recorte e encaixe na aba Clientes; utilitários puros + testes. |
+| 2026-04-29 | Promovido a LKG `lkg-2026-04-28-link-operational-view` (`28f7936`); `HANDOFF_MASTER` / `CHECKPOINT_CHECKLIST` atualizados como base estável. |

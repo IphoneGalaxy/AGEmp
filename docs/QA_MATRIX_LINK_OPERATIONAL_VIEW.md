@@ -1,5 +1,7 @@
 # Matriz QA — visão operacional local por vínculo
 
+**Referência de materialização:** tag anotada **`lkg-2026-04-28-link-operational-view`** · commit **`28f7936`**.
+
 Checklist regressivo quando a decisão consolidada em [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md) estiver materializada nas telas/utils.
 
 Guardrails obrigatórios (critérios de falha grave):
@@ -46,3 +48,4 @@ Guardrails obrigatórios (critérios de falha grave):
 | Data | Nota |
 |------|------|
 | 2026-04-29 | Checklist inicial alinhado a `LINK_OPERATIONAL_VIEW`. |
+| 2026-04-29 | Alinhado ao LKG `lkg-2026-04-28-link-operational-view` (`28f7936`). |

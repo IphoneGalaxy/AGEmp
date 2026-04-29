@@ -14,7 +14,7 @@ Leitura recomendada junto com:
 4. Project Rule (guardrail: limites, cautela, direção futura — trechos de “estado atual” na rule podem estar defasados; priorizar código + handoff)  
 5. `DESIGN.md`, `BRAND.md`, `PROJECT_OVERRIDES.md` (UX/UI)
 
-**Base estável de referência (LKG):** `lkg-2026-04-27-payment-linkcontext-display` · commit `e0de30c` — confirmar com `git tag` / `git rev-parse` ao retomar.
+**Base estável de referência (LKG):** `lkg-2026-04-28-link-operational-view` · commit `28f7936` — confirmar com `git tag` / `git rev-parse` ao retomar (antecessor de referência: `lkg-2026-04-27-payment-linkcontext-display` · `e0de30c`).
 
 ---
 
@@ -106,7 +106,7 @@ Metadado local opcional (`version`, `linkId`, `supplierId`, `clientId`, `associa
 - Associação e remoção individuais; leitura no `ClientView`.
 - Microcopy clara onde aplicável.
 - Filtro por presença de anotação (Todos / Com / Sem).
-- Organização/refino por `linkId`; estados vazios e indicadores discretos na lista.
+- Organização/refino por `linkId`; estados vazios e indicadores discretos na lista; contagens operacionais locais derivadas no refinamento (cadastros, contratos, lançamentos de pagamento apenas em contratos anotados — ver `linkOperationalDerive`).
 - Criação de cliente com **herança opcional** do vínculo ativo (checkbox explícito, reversível).
 - Operações em **lote** (seleção, anotação/remoção com regras conservadoras — não sobrescrever outro vínculo sem critério explícito); seleção efêmera.
 
@@ -126,7 +126,7 @@ Metadado local opcional (`version`, `linkId`, `supplierId`, `clientId`, `associa
 
 Fluxo já consolidado no código:
 
-**cliente → contrato (`loan`) → lista de pagamentos (exibição derivada)**
+**cliente → contrato (`loan`) → lista de pagamentos (exibição derivada)** (+ visão operacional local por `linkId` no refinamento da lista de clientes, implementada no LKG atual)
 
 Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calculations.js`; **sem** sync financeiro remoto deste domínio.
 
@@ -136,10 +136,10 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 5.1. Validação técnica (automática)
 
-- `npx vitest run` estável nas fases recentes (quantidade atual de testes: validar no repo ao retomar).
+- `npx vitest run` estável nas fases recentes (ex.: ~241 testes no estado do LKG atual — validar no repo ao retomar).
 - `npm run build` após mudanças sensíveis.
 - Testes de Firebase, storage/escopo/settings/backup preservados/ampliados.
-- Testes adicionais na linha `linkContext`: modelagem, filtros cliente, organização, herança criação cliente, lote, contrato (herança/filtro/gestão), exibição em pagamentos.
+- Testes adicionais na linha `linkContext`: modelagem, filtros cliente, organização, herança criação cliente, lote, contrato (herança/filtro/gestão), exibição em pagamentos, derivações operacionais por vínculo (`linkOperationalDerive`).
 
 ### 5.2. Validação manual
 
@@ -148,7 +148,8 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 5.3. Lacuna consciente (não é ausência de QA)
 
-- **Matriz QA manual única** ainda não existe como documento consolidado; isso **não** implica falta de validação prática — apenas registro único pendente para regressão sistemática.
+- **Matriz QA manual única** cobrindo todo o produto ponta a ponta ainda não existe como documento único; já há checklist específico para a fatia **visão operacional por vínculo** em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); isso **não** equivale à matriz geral quando for definida.
+- Ausência da matriz geral **não** implica falta de validação prática — apenas falta de registro único abrangendo tudo.
 
 ---
 
@@ -220,7 +221,7 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ## 10. Condição de “trilha” satisfatória para a fatia atual
 
-A trilha **`linkContext` v1 no fluxo operacional local (cliente → contrato → exibição em pagamento)** está **consolidada** no estado do LKG referenciado acima, com motor financeiro íntegro, escopos e backups preservados.
+A trilha **`linkContext` v1 no fluxo operacional local (cliente → contrato → exibição em pagamento + refinamento com contagens locais por vínculo na lista de clientes)** está **consolidada** no estado do LKG referenciado acima, com motor financeiro íntegro, escopos e backups preservados.
 
 Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras por vínculo) exigem **fases e decisões explícitas**, não continuidade automática da mesma fatia.
 
@@ -230,11 +231,11 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Dimensão | Situação |
 |----------|----------|
-| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); testes e LKGs na linha. |
-| **Validado** | Automático recorrente + manual ao longo das fases; matriz QA única ainda opcional como documento. |
+| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); testes e LKGs na linha. |
+| **Validado** | Automático recorrente + manual ao longo das fases; QA matriz geral única ainda opcional; existe checklist para fatia vínculo operacional. |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira. |
 | **Fora de escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco real (provável)** | Estabilização documental + QA consolidado opcional; decisão futura explícita sobre snapshot por pagamento — **não** reabrir implementação de contrato/pagamento da trilha já fechada. |
+| **Próximo foco real (provável)** | Consolidar matriz QA geral opcional; decisão futura sobre snapshot por pagamento ou sync remoto — apenas com ADR; novas superfícies por vínculo apenas derivação local. |
 
 ---
 
@@ -253,4 +254,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Data | Nota |
 |------|------|
-| 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes. |
+| 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes; promoção a LKG `lkg-2026-04-28-link-operational-view` (`28f7936`); `HANDOFF_MASTER.md` alinhado à base estável. |
