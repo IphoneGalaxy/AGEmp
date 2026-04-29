@@ -5,10 +5,13 @@ import {
   LINK_LIST_FILTER,
 } from '../utils/clientLinkListFilter';
 import {
-  listDistinctLocalLinkOptions,
   filterClientsByLocalLinkId,
   formatLocalVinculoLineFromContext,
 } from '../utils/localLinkContextOrganize';
+import {
+  listOperationalLinkOptions,
+  findOperationalLinkOption,
+} from '../utils/linkOperationalDerive';
 import {
   getLinkContextTemplateForInheritFromClients,
   buildNewClientWithOptionalLinkContext,
@@ -26,7 +29,7 @@ import {
  * Exibe:
  * - Formulário para adicionar novo cliente
  * - Filtro local opcional por presença de anotação de vínculo (linkContext)
- * - Refino opcional por vínculo específico (chave local linkId) derivado do dataset
+ * - Refino opcional por vínculo específico (`linkId`), com contagens operacionais derivadas (cadastros/contratos/registros pag. em contratos anotados)
  * - Opcional: ao criar cliente com filtro de vínculo ativo, herdar anotação local (reversível antes de salvar)
  * - Modo de seleção em lote: anotar com o vínculo ativo do refinamento ou remover anotação (local, sem nuvem)
  * - Lista de clientes com status de pagamento e dívida total
@@ -71,9 +74,14 @@ const ClientsList = ({
     [processedClients, linkedCount]
   );
 
-  const distinctLocalLinks = useMemo(
-    () => listDistinctLocalLinkOptions(processedClients),
+  const operationalLinks = useMemo(
+    () => listOperationalLinkOptions(processedClients),
     [processedClients]
+  );
+
+  const operationalSnapshot = useMemo(
+    () => findOperationalLinkOption(operationalLinks, localLinkIdFilter),
+    [operationalLinks, localLinkIdFilter]
   );
 
   const baseFiltered = useMemo(
@@ -321,7 +329,7 @@ const ClientsList = ({
             </button>
           </div>
 
-          {distinctLocalLinks.length > 0 && linkFilter !== LINK_LIST_FILTER.UNLINKED && (
+          {operationalLinks.length > 0 && linkFilter !== LINK_LIST_FILTER.UNLINKED && (
             <div className="mt-3">
               <label
                 htmlFor="client-list-link-id-filter"
@@ -337,16 +345,25 @@ const ClientsList = ({
                 aria-label="Refinar por vínculo anotado"
               >
                 <option value="">
-                  Qualquer — {distinctLocalLinks.length} vínculo
-                  {distinctLocalLinks.length === 1 ? '' : 's'} distinto
-                  {distinctLocalLinks.length === 1 ? '' : 's'} neste aparelho
+                  Qualquer — {operationalLinks.length} vínculo
+                  {operationalLinks.length === 1 ? '' : 's'} distinto
+                  {operationalLinks.length === 1 ? '' : 's'} neste aparelho
                 </option>
-                {distinctLocalLinks.map((opt) => (
+                {operationalLinks.map((opt) => (
                   <option key={opt.linkId} value={opt.linkId}>
-                    {opt.label} — {opt.count} cliente{opt.count === 1 ? '' : 's'}
+                    {opt.label} · {opt.clientCount} cliente(s) · {opt.loanCount} contr. ·{' '}
+                    {opt.paymentCount} pag. (só contr. anotados)
                   </option>
                 ))}
               </select>
+              {localLinkIdFilter && operationalSnapshot && (
+                <p className="mt-2 text-[11px] leading-snug text-content-muted">
+                  Neste vínculo (somente dados locais deste aparelho): cadastros com anotação no cliente{' '}
+                  {operationalSnapshot.clientCount}, contratos anotados {operationalSnapshot.loanCount};{' '}
+                  {operationalSnapshot.paymentCount} lançamentos registados apenas em contratos com esta
+                  anotação — não existe pagamento próprio nem sync remoto financeiro.
+                </p>
+              )}
             </div>
           )}
 

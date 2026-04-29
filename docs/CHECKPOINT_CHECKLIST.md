@@ -199,7 +199,7 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 9.1. Próximo foco conservador (imediato, sem nova feature obrigatória)
 
-- Opcionalmente **formalizar matriz QA única** (checklist curto: dois escopos, cliente → contrato → pagamento, backup/import, fluxos de conta/vínculo).
+- Opcionalmente **formalizar matriz QA única** (checklist curto: dois escopos, cliente → contrato → pagamento, backup/import, fluxos de conta/vínculo). **Pacote relacionado já iniciado:** [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) + decisão/recorte [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md).
 - Manter documentos vivos (`HANDOFF_MASTER`, este checkpoint) atualizados ao fechar fases ou novos LKGs.
 
 ### 9.2. Decisão de produto (quando houver demanda; **não** implementação automática)
@@ -253,4 +253,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Data | Nota |
 |------|------|
-| 2026-04-28 | Realinhamento ao código, LKG `lkg-2026-04-27-payment-linkcontext-display` e ao `HANDOFF_MASTER`; inclusão contrato + pagamento na trilha `linkContext`; atualização de próximos passos e remoção de trechos obsoletos (herança no contrato como “próxima fase”). |
+| 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes. |
