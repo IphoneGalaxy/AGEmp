@@ -950,6 +950,7 @@ const ClientView = ({
         ) : (
           visibleLoans.map((loan) => {
             const loanRateDisplay = formatRate(loan.interestRate != null ? loan.interestRate : 10);
+            const paymentDisplayLc = getLoanLinkContextForPaymentDisplay(loan);
 
             return (
               <div
@@ -1223,6 +1224,12 @@ const ClientView = ({
                         className="relative z-10 mb-4 animate-fade-in rounded-design-lg border border-edge bg-surface p-4 shadow-design-sm"
                       >
                         <p className="mb-3 text-sm font-semibold text-content">Novo Pagamento</p>
+                        {paymentDisplayLc && (
+                          <p className="mb-3 text-[11px] leading-relaxed text-content-muted">
+                            O lançamento não guarda vínculo próprio neste aparelho. Depois de salvo, a lista pode
+                            mostrar a anotação local atual do contrato só como leitura auxiliar.
+                          </p>
+                        )}
                         <div className="mb-3 flex gap-2">
                           <div className="w-[38%] min-w-0 space-y-1">
                             <p className="text-xs font-medium text-content-muted">Data</p>
@@ -1270,8 +1277,13 @@ const ClientView = ({
                 {/* Lista de pagamentos */}
                 {loan.processedPayments.length > 0 && (
                   <div className="mt-4 border-t border-edge pt-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                      Pagamentos:
+                    <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                      Pagamentos
+                    </p>
+                    <p className="mb-3 text-[11px] leading-relaxed text-content-muted">
+                      {paymentDisplayLc
+                        ? 'Sem vínculo próprio por pagamento. A etiqueta em cada item espelha a anotação local atual do contrato neste aparelho; pode mudar se você alterar o contrato, sem alterar valores financeiros.'
+                        : 'Sem anotação local neste contrato — os lançamentos não exibem vínculo.'}
                     </p>
                     <div className="space-y-2">
                       {[...loan.processedPayments].reverse().map((p) => (
@@ -1287,6 +1299,12 @@ const ClientView = ({
                               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
                                 Editar pagamento
                               </p>
+                              {paymentDisplayLc && (
+                                <p className="mb-2 text-[11px] leading-relaxed text-content-muted">
+                                  Vínculo segue sendo apenas leitura derivada do contrato neste aparelho, não
+                                  parte do pagamento salvo.
+                                </p>
+                              )}
                               <div className="mb-3 flex gap-2">
                                 <div className="w-[38%] min-w-0 space-y-1">
                                   <p className="text-xs font-medium text-content-muted">Data</p>
@@ -1373,18 +1391,15 @@ const ClientView = ({
                                   Juros: {displayMoney(p.interestPaid)} | Abateu:{' '}
                                   {displayMoney(p.amortized)}
                                 </p>
-                                {(() => {
-                                  const plc = getLoanLinkContextForPaymentDisplay(loan);
-                                  if (!plc) return null;
-                                  return (
-                                    <p
-                                      className="mt-1 line-clamp-2 text-[11px] leading-snug text-info/90"
-                                      title="Anotação local do contrato; não indica situação do pagamento"
-                                    >
-                                      Vínculo do contrato: {formatLocalVinculoLineFromContext(plc)}
-                                    </p>
-                                  );
-                                })()}
+                                {paymentDisplayLc && (
+                                  <p
+                                    className="mt-1 line-clamp-3 text-[11px] leading-snug text-info/90"
+                                    title="Leitura neste aparelho derivada da anotação local atual deste contrato; não grava vínculo no pagamento nem indica situação do lançamento na nuvem."
+                                  >
+                                    <span className="text-content-muted">Espelho do contrato · </span>
+                                    {formatLocalVinculoLineFromContext(paymentDisplayLc)}
+                                  </p>
+                                )}
                               </div>
                               <div className="flex shrink-0 gap-1">
                                 <button
