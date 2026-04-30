@@ -1,8 +1,10 @@
 # Matriz QA — visão operacional local por vínculo
 
-**Referência de materialização:** tag anotada **`lkg-2026-04-28-link-operational-view`** · commit **`28f7936`**.
+**Referência principal de materialização (lista Clientes + utils):** tag **`lkg-2026-04-28-link-operational-view`** · commit **`28f7936`**.
 
-Checklist regressivo quando a decisão consolidada em [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md) estiver materializada nas telas/utils.
+**Fechamento do bloco `ClientView` (overlay):** tag **`lkg-2026-04-30-clientview-operational-link-block-complete`** — confirmar commit com `git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete`; cobre resumo operacional, espelho em pagamentos e estados vazio/erro/divergência; antecessores úteis: `lkg-2026-04-29-clientview-operational-link-reading`, `lkg-2026-04-30-clientview-payment-derived-reading`.
+
+Checklist regressivo quando a decisão consolidada em [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md) estiver materializada nas telas/utils, **e** para regressão específica do overlay [`ClientView.jsx`](../src/components/ClientView.jsx) após mudanças na linha de vínculo.
 
 Guardrails obrigatórios (critérios de falha grave):
 
@@ -17,7 +19,7 @@ Guardrails obrigatórios (critérios de falha grave):
 
 - Contagem por `linkId` combina apenas `client.linkContext` e `loan.linkContext`.
 - Contratos só em `loan`; pagamentos só entram como **quantidade** de itens em `loan.payments` nos contratos anotados com aquele vínculo.
-- `linkId` só em préstimos (sem cliente anotado) aparece nas opções; rótulo e contagens devem faz sentido.
+- `linkId` só em préstimos (sem cliente anotado) aparece nas opções; rótulo e contagens devem fazer sentido.
 
 ## 2. Aba Clientes (`ClientsList`)
 
@@ -42,10 +44,20 @@ Guardrails obrigatórios (critérios de falha grave):
 
 ## 6. Automação
 
-- `npx vitest run` incluindo novos testes de `linkOperationalDerive`.
+- `npx vitest run` incluindo novos testes de `linkOperationalDerive`, `clientLoanLinkContextSummary` e `paymentLinkContextDisplay`.
 - `npm run build`.
+
+## 7. Overlay `ClientView` — leitura operacional por vínculo
+
+- Card opcional de vínculo deixa claro que é **neste aparelho** e não envia financeiro remoto.
+- **Leitura operacional local:** contagens e mensagens batem com contratos anotados vs `client.linkContext` (incluindo “todos sem anotação”, só cliente anotado, só contratos anotados).
+- **Divergência:** quando contratos usam `linkId` diferente do cliente, há aviso explícito como organização local (sem alterar totais).
+- **Lista remota** (`listUserLinks`): loading; erro com `role="alert"` e texto de que o financeiro local segue ok; vazio sem vínculos aprovados; select + anotar/remover no cliente.
+- **Contratos:** rótulo por relação cliente/contrato; atalho “anotar com vínculo atual do cliente” quando aplicável; filtros Com/Sem anotação com lista vazia tratada (mensagem + voltar a “Ver todos”).
+- **Pagamentos:** cabeçalho/formulário deixam claro **espelho do contrato**; cada item usa apenas `loan.linkContext` via helper dedicado; mudança posterior no contrato **altera rótulo** dos pagamentos históricos (comportamento esperado — ver [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md)).
 
 | Data | Nota |
 |------|------|
 | 2026-04-29 | Checklist inicial alinhado a `LINK_OPERATIONAL_VIEW`. |
 | 2026-04-29 | Alinhado ao LKG `lkg-2026-04-28-link-operational-view` (`28f7936`). |
+| 2026-04-30 | §7 `ClientView`; referência de fechamento `lkg-2026-04-30-clientview-operational-link-block-complete`. |

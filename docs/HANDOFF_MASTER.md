@@ -135,11 +135,24 @@ A diretriz central do projeto continua sendo:
 - exibição discreta na lista de pagamentos derivada de `loan.linkContext`;
 - sem persistir `payment.linkContext`.
 
+### 3.5. ClientView — leitura operacional local por vínculo (overlay)
+
+Bloco **formalmente encerrado** na linha documentada pelo LKG `lkg-2026-04-30-clientview-operational-link-block-complete` (ver §4).
+
+Inclui, sem alterar `calculations.js` nem persistir `payment.linkContext`:
+
+- card opcional de vínculo com linguagem **local-only** (sem prometer sync financeiro remoto);
+- **resumo operacional local** agregando contratos vs `client.linkContext` via [`clientLoanLinkContextSummary.js`](../src/utils/clientLoanLinkContextSummary.js) (contagens coerentes; mensagens para ausência total de anotação, só cliente anotado, só contratos anotados e **divergência** cliente/contrato como organização local);
+- lista remota de vínculos (`listUserLinks`) quando logado: **carregando**, **erro** (`role="alert"`), **vazio** sem vínculos aprovados e fluxo de **anotar/remover** no cliente;
+- por contrato: rótulo da relação vínculo cliente/contrato, linha formatada, divergência explícita e atalho para anotar contrato com o vínculo atual do cliente quando aplicável;
+- por pagamento: **espelho** apenas de `loan.linkContext` via [`paymentLinkContextDisplay.js`](../src/utils/paymentLinkContextDisplay.js), com copy explícito de derivação;
+- filtros de contratos **Com/Sem anotação** com lista vazia tratada na UX.
+
 ### Síntese da trilha recente
 
 A trilha de `linkContext` já foi consolidada em:
 
-**cliente → contrato → exibição derivada no pagamento** (mais contagens operacionais locais derivadas por `linkId` no refinamento da lista de clientes, sem novo campo persistente nem alteração em `calculations.js`)
+**cliente → contrato → exibição derivada no pagamento** + **overlay `ClientView`** com leitura operacional por vínculo + contagens operacionais locais por `linkId` no refinamento da lista de clientes — sempre sem novo campo persistente em pagamento nem alteração em `calculations.js`
 
 sempre como:
 
@@ -164,22 +177,26 @@ sempre como:
 - `lkg-2026-04-26-loan-linkcontext-consumption`
 - `lkg-2026-04-27-loan-linkcontext-manual`
 - `lkg-2026-04-27-payment-linkcontext-display` (antecessor imediato; commit `e0de30c`)
-- **`lkg-2026-04-28-link-operational-view`** ← base estável principal atual.
+- `lkg-2026-04-28-link-operational-view` (visão operacional na lista de clientes; commit `28f7936`)
+- `lkg-2026-04-29-clientview-operational-link-reading` (leitura operacional de contratos no `ClientView`)
+- `lkg-2026-04-30-clientview-payment-derived-reading` (espelho explícito em pagamentos)
+- **`lkg-2026-04-30-clientview-operational-link-block-complete`** ← base estável principal atual (fechamento documental + código do bloco `ClientView`).
 
 ### Base estável principal atual
 
 A base estável principal recomendada neste momento é:
 
-- **`lkg-2026-04-28-link-operational-view`**
-- **commit:** `28f7936`
+- **`lkg-2026-04-30-clientview-operational-link-block-complete`**
+- **commit:** o mesmo apontado pela tag (`git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete`).
 
 ### Até onde a trilha já foi consolidada
 
 A trilha consolidada atual vai:
 
 - da associação local no cliente;
-- até a visibilidade do vínculo na lista de pagamentos;
-- e, a partir da base atual, até **visão operacional derivada por vínculo** no refinamento da lista de clientes (contagens locais por `linkId` em [`linkOperationalDerive.js`](../src/utils/linkOperationalDerive.js)); ver [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md);
+- até a visibilidade do vínculo na lista de pagamentos (derivada do contrato);
+- até **visão operacional derivada por vínculo** no refinamento da lista de clientes (contagens locais por `linkId` em [`linkOperationalDerive.js`](../src/utils/linkOperationalDerive.js)); ver [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md);
+- até o **overlay `ClientView`**: resumo operacional, lista remota com estados vazio/erro, divergência cliente/contrato e espelho em pagamentos conforme [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md);
 - sempre sem sync financeiro remoto;
 - e sem `payment.linkContext` persistido.
 
@@ -227,7 +244,7 @@ Existe validação manual prática recorrente ao longo das fases recentes e prom
 
 Existe uma **matriz QA manual geral mínima**: [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — cobre ponta‑a‑ponta do produto; serve como registro regressivo oficial complementar aos testes automatizados e ao checklist específico da fatia vínculo abaixo.
 
-Já existe, para a fatia de **visão operacional por vínculo**, o checklist específico em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md), alinhado ao LKG base atual — esse documento específico **não deve ser confundido** com a cobertura geral.
+Já existe, para a fatia de **visão operacional por vínculo**, o checklist específico em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) — atualizado com §7 (`ClientView`) e referência ao LKG de fechamento do bloco; esse documento específico **não deve ser confundido** com a cobertura geral.
 
 Critérios de saída e entrada formal da governança pós-consolidação estão declarados dentro de **`QA_MATRIX_GENERAL.md`**.
 
@@ -369,6 +386,14 @@ Maior superfície de UX e fluxos financeiros do projeto.
 
 Deriva apenas leitura operacional/local por vínculo; não substitui o motor nem o storage financeiro central.
 
+### `src/utils/clientLoanLinkContextSummary.js`
+
+Agrega leitura operacional local **no `ClientView`** (contratos vs `client.linkContext`); não altera valores financeiros.
+
+### `src/utils/paymentLinkContextDisplay.js`
+
+Somente leitura para UI de pagamentos a partir de `loan.linkContext`; **não** persiste `payment.linkContext`.
+
 ### `public/sw.js`
 
 Deve continuar sem cache agressivo de dados financeiros dinâmicos.
@@ -438,3 +463,4 @@ Ele funciona como:
 | 2026-04-28 | Substituição do conteúdo pelo handoff master oficial (seção Status + ordem de fontes + seções 1–13 revisadas). |
 | 2026-04-29 | Base estável atual: LKG `lkg-2026-04-28-link-operational-view` · commit `28f7936`; trilha e QA parcial atualizados (visão operacional local por vínculo). |
 | 2026-04-29 | Consolidação pós‑LKG documental oficial: nova matriz geral QA mínima + ADR campo pagamento só derivado conforme atual; atualizado §6/handoff relacionados. |
+| 2026-04-30 | Fechamento formal do bloco **ClientView** — leitura operacional local por vínculo (resumo, contratos, pagamentos derivados, estados vazio/erro, divergência); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; base estável atualizada no §4. |

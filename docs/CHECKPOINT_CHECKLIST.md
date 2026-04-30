@@ -14,7 +14,7 @@ Leitura recomendada junto com:
 4. Project Rule (guardrail: limites, cautela, direção futura — trechos de “estado atual” na rule podem estar defasados; priorizar código + handoff)  
 5. `DESIGN.md`, `BRAND.md`, `PROJECT_OVERRIDES.md` (UX/UI)
 
-**Base estável de referência (LKG):** `lkg-2026-04-28-link-operational-view` · commit `28f7936` — confirmar com `git tag` / `git rev-parse` ao retomar (antecessor de referência: `lkg-2026-04-27-payment-linkcontext-display` · `e0de30c`).
+**Base estável de referência (LKG):** `lkg-2026-04-30-clientview-operational-link-block-complete` — commit exato: `git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete` (sincronizar tags ao retomar; cadeia anterior relevante: `lkg-2026-04-28-link-operational-view` · `28f7936`; pacotes intermediários `lkg-2026-04-29-clientview-operational-link-reading`, `lkg-2026-04-30-clientview-payment-derived-reading`).
 
 ---
 
@@ -126,9 +126,11 @@ Metadado local opcional (`version`, `linkId`, `supplierId`, `clientId`, `associa
 
 Fluxo já consolidado no código:
 
-**cliente → contrato (`loan`) → lista de pagamentos (exibição derivada)** (+ visão operacional local por `linkId` no refinamento da lista de clientes, implementada no LKG atual)
+**cliente → contrato (`loan`) → lista de pagamentos (exibição derivada)** + **visão operacional local por `linkId`** no refinamento da lista de clientes + **overlay `ClientView`** com leitura operacional por vínculo (resumo local, estados de vínculo remoto vazio/erro, divergência cliente/contrato e espelho em pagamentos só a partir do contrato).
 
 Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calculations.js`; **sem** sync financeiro remoto deste domínio.
+
+**Status:** bloco `ClientView` de leitura operacional por vínculo **encerrado formalmente** para esta etapa (ver LKG atual no cabeçalho deste checkpoint).
 
 ---
 
@@ -136,7 +138,7 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 5.1. Validação técnica (automática)
 
-- `npx vitest run` estável nas fases recentes (ex.: ~241 testes no estado do LKG atual — validar no repo ao retomar).
+- `npx vitest run` estável nas fases recentes (ex.: **247** testes no fechamento `2026-04-30` do bloco `ClientView` — validar no repo ao retomar).
 - `npm run build` após mudanças sensíveis.
 - Testes de Firebase, storage/escopo/settings/backup preservados/ampliados.
 - Testes adicionais na linha `linkContext`: modelagem, filtros cliente, organização, herança criação cliente, lote, contrato (herança/filtro/gestão), exibição em pagamentos, derivações operacionais por vínculo (`linkOperationalDerive`).
@@ -220,7 +222,7 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ## 10. Condição de “trilha” satisfatória para a fatia atual
 
-A trilha **`linkContext` v1 no fluxo operacional local (cliente → contrato → exibição em pagamento + refinamento com contagens locais por vínculo na lista de clientes)** está **consolidada** no estado do LKG referenciado acima, com motor financeiro íntegro, escopos e backups preservados.
+A trilha **`linkContext` v1 no fluxo operacional local** — **cliente → contrato → exibição derivada em pagamento** + **refinamento com contagens locais por vínculo na lista de clientes** + **overlay `ClientView` com leitura operacional por vínculo** — está **consolidada e encerrada formalmente** para esta etapa no LKG referenciado acima, com motor financeiro íntegro, escopos e backups preservados.
 
 Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras por vínculo) exigem **fases e decisões explícitas**, não continuidade automática da mesma fatia.
 
@@ -230,7 +232,7 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Dimensão | Situação |
 |----------|----------|
-| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); testes e LKGs na linha. |
+| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); **bloco `ClientView`** com resumo operacional, espelho explícito em pagamentos e estados vazio/erro/divergência; testes e LKGs na linha. |
 | **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
@@ -255,3 +257,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 |------|------|
 | 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes; promoção a LKG `lkg-2026-04-28-link-operational-view` (`28f7936`); `HANDOFF_MASTER.md` alinhado à base estável. |
 | 2026-04-29 | **Consolidação pós‑LKG** documental oficial: matriz QA geral [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + ADR [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md); `HANDOFF`/checkpoint revisados. |
+| 2026-04-30 | Fechamento formal bloco **`ClientView`** (leitura operacional por vínculo); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; matriz QA vínculo estendida §7; `vitest` 247 testes + `npm run build` no fechamento. |
