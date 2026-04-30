@@ -225,11 +225,16 @@ Existe validação manual prática recorrente ao longo das fases recentes e prom
 
 ### Observação importante
 
-O que **não** está formalizado de forma única neste momento é uma **matriz QA manual única** cobrindo **todo** o produto ponta a ponta.
+Existe uma **matriz QA manual geral mínima**: [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — cobre ponta‑a‑ponta do produto; serve como registro regressivo oficial complementar aos testes automatizados e ao checklist específico da fatia vínculo abaixo.
 
-Já existe, para a fatia de **visão operacional por vínculo**, o checklist específico em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md), alinhado ao LKG base atual — isso não substitui uma matriz geral quando for definida.
+Já existe, para a fatia de **visão operacional por vínculo**, o checklist específico em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md), alinhado ao LKG base atual — esse documento específico **não deve ser confundido** com a cobertura geral.
 
-Isso **não** significa ausência de validação prática, apenas ausência de registro formal único abrangendo tudo.
+Critérios de saída e entrada formal da governança pós-consolidação estão declarados dentro de **`QA_MATRIX_GENERAL.md`**.
+
+A decisão arquitetural atual sobre **`payment.linkContext`** não persistido está em [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md).
+
+
+A partir deste documento há template explícito de regressão manual geral; preencher tabela quando houver ciclo QA formal decidido segundo critérios S1‑S4 de [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md).
 
 ---
 
@@ -297,21 +302,19 @@ O próximo passo natural **não** deve ser assumido automaticamente como impleme
 
 ### Caminho mais conservador e correto
 
-- consolidar QA guiado (incluída a fatia de vínculo em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md)); quando útil, unificar numa futura **matriz geral única** cobrindo também:
-  - cliente
-  - contrato
-  - pagamento
-  - backup/import
-  - dois escopos locais
-- só depois decidir a próxima fatia real de produto
+- Executar regressão usando [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + (opcional) [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); atualizar registros/handoff apenas se aparecer novo bloqueador formal.
+- Revisitar [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) somente quando houver novo requisito explícito (auditoria, sync eventual, decisão nova de produto) — não antecipa implementação.
+- Só depois decidir próxima fatia única produto usando critérios de entrada finais já descritos dentro da própria matriz geral.
 
 ### Decisão de produto futura relevante
 
-A próxima grande decisão de produto, quando chegar a hora, será responder:
+**Estado atual documentado oficialmente**: [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) — só espelho visual derivado do contrato; sem `payment.linkContext` persistido.
 
-**pagamentos precisam snapshot próprio no futuro ou continuam apenas como espelho visual do contrato?**
+Se no futuro o produto exigir responder à pergunta abaixo de forma nova, será preciso atualizar primeiro a própria ADR e só então discutir código/migração:
 
-Essa pergunta não deve virar implementação automática agora.
+**Pagamentos devem eventualmente ter snapshot próprio (`payment.linkContext`) ou permanecem apenas como espelho visual derivado permanente só do contrato?**
+
+Qualquer código futuro relacionado só após esse passo oficial de revisão decidida conscientemente pela governança (nunca automática só por aparecer novo chat).
 
 ---
 
@@ -434,3 +437,4 @@ Ele funciona como:
 |------|------|
 | 2026-04-28 | Substituição do conteúdo pelo handoff master oficial (seção Status + ordem de fontes + seções 1–13 revisadas). |
 | 2026-04-29 | Base estável atual: LKG `lkg-2026-04-28-link-operational-view` · commit `28f7936`; trilha e QA parcial atualizados (visão operacional local por vínculo). |
+| 2026-04-29 | Consolidação pós‑LKG documental oficial: nova matriz geral QA mínima + ADR campo pagamento só derivado conforme atual; atualizado §6/handoff relacionados. |

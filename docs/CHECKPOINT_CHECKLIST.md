@@ -148,8 +148,8 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 5.3. Lacuna consciente (não é ausência de QA)
 
-- **Matriz QA manual única** cobrindo todo o produto ponta a ponta ainda não existe como documento único; já há checklist específico para a fatia **visão operacional por vínculo** em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); isso **não** equivale à matriz geral quando for definida.
-- Ausência da matriz geral **não** implica falta de validação prática — apenas falta de registro único abrangendo tudo.
+- Existe agora matriz geral mínima em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) além da matriz específica de fatia em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md). A matriz geral ainda depende de execução/atualização quando o time designar ciclos QA manuais formais.
+- Ausência de ciclo QA manual executado num dado mês **não** implica ausência de desenvolvimento válido se testes automatizados e validações ad hoc anteriores já existirem — apenas registro operacional por data.
 
 ---
 
@@ -200,13 +200,12 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ### 9.1. Próximo foco conservador (imediato, sem nova feature obrigatória)
 
-- Opcionalmente **formalizar matriz QA única** (checklist curto: dois escopos, cliente → contrato → pagamento, backup/import, fluxos de conta/vínculo). **Pacote relacionado já iniciado:** [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) + decisão/recorte [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md).
+- Regressão assistida por [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) (mínima ponta a ponta) + opcional [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) (fatia vínculo já existente antes). Decisão atual de `payment.linkContext` apenas como derivado do contrato está em [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md).
 - Manter documentos vivos (`HANDOFF_MASTER`, este checkpoint) atualizados ao fechar fases ou novos LKGs.
 
 ### 9.2. Decisão de produto (quando houver demanda; **não** implementação automática)
 
-- Pagamentos devem ter **snapshot próprio** (`payment.linkContext`) no futuro ou permanecer **apenas espelho do contrato**?  
-  Depende de requisitos de histórico imutável e possível sync futuro — ver [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md).
+- Pagamentos permanecem apenas derivados conforme snapshot contrato atual; [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) define quando reabrir oficialmente cenário próprio campo pagamento antes de novo código relacionado aparecer aceitável segundo governança.
 
 ### 9.3. Médio prazo (direção, não compromisso de sprint)
 
@@ -232,10 +231,10 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | Dimensão | Situação |
 |----------|----------|
 | **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); testes e LKGs na linha. |
-| **Validado** | Automático recorrente + manual ao longo das fases; QA matriz geral única ainda opcional; existe checklist para fatia vínculo operacional. |
-| **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira. |
-| **Fora de escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco real (provável)** | Consolidar matriz QA geral opcional; decisão futura sobre snapshot por pagamento ou sync remoto — apenas com ADR; novas superfícies por vínculo apenas derivação local. |
+| **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
+| **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
+| **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
+| **Próximo foco documental primeiro** | Executar ciclo QA geral marcando resultados segundo critérios S1‑S4; só então iniciar próxima trilha funcional usando critérios E1‑E4 do mesmo arquivo; novas decisões grandes snapshot pagamento apenas após atualização oficial da ADR. |
 
 ---
 
@@ -255,3 +254,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | Data | Nota |
 |------|------|
 | 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes; promoção a LKG `lkg-2026-04-28-link-operational-view` (`28f7936`); `HANDOFF_MASTER.md` alinhado à base estável. |
+| 2026-04-29 | **Consolidação pós‑LKG** documental oficial: matriz QA geral [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + ADR [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md); `HANDOFF`/checkpoint revisados. |
