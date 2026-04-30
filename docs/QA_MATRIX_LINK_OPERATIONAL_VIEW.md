@@ -61,3 +61,4 @@ Guardrails obrigatórios (critérios de falha grave):
 | 2026-04-29 | Checklist inicial alinhado a `LINK_OPERATIONAL_VIEW`. |
 | 2026-04-29 | Alinhado ao LKG `lkg-2026-04-28-link-operational-view` (`28f7936`). |
 | 2026-04-30 | §7 `ClientView`; referência de fechamento `lkg-2026-04-30-clientview-operational-link-block-complete`. |
+| 2026-04-30 | Complemento do gate final: smoke manual dos itens §§ 1–7 e automação §6 (`vitest`/build) permanecem válidos; overlay `ClientView` coberto em código/LKG — regressão fina ainda depende de operador humano para fechar **F2** da matriz geral. |

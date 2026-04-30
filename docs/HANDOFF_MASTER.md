@@ -330,6 +330,10 @@ A decisão estratégica atual é seguir o **Caminho 1**: consolidar e praticamen
 - Se houver NOK crítico, corrigir apenas o bloqueador identificado, preservando os guardrails congelados deste documento.
 - Não iniciar feature nova antes de registrar formalmente a decisão de encerramento ou o bloqueador que justifica correção.
 
+### Estado do gate final (registro mais recente)
+
+Última execução assistida registrada em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — ciclo **2026-04-30**: **F2 não satisfeito** (§§ 1–9 da matriz geral ainda pendentes de operador humano ou de aceite/replanejamento explícito do impedimento). Automatização (`vitest`/build) e revisão estática sustentam **parcialmente** **F1**/**F3**, mas **não substituem** **F2**. Decisão formal neste registro: **não declarar** o ciclo local-first “praticamente encerrado” apenas com essa evidência — falta a execução/registro manual mínima do gate.
+
 ### Decisão de produto futura relevante
 
 **Estado atual documentado oficialmente**: [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) — só espelho visual derivado do contrato; sem `payment.linkContext` persistido.
@@ -472,3 +476,4 @@ Ele funciona como:
 | 2026-04-29 | Consolidação pós‑LKG documental oficial: nova matriz geral QA mínima + ADR campo pagamento só derivado conforme atual; atualizado §6/handoff relacionados. |
 | 2026-04-30 | Fechamento formal do bloco **ClientView** — leitura operacional local por vínculo (resumo, contratos, pagamentos derivados, estados vazio/erro, divergência); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; base estável atualizada no §4. |
 | 2026-04-30 | Decisão estratégica Caminho 1: próxima fase deve ser **consolidação/encerramento local-first**, não nova feature; gate final passa pela QA manual geral e correções apenas se houver bloqueador real. |
+| 2026-04-30 | Gate final assistido (ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)): **F2 pendente** — §§ 1–9 da matriz geral sem execução humana completa neste ciclo; não declarar encerramento do ciclo local-first só com evidência automatizada. |

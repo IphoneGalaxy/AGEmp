@@ -153,6 +153,28 @@ Decisão estratégica vigente: **não abrir nova trilha funcional local-first** 
 
 ---
 
+## Resultado da execução — gate final (ciclo 2026-04-30 — QA assistido + objetiva)
+
+**Escopo deste registro:** revisão do gate F1–F5 conforme definido acima; evidência automatizada desta sessão (`npx vitest run`: **247** testes OK · `npm run build`: OK); conferência estática complementar (grep `payment.linkContext` em `src/` → apenas comentários em utilitários de vínculo, sem campo persistido identificado nesta busca). **Nenhuma** sessão interativa completa no navegador/PWA/Firebase foi realizada neste ciclo para §§ 1–9.
+
+### Avaliação do gate
+
+| # | Resultado | Observação |
+|---|-----------|------------|
+| **F1** | **OK (evidência parcial/indireta)** | Guardrails G1–G4 sustentados por automação + leitura estática anterior/cycle assistido; não substituem validação de regressão de produto em UI. |
+| **F2** | **Não satisfeito** | Critério exige execução humana de §§ 1–9 **ou** impedimento com **aceite ou replanejamento explícito** registrado. Neste ciclo §§ 1–9 continuam **pendentes de operador humano**; não há aceite formal de impedimento como substituto completo do §§ 1–9 (somente “IMPEDIDO” histórico ≠ critério F2 cumprido). |
+| **F3** | **OK (revisão documental)** | [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) não registra bloqueador novo; complemento da trilha de vínculo permanece válido para smoke manual opcional. |
+| **F4** | **Neutro / aplicável após F2** | Nenhum **NOK crítico de produto** foi demonstrado só com esta evidência; correção pontual só se abre **depois** de NOK real na execução manual, conforme estratégia vigente. |
+| **F5** | **Não declarável neste ciclo** | Depende de **F2** satisfeito **e** ausência de NOK crítico comprovado na matriz; hoje **F2 não fecha**. |
+
+### Decisão formal desta etapa
+
+**Não é possível declarar o ciclo local-first “praticamente encerrado” apenas com este ciclo assistido.** Próximo passo obrigatório para encerramento governado: operador humano executar §§ 1–9 (e opcionalmente §10 matriz vínculo) marcando OK/NOK/N/A **ou** registrar formalmente impedimento + aceite/replanejamento explícito como permitido por **F2**.
+
+**Bloqueadores de produto:** nenhum foi **comprovado** nesta sessão sem a maturação manual dos cenários §§ 1–9. **Pendência principal:** execução/registro manual do gate (**governança / F2**), não nova feature.
+
+---
+
 ## Critérios de entrada — próxima trilha funcional de produto
 
 Nova trilha de **implementação** pode começar quando:
@@ -171,6 +193,7 @@ Nova trilha de **implementação** pode começar quando:
 | 2026-04-29 | Criação da matriz geral mínima e critérios pós-consolidação (`Consolidação Pós-LKG`). |
 | 2026-04-29 | Primeiro ciclo de execução registrado (QA assistida + objetiva; UI manual não exercitada neste ciclo). |
 | 2026-04-30 | Adicionado gate final para encerramento prático do ciclo local-first atual; referência atualizada para LKG `lkg-2026-04-30-clientview-operational-link-block-complete`. |
+| 2026-04-30 | Execução assistida do gate F1–F5: **F2 não satisfeito** (manual §§ 1–9 pendente); decisão formal — não declarar encerramento do ciclo só com esta evidência; `vitest` 247 + `npm run build` OK nesta sessão. |
 
 ---
 
@@ -180,6 +203,7 @@ Nova trilha de **implementação** pode começar quando:
 |----------------|----------|-------------------------------------|
 | 2026-04-29 | Cursor Agent (QA assistido: regressão objetiva + revisão estática de código; **sem sessão manual no navegador/Firebase neste ciclo**) | `npx vitest run`: 241/241 OK · `npm run build`: OK · Guardrails G1–G4 conferidos por código/grep · Itens 1.x–9.x e vários de fluxo fino: **IMPEDIDO** até operador humano completar matriz no ambiente real · Matriz vínculo: revisão rápida documentada como complemento (código + testes `linkOperationalDerive`). |
 | 2026-04-30 | Cursor Agent (planejamento estratégico + consolidação documental; **sem sessão manual no navegador/Firebase neste ciclo**) | Decisão registrada: próxima fase é **encerramento/consolidação local-first**, não nova feature. Gate manual final definido em F1–F5. Execução manual §§ 1–9 segue pendente de operador humano ou aceite/reprogramação explícita. |
+| 2026-04-30 | Cursor Agent (QA assistido — gate final F1–F5; **sem sessão manual completa §§ 1–9 neste ciclo**) | `npx vitest run`: **247**/247 OK · `npm run build`: OK · **F2 não satisfeito** · Decisão formal: **não** declarar encerramento do ciclo local-first até humano completar §§ 1–9 (ou aceite/replanejamento explícito de impedimento conforme F2). Sem NOK crítico de produto demonstrado só por esta sessão. |
 
 ---
 

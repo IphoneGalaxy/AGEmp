@@ -248,7 +248,8 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Dimensão | Decisão |
 |----------|---------|
-| **Recomendação principal** | Encerrar praticamente agora após gate final de QA/registro. |
+| **Estado do gate final (`QA_MATRIX_GENERAL`)** | Ciclo assistido **2026-04-30**: **F1**/automação OK nesta sessão; **F3** revisão documental OK; **F2 não satisfeito** — §§ 1–9 pendentes de operador humano **ou** aceite/replanejamento explícito de impedimento; **F5 não declarável** até **F2**. **Sem bloqueador de produto comprovado** nesta sessão sem maturação manual. |
+| **Recomendação principal** | Encerrar praticamente **após** completar **F2** (manual mínimo ou aceite formal de impedimento); até lá manter ciclo em **consolidação**. |
 | **Última trilha funcional** | Não recomendada neste momento. |
 | **Quando abrir correção** | Apenas se a QA manual geral revelar bloqueador real de uso diário. |
 | **Riscos aceitos nesta etapa** | Pagamento segue como espelho derivado do contrato; vínculo não é auditoria imutável por pagamento; Firebase não é fonte financeira; execução manual real ainda precisa ser feita ou formalmente reprogramada/aceita. |
@@ -275,3 +276,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-29 | **Consolidação pós‑LKG** documental oficial: matriz QA geral [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + ADR [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md); `HANDOFF`/checkpoint revisados. |
 | 2026-04-30 | Fechamento formal bloco **`ClientView`** (leitura operacional por vínculo); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; matriz QA vínculo estendida §7; `vitest` 247 testes + `npm run build` no fechamento. |
 | 2026-04-30 | Decisão Caminho 1 registrada: fase atual deve ser **consolidação/encerramento local-first**, não nova feature; uma correção pontual só se justifica por bloqueador real encontrado na QA manual geral. |
+| 2026-04-30 | Gate final assistido: ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — **F2 pendente**; decisão formal — não declarar encerramento do ciclo local-first sem execução/registro humano mínimo §§ 1–9 ou equivalente governado. |
