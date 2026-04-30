@@ -6,7 +6,7 @@ Não substitui a matriz específica da fatia vínculo: [`QA_MATRIX_LINK_OPERATIO
 
 ## Base de execução
 
-- **Referência opcional**: base estável atual `lkg-2026-04-28-link-operational-view` (confirmar commit com `git tag` / histórico de releases).
+- **Referência opcional**: base estável atual `lkg-2026-04-30-clientview-operational-link-block-complete` (confirmar commit com `git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete^{commit}` / histórico de releases).
 - Para cada cenário usar **marcar resultado** conforme esperado (**OK/NOK**/N/A ao ambiente).
 - Ao finalizar um ciclo ou antes de novo LKG funcional pesado: preencher seção **Resumo**.
 
@@ -135,6 +135,24 @@ Este checklist não substitui `npx vitest run` já recorrente no desenvolvimento
 
 ---
 
+## Gate final — encerramento do ciclo local-first atual
+
+Esta matriz é o **gate operacional principal** para decidir o encerramento prático do ciclo local-first atual.
+
+Resultado esperado para fechamento:
+
+| # | Critério |
+|---|----------|
+| F1 | Guardrails G1–G4 permanecem OK. |
+| F2 | Cenários manuais críticos (§§ 1–9) foram executados por operador humano **ou** impedimentos foram registrados com decisão explícita de aceite/reprogramação. |
+| F3 | A matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) não registra bloqueador novo na trilha de vínculo. |
+| F4 | Qualquer NOK crítico vira correção pontual antes de fechamento; não abre nova feature. |
+| F5 | Sem NOK crítico, o ciclo local-first pode ser considerado **praticamente encerrado** nesta etapa. |
+
+Decisão estratégica vigente: **não abrir nova trilha funcional local-first** sem evidência objetiva de bloqueador real de uso diário.
+
+---
+
 ## Critérios de entrada — próxima trilha funcional de produto
 
 Nova trilha de **implementação** pode começar quando:
@@ -152,6 +170,7 @@ Nova trilha de **implementação** pode começar quando:
 |------|------|
 | 2026-04-29 | Criação da matriz geral mínima e critérios pós-consolidação (`Consolidação Pós-LKG`). |
 | 2026-04-29 | Primeiro ciclo de execução registrado (QA assistida + objetiva; UI manual não exercitada neste ciclo). |
+| 2026-04-30 | Adicionado gate final para encerramento prático do ciclo local-first atual; referência atualizada para LKG `lkg-2026-04-30-clientview-operational-link-block-complete`. |
 
 ---
 
@@ -160,6 +179,7 @@ Nova trilha de **implementação** pode começar quando:
 | Data ciclo QA | Executor | Observações rápidas / bloqueadores |
 |----------------|----------|-------------------------------------|
 | 2026-04-29 | Cursor Agent (QA assistido: regressão objetiva + revisão estática de código; **sem sessão manual no navegador/Firebase neste ciclo**) | `npx vitest run`: 241/241 OK · `npm run build`: OK · Guardrails G1–G4 conferidos por código/grep · Itens 1.x–9.x e vários de fluxo fino: **IMPEDIDO** até operador humano completar matriz no ambiente real · Matriz vínculo: revisão rápida documentada como complemento (código + testes `linkOperationalDerive`). |
+| 2026-04-30 | Cursor Agent (planejamento estratégico + consolidação documental; **sem sessão manual no navegador/Firebase neste ciclo**) | Decisão registrada: próxima fase é **encerramento/consolidação local-first**, não nova feature. Gate manual final definido em F1–F5. Execução manual §§ 1–9 segue pendente de operador humano ou aceite/reprogramação explícita. |
 
 ---
 

@@ -198,12 +198,18 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ---
 
-## 9. Próximas fases e próximo foco **provável**
+## 9. Próxima fase — consolidação/encerramento local-first
 
-### 9.1. Próximo foco conservador (imediato, sem nova feature obrigatória)
+### 9.1. Decisão estratégica atual
 
-- Regressão assistida por [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) (mínima ponta a ponta) + opcional [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) (fatia vínculo já existente antes). Decisão atual de `payment.linkContext` apenas como derivado do contrato está em [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md).
-- Manter documentos vivos (`HANDOFF_MASTER`, este checkpoint) atualizados ao fechar fases ou novos LKGs.
+A próxima fase deve ser **consolidação final e encerramento prático do ciclo local-first atual**, não uma nova trilha funcional.
+
+Critério recomendado:
+
+- executar/registrar a regressão final em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md);
+- revisar a matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) como complemento da trilha de vínculo;
+- se não houver NOK crítico, considerar o ciclo local-first **praticamente encerrado**;
+- se houver NOK crítico, abrir apenas correção pontual e documentada, sem transformar isso em nova frente de produto.
 
 ### 9.2. Decisão de produto (quando houver demanda; **não** implementação automática)
 
@@ -236,7 +242,17 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco documental primeiro** | Executar ciclo QA geral marcando resultados segundo critérios S1‑S4; só então iniciar próxima trilha funcional usando critérios E1‑E4 do mesmo arquivo; novas decisões grandes snapshot pagamento apenas após atualização oficial da ADR. |
+| **Próximo foco** | Encerramento/consolidação local-first: executar ou registrar impedimentos da QA manual geral segundo [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); não abrir nova trilha funcional sem bloqueador real. |
+
+### Decisão de fechamento local-first
+
+| Dimensão | Decisão |
+|----------|---------|
+| **Recomendação principal** | Encerrar praticamente agora após gate final de QA/registro. |
+| **Última trilha funcional** | Não recomendada neste momento. |
+| **Quando abrir correção** | Apenas se a QA manual geral revelar bloqueador real de uso diário. |
+| **Riscos aceitos nesta etapa** | Pagamento segue como espelho derivado do contrato; vínculo não é auditoria imutável por pagamento; Firebase não é fonte financeira; execução manual real ainda precisa ser feita ou formalmente reprogramada/aceita. |
+| **Guardrails inegociáveis** | Sem sync financeiro; sem `payment.linkContext`; sem regra financeira por vínculo; sem alteração em `calculations.js`; sem dashboard/caixa por vínculo; sem redesign amplo. |
 
 ---
 
@@ -258,3 +274,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-29 | Pacote inicial de **visão operacional local por vínculo**: `LINK_OPERATIONAL_VIEW.md`, utilitários `linkOperationalDerive`, QA `QA_MATRIX_LINK_OPERATIONAL_VIEW`; refinamento enriquecido na lista de clientes; promoção a LKG `lkg-2026-04-28-link-operational-view` (`28f7936`); `HANDOFF_MASTER.md` alinhado à base estável. |
 | 2026-04-29 | **Consolidação pós‑LKG** documental oficial: matriz QA geral [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + ADR [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md); `HANDOFF`/checkpoint revisados. |
 | 2026-04-30 | Fechamento formal bloco **`ClientView`** (leitura operacional por vínculo); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; matriz QA vínculo estendida §7; `vitest` 247 testes + `npm run build` no fechamento. |
+| 2026-04-30 | Decisão Caminho 1 registrada: fase atual deve ser **consolidação/encerramento local-first**, não nova feature; uma correção pontual só se justifica por bloqueador real encontrado na QA manual geral. |

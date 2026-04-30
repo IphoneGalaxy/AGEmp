@@ -313,15 +313,22 @@ Continuam fora do escopo atual:
 
 ---
 
-## 9. Próximo passo natural recomendado
+## 9. Decisão estratégica atual — consolidação final local-first
 
-O próximo passo natural **não** deve ser assumido automaticamente como implementação imediata.
+A decisão estratégica atual é seguir o **Caminho 1**: consolidar e praticamente encerrar o ciclo **local-first** atual, sem abrir agora a visão futura multiusuário financeira.
 
-### Caminho mais conservador e correto
+### Direção recomendada
 
-- Executar regressão usando [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + (opcional) [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); atualizar registros/handoff apenas se aparecer novo bloqueador formal.
-- Revisitar [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) somente quando houver novo requisito explícito (auditoria, sync eventual, decisão nova de produto) — não antecipa implementação.
-- Só depois decidir próxima fatia única produto usando critérios de entrada finais já descritos dentro da própria matriz geral.
+- A base atual é considerada **madura o suficiente** para encerramento prático do ciclo local-first, desde que passe pelo gate operacional final de QA/manualidade registrado em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md).
+- Não há, neste momento, recomendação para abrir uma nova trilha funcional local-first.
+- Uma nova trilha só deve ser aberta se a QA manual geral revelar **bloqueador real de uso diário**, e ainda assim como correção pontual/cirúrgica, não como nova frente de produto.
+- A matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) permanece como complemento de regressão para vínculo; a matriz geral é o gate principal de encerramento.
+
+### Critério de decisão
+
+- Se a QA manual geral não registrar bloqueador crítico, o ciclo local-first pode ser tratado como **praticamente encerrado**.
+- Se houver NOK crítico, corrigir apenas o bloqueador identificado, preservando os guardrails congelados deste documento.
+- Não iniciar feature nova antes de registrar formalmente a decisão de encerramento ou o bloqueador que justifica correção.
 
 ### Decisão de produto futura relevante
 
@@ -464,3 +471,4 @@ Ele funciona como:
 | 2026-04-29 | Base estável atual: LKG `lkg-2026-04-28-link-operational-view` · commit `28f7936`; trilha e QA parcial atualizados (visão operacional local por vínculo). |
 | 2026-04-29 | Consolidação pós‑LKG documental oficial: nova matriz geral QA mínima + ADR campo pagamento só derivado conforme atual; atualizado §6/handoff relacionados. |
 | 2026-04-30 | Fechamento formal do bloco **ClientView** — leitura operacional local por vínculo (resumo, contratos, pagamentos derivados, estados vazio/erro, divergência); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; base estável atualizada no §4. |
+| 2026-04-30 | Decisão estratégica Caminho 1: próxima fase deve ser **consolidação/encerramento local-first**, não nova feature; gate final passa pela QA manual geral e correções apenas se houver bloqueador real. |
