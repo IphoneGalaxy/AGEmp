@@ -332,7 +332,9 @@ A decisão estratégica atual é seguir o **Caminho 1**: consolidar e praticamen
 
 ### Estado do gate final (registro mais recente)
 
-Última execução assistida registrada em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — ciclo **2026-04-30**: **F2 não satisfeito** (§§ 1–9 da matriz geral ainda pendentes de operador humano ou de aceite/replanejamento explícito do impedimento). Automatização (`vitest`/build) e revisão estática sustentam **parcialmente** **F1**/**F3**, mas **não substituem** **F2**. Decisão formal neste registro: **não declarar** o ciclo local-first “praticamente encerrado” apenas com essa evidência — falta a execução/registro manual mínima do gate.
+Execução **manual humana** **2026-04-30** registrada em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md): operador atesta **OK integral** nos casos **1.1–9.1** (§§ 1–9), **sem NOK crítico**. Critério **F2** do gate (**[`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)**) está **satisfeito**; **F5** permite considerar o ciclo local-first **praticamente encerrado** nesta etapa, preservando guardrails congelados (sem sync financeiro remoto, sem `payment.linkContext`, sem mudança em `calculations.js` nesta linha).
+
+*(Registro anterior do ciclo assistido **2026-04-30** permanece no histórico da matriz como evidência complementar de automação; não substitui **F2**.)*
 
 ### Decisão de produto futura relevante
 
@@ -477,3 +479,4 @@ Ele funciona como:
 | 2026-04-30 | Fechamento formal do bloco **ClientView** — leitura operacional local por vínculo (resumo, contratos, pagamentos derivados, estados vazio/erro, divergência); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; base estável atualizada no §4. |
 | 2026-04-30 | Decisão estratégica Caminho 1: próxima fase deve ser **consolidação/encerramento local-first**, não nova feature; gate final passa pela QA manual geral e correções apenas se houver bloqueador real. |
 | 2026-04-30 | Gate final assistido (ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)): **F2 pendente** — §§ 1–9 da matriz geral sem execução humana completa neste ciclo; não declarar encerramento do ciclo local-first só com evidência automatizada. |
+| 2026-04-30 | Gate final **manual**: operador atesta **OK integral** §§ 1–9 (**1.1–9.1**); **F2 satisfeito** · **F5** — ciclo local-first **praticamente encerrado** (sem NOK crítico declarado). |

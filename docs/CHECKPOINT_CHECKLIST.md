@@ -242,17 +242,17 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco** | Encerramento/consolidação local-first: executar ou registrar impedimentos da QA manual geral segundo [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); não abrir nova trilha funcional sem bloqueador real. |
+| **Próximo foco** | Ciclo local-first **praticamente encerrado** no gate geral (**F2**/**F5** OK conforme [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)); próxima mudança só com **nova fase/decisão explícita** — não abrir trilha funcional só por inércia. |
 
 ### Decisão de fechamento local-first
 
 | Dimensão | Decisão |
 |----------|---------|
-| **Estado do gate final (`QA_MATRIX_GENERAL`)** | Ciclo assistido **2026-04-30**: **F1**/automação OK nesta sessão; **F3** revisão documental OK; **F2 não satisfeito** — §§ 1–9 pendentes de operador humano **ou** aceite/replanejamento explícito de impedimento; **F5 não declarável** até **F2**. **Sem bloqueador de produto comprovado** nesta sessão sem maturação manual. |
-| **Recomendação principal** | Encerrar praticamente **após** completar **F2** (manual mínimo ou aceite formal de impedimento); até lá manter ciclo em **consolidação**. |
+| **Estado do gate final (`QA_MATRIX_GENERAL`)** | **2026-04-30:** execução manual §§ 1–9 com **OK integral** atestado pelo operador; **F2 satisfeito**, **F5 atendido** — ciclo local-first **praticamente encerrado** nesta etapa. **Sem NOK crítico** declarado. Evidência assistida (`vitest`/build) permanece complementar no histórico da matriz. |
+| **Recomendação principal** | Considerar **encerrado** o gate de consolidação local-first atual; qualquer evolução futura só com decisão de produto/arquitetura explícita (fora do Caminho 1 neste registro). |
 | **Última trilha funcional** | Não recomendada neste momento. |
 | **Quando abrir correção** | Apenas se a QA manual geral revelar bloqueador real de uso diário. |
-| **Riscos aceitos nesta etapa** | Pagamento segue como espelho derivado do contrato; vínculo não é auditoria imutável por pagamento; Firebase não é fonte financeira; execução manual real ainda precisa ser feita ou formalmente reprogramada/aceita. |
+| **Riscos aceitos nesta etapa** | Pagamento segue como espelho derivado do contrato; vínculo não é auditoria imutável por pagamento; Firebase não é fonte financeira; regressões futuras exigem novo ciclo de QA conforme matrizes. |
 | **Guardrails inegociáveis** | Sem sync financeiro; sem `payment.linkContext`; sem regra financeira por vínculo; sem alteração em `calculations.js`; sem dashboard/caixa por vínculo; sem redesign amplo. |
 
 ---
@@ -277,3 +277,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-30 | Fechamento formal bloco **`ClientView`** (leitura operacional por vínculo); novo LKG `lkg-2026-04-30-clientview-operational-link-block-complete`; matriz QA vínculo estendida §7; `vitest` 247 testes + `npm run build` no fechamento. |
 | 2026-04-30 | Decisão Caminho 1 registrada: fase atual deve ser **consolidação/encerramento local-first**, não nova feature; uma correção pontual só se justifica por bloqueador real encontrado na QA manual geral. |
 | 2026-04-30 | Gate final assistido: ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — **F2 pendente**; decisão formal — não declarar encerramento do ciclo local-first sem execução/registro humano mínimo §§ 1–9 ou equivalente governado. |
+| 2026-04-30 | Gate final **manual** OK integral: **F2**/**F5** conforme matriz geral; ciclo local-first **praticamente encerrado**; sem NOK crítico declarado pelo operador. |
