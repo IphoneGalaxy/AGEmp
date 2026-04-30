@@ -151,6 +151,7 @@ Nova trilha de **implementação** pode começar quando:
 | Data | Nota |
 |------|------|
 | 2026-04-29 | Criação da matriz geral mínima e critérios pós-consolidação (`Consolidação Pós-LKG`). |
+| 2026-04-29 | Primeiro ciclo de execução registrado (QA assistida + objetiva; UI manual não exercitada neste ciclo). |
 
 ---
 
@@ -158,4 +159,37 @@ Nova trilha de **implementação** pode começar quando:
 
 | Data ciclo QA | Executor | Observações rápidas / bloqueadores |
 |----------------|----------|-------------------------------------|
-|  |  |  |
+| 2026-04-29 | Cursor Agent (QA assistido: regressão objetiva + revisão estática de código; **sem sessão manual no navegador/Firebase neste ciclo**) | `npx vitest run`: 241/241 OK · `npm run build`: OK · Guardrails G1–G4 conferidos por código/grep · Itens 1.x–9.x e vários de fluxo fino: **IMPEDIDO** até operador humano completar matriz no ambiente real · Matriz vínculo: revisão rápida documentada como complemento (código + testes `linkOperationalDerive`). |
+
+---
+
+## Resultado da execução — ciclo 2026-04-29
+
+**Escopo deste registro:** apenas evidência objetiva (Vitest, build, leitura de `src/`/`docs`) e classificação dos casos da matriz; **nenhuma** sessão interativa de app (dashboard, login, PWA, backup manual, caixa) foi realizada pelo executor deste ciclo.
+
+**Itens tratados como OK (evidência indireta):** guardrails G1–G4 (sem persistência financeira remota autoritativa; ausência de `payment.linkContext` em modelo/caminhos verificados; `calculations.js` não alterado neste ciclo de QA; vínculo como metadado local — alinhado a `HANDOFF_MASTER` + ADR).
+
+**Itens IMPEDIDO:** cenários que exigem operador humano no browser/PWA e/ou contas Firebase reais (§§ 1.1–1.4, 2.x, 3.x–9.x na íntegra manual).
+
+**Próximo passo recomendado:** operador designado repetir este documento marcando linha a linha após smoke manual, mantendo o mesmo commit/tag de referência quando possível.
+
+### Classificação por caso (ciclo 2026-04-29 — executor assistido)
+
+| Caso | Resultado | Observação |
+|------|-----------|------------|
+| G1 | OK | Domínio financeiro em `localStorage` por escopo; Firestore limitado a perfil/vínculos (`src/firebase/`). |
+| G2 | OK | Comentários/utils confirmam ausência de persistência `payment.linkContext`; `normalizeLoan` não acrescenta campo em pagamentos. |
+| G3 | OK | `calculations.js` não objeto de alteração neste ciclo; testes do motor passando. |
+| G4 | OK | Escopo `anonymous` / `account:{uid}` mantido em `storageScope`; sem regra financeira obrigatória por vínculo no motor. |
+| 1.1–1.4 | IMPEDIDO | Requer sessão interativa (reload, escopos A/B, legado Firebase). |
+| 2.1–2.2 | IMPEDIDO | Requer UI manual / viewport mobile. |
+| 3.1–3.4 | IMPEDIDO | Requer `ClientsList` ao vivo + opcionalmente vínculos aprovados. |
+| 4.1–4.3 | IMPEDIDO | Requer `ClientView` ao vivo. |
+| 5.1–5.2 | IMPEDIDO | Requer fluxo pagamento + contrato com `loan.linkContext` (conf. ADR revisável só manualmente). |
+| 6.1 | IMPEDIDO | Requer fluxo de caixa na UI. |
+| 7.1–7.2 | IMPEDIDO | Requer export/import manual smoke (testes automatizados cobrem parte em `storage`/`autoBackup`). |
+| 8.1–8.3 | IMPEDIDO | Requer configurações + auth Firebase real. |
+| 9.1 | IMPEDIDO | Requer reload PWA/dev shell ao vivo. |
+| §10 matriz vínculo | OK (revisão rápida) | `linkOperationalDerive.js` + testes + uso em `ClientsList.jsx` conferidos; smoke manual opcional não executado. |
+
+Reexecutar com operador humano para converter IMPEDIDO → OK/NOK linha a linha quando aplicável.
