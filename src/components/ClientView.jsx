@@ -18,6 +18,11 @@ import {
   removeLoanLinkContext,
 } from '../utils/loanLinkContextManage';
 import { getLoanLinkContextForPaymentDisplay } from '../utils/paymentLinkContextDisplay';
+import {
+  LOAN_LINK_CONTEXT_RELATION,
+  classifyLoanLinkContextRelation,
+  summarizeClientLoanLinkContext,
+} from '../utils/clientLoanLinkContextSummary';
 import { generateId } from '../utils/ids';
 import { buildLocalLinkContext } from '../utils/linkContext';
 import {
@@ -83,6 +88,7 @@ const ClientView = ({
   const [loanLinkFilter, setLoanLinkFilter] = useState(LOAN_LINK_LIST_FILTER.ALL);
   const [confirmRemoveLoanLinkContextId, setConfirmRemoveLoanLinkContextId] = useState(null);
 
+  const localLink = clientData.linkContext;
   const allLoans = clientData.loans || [];
   const linkedLoanCount = countLoansWithLinkContext(allLoans);
   const unlinkedLoanCount = countLoansWithoutLinkContext(allLoans);
@@ -90,6 +96,10 @@ const ClientView = ({
   const visibleLoans = useMemo(
     () => filterLoansByLinkContextPresence(clientData.loans || [], loanLinkFilter),
     [clientData.loans, loanLinkFilter]
+  );
+  const loanLinkContextSummary = useMemo(
+    () => summarizeClientLoanLinkContext(clientData.linkContext, clientData.loans || []),
+    [clientData.linkContext, clientData.loans]
   );
 
   const loanFilterButtonClass = (active) =>
@@ -519,13 +529,26 @@ const ClientView = ({
     }
   };
 
-  const localLink = clientData.linkContext;
   const vinculoLineLocal = localLink ? formatLocalVinculoLineFromContext(localLink) : '';
   const canInheritLoanLinkContext = canInheritLinkContextToLoan(localLink);
   const anotadoEmLine =
     localLink?.associatedAt && typeof localLink.associatedAt === 'string'
       ? `Anotado em ${formatDateTime(localLink.associatedAt)}`
       : null;
+
+  const getLoanLinkContextRelationLabel = (loan) => {
+    const relation = classifyLoanLinkContextRelation(loan, localLink);
+    if (relation === LOAN_LINK_CONTEXT_RELATION.SAME_AS_CLIENT) {
+      return 'Mesmo vínculo do cliente';
+    }
+    if (relation === LOAN_LINK_CONTEXT_RELATION.DIFFERENT_FROM_CLIENT) {
+      return 'Anotação diferente do cliente';
+    }
+    if (relation === LOAN_LINK_CONTEXT_RELATION.LINKED_WITHOUT_CLIENT) {
+      return 'Contrato anotado';
+    }
+    return 'Sem anotação local';
+  };
 
   // ==================== RENDERIZAÇÃO ====================
 
@@ -625,6 +648,54 @@ const ClientView = ({
           Só neste aparelho: anotar qual vínculo aprovado na sua conta corresponde a este cliente. Não envia
           empréstimos, caixa ou dashboard para a nuvem.
         </p>
+
+        {(localLink || loanLinkContextSummary.total > 0) && (
+          <div className="mb-4 rounded-design-md border border-info/20 bg-info-soft/20 px-3 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-info">
+              Leitura operacional local
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-content-muted">
+              Esta leitura organiza apenas os contratos deste cliente por anotação local de vínculo. Os
+              valores acima continuam considerando todos os contratos.
+            </p>
+            {localLink && vinculoLineLocal && (
+              <p className="mt-2 break-words text-xs font-medium text-content-soft">
+                Cliente: {vinculoLineLocal}
+              </p>
+            )}
+            {!localLink && loanLinkContextSummary.linked > 0 && (
+              <p className="mt-2 text-xs text-content-muted">
+                Cliente sem anotação local; alguns contratos podem manter snapshot próprio.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex rounded-design-sm border border-edge bg-surface px-2 py-1 text-xs font-medium text-content-soft">
+                Contratos: {loanLinkContextSummary.total}
+              </span>
+              <span className="inline-flex rounded-design-sm border border-info/25 bg-surface px-2 py-1 text-xs font-medium text-info">
+                Anotados: {loanLinkContextSummary.linked}
+              </span>
+              <span className="inline-flex rounded-design-sm border border-edge bg-surface px-2 py-1 text-xs font-medium text-content-muted">
+                Sem anotação: {loanLinkContextSummary.unlinked}
+              </span>
+              {localLink && (
+                <span className="inline-flex rounded-design-sm border border-success/25 bg-surface px-2 py-1 text-xs font-medium text-success">
+                  Do cliente: {loanLinkContextSummary.sameAsClient}
+                </span>
+              )}
+              {localLink && loanLinkContextSummary.differentFromClient > 0 && (
+                <span className="inline-flex rounded-design-sm border border-warning/30 bg-surface px-2 py-1 text-xs font-medium text-warning">
+                  Outro vínculo: {loanLinkContextSummary.differentFromClient}
+                </span>
+              )}
+              {!localLink && loanLinkContextSummary.linkedWithoutClient > 0 && (
+                <span className="inline-flex rounded-design-sm border border-info/25 bg-surface px-2 py-1 text-xs font-medium text-info">
+                  Com anotação própria: {loanLinkContextSummary.linkedWithoutClient}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {!user?.uid && !localLink && (
           <p className="text-sm text-content-muted">
@@ -984,14 +1055,22 @@ const ClientView = ({
                       {displayMoney(loan.amount)}
                     </p>
                     <p className="mt-0.5 text-xs text-content-muted">Taxa {loanRateDisplay}</p>
-                    {loan.linkContext && (
+                    {loan.linkContext ? (
                       <p
                         className="mt-1.5 line-clamp-2 text-xs text-info"
                         title="Anotação local do contrato; não indica situação de pagamento"
                       >
-                        Contrato anotado: {formatLocalVinculoLineFromContext(loan.linkContext)}
+                        {getLoanLinkContextRelationLabel(loan)}:{' '}
+                        {formatLocalVinculoLineFromContext(loan.linkContext)}
                       </p>
-                    )}
+                    ) : localLink ? (
+                      <p
+                        className="mt-1.5 text-xs text-content-muted"
+                        title="Este contrato não herdou a anotação local do cliente"
+                      >
+                        Sem anotação local neste contrato
+                      </p>
+                    ) : null}
                     {!loan.isPaidOff && (
                       <div className="mt-2">
                         {loan.isLoanOK ? (
