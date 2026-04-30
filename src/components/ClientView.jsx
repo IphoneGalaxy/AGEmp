@@ -665,9 +665,27 @@ const ClientView = ({
             )}
             {!localLink && loanLinkContextSummary.linked > 0 && (
               <p className="mt-2 text-xs text-content-muted">
-                Cliente sem anotação local; alguns contratos podem manter snapshot próprio.
+                Cliente sem anotação local; alguns contratos podem manter snapshot próprio neste aparelho,
+                sem sincronizar financeiro na nuvem.
               </p>
             )}
+            {!localLink &&
+              loanLinkContextSummary.total > 0 &&
+              loanLinkContextSummary.linked === 0 && (
+                <p className="mt-2 text-xs text-content-muted">
+                  Todos os contratos estão sem anotação de vínculo — situação normal até você escolher marcar.
+                  Os valores acima não dependem disso.
+                </p>
+              )}
+            {localLink &&
+              loanLinkContextSummary.total > 0 &&
+              loanLinkContextSummary.unlinked > 0 &&
+              loanLinkContextSummary.differentFromClient === 0 && (
+                <p className="mt-2 text-xs text-content-muted">
+                  Contratos sem anotação continuam válidos financeiramente; você só está organizando a leitura
+                  local neste aparelho.
+                </p>
+              )}
             <div className="mt-3 flex flex-wrap gap-2">
               <span className="inline-flex rounded-design-sm border border-edge bg-surface px-2 py-1 text-xs font-medium text-content-soft">
                 Contratos: {loanLinkContextSummary.total}
@@ -694,6 +712,12 @@ const ClientView = ({
                 </span>
               )}
             </div>
+            {localLink && loanLinkContextSummary.differentFromClient > 0 && (
+              <p className="mt-3 text-[11px] leading-relaxed text-content-muted">
+                Contratos com vínculo diferente do cliente são uma escolha local opcional neste aparelho —
+                não indicam erro financeiro, nem envio dos dados para os servidores.
+              </p>
+            )}
           </div>
         )}
 
@@ -708,14 +732,19 @@ const ClientView = ({
         )}
 
         {user?.uid && !localLink && !platformLinksLoading && platformLinksError && (
-          <p className="text-sm text-danger" role="alert">
-            {platformLinksError}
-          </p>
+          <div role="alert">
+            <p className="text-sm text-danger">{platformLinksError}</p>
+            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+              Os dados financeiros deste cliente neste aparelho continuam disponíveis normalmente. É só a lista
+              de vínculos da conta que não carregou agora — você pode tentar de novo mais tarde em Config.
+            </p>
+          </div>
         )}
 
         {user?.uid && !localLink && !platformLinksLoading && !platformLinksError && platformLinks.length === 0 && (
-          <p className="text-sm text-content-muted">
-            Não há vínculos aprovados na sua conta. Acompanhe pedidos e aprovações em Conta.
+          <p className="text-sm leading-relaxed text-content-muted">
+            Não há vínculos aprovados na sua conta. Acompanhe pedidos e aprovações em Conta. O financeiro neste
+            aparelho não depende disso para continuar funcionando.
           </p>
         )}
 
@@ -939,6 +968,9 @@ const ClientView = ({
             <p className="text-sm text-content-muted">
               Nenhum contrato corresponde a este filtro.
             </p>
+            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+              Dívida e quitação na parte de cima continuam considerando todos os contratos deste cliente.
+            </p>
             <button
               type="button"
               onClick={() => setLoanLinkFilter(LOAN_LINK_LIST_FILTER.ALL)}
@@ -951,6 +983,7 @@ const ClientView = ({
           visibleLoans.map((loan) => {
             const loanRateDisplay = formatRate(loan.interestRate != null ? loan.interestRate : 10);
             const paymentDisplayLc = getLoanLinkContextForPaymentDisplay(loan);
+            const loanLinkRelationToClient = classifyLoanLinkContextRelation(loan, localLink);
 
             return (
               <div
@@ -1057,20 +1090,42 @@ const ClientView = ({
                     </p>
                     <p className="mt-0.5 text-xs text-content-muted">Taxa {loanRateDisplay}</p>
                     {loan.linkContext ? (
-                      <p
-                        className="mt-1.5 line-clamp-2 text-xs text-info"
-                        title="Anotação local do contrato; não indica situação de pagamento"
-                      >
-                        {getLoanLinkContextRelationLabel(loan)}:{' '}
-                        {formatLocalVinculoLineFromContext(loan.linkContext)}
-                      </p>
+                      <div className="mt-1.5 space-y-1">
+                        <p
+                          className="line-clamp-2 text-xs text-info"
+                          title="Anotação local opcional neste aparelho; não indica situação de pagamento nem sincronização financeira remota"
+                        >
+                          {getLoanLinkContextRelationLabel(loan)}:{' '}
+                          {formatLocalVinculoLineFromContext(loan.linkContext)}
+                        </p>
+                        {loanLinkRelationToClient ===
+                          LOAN_LINK_CONTEXT_RELATION.DIFFERENT_FROM_CLIENT && (
+                          <p className="text-[11px] leading-relaxed text-content-muted">
+                            Organização local opcional por contrato neste aparelho — não altera saldos nem
+                            envia dados financeiros.
+                          </p>
+                        )}
+                        {loanLinkRelationToClient ===
+                          LOAN_LINK_CONTEXT_RELATION.LINKED_WITHOUT_CLIENT && (
+                          <p className="text-[11px] leading-relaxed text-content-muted">
+                            O cadastro deste cliente não está anotado; só este contrato tem marcação aqui, se
+                            preferir assim neste aparelho.
+                          </p>
+                        )}
+                      </div>
                     ) : localLink ? (
-                      <p
-                        className="mt-1.5 text-xs text-content-muted"
-                        title="Este contrato não herdou a anotação local do cliente"
-                      >
-                        Sem anotação local neste contrato
-                      </p>
+                      <div className="mt-1.5 space-y-1">
+                        <p
+                          className="text-xs text-content-muted"
+                          title="Este contrato não tem anotação de vínculo; valores seguem normais"
+                        >
+                          Sem anotação local neste contrato
+                        </p>
+                        <p className="text-[11px] leading-relaxed text-content-muted">
+                          Você pode usar o atalho abaixo para alinhar ao vínculo atual do cliente, ou deixar sem
+                          marcação — só leitura local neste aparelho.
+                        </p>
+                      </div>
                     ) : null}
                     {!loan.isPaidOff && (
                       <div className="mt-2">
