@@ -13,8 +13,8 @@
 - [x] Fechar recorte funcional v1 de `loanRequest`: status, duplicidade, limites, contraproposta e leitura. → `docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`
 - [x] Desenhar modelo remoto, rules e índices de `loanRequests` antes de UI. → `docs/FIRESTORE_LOANREQUESTS.md`, `firestore.rules`, `firestore.indexes.json`, `src/firebase/loanRequests.js`
 - [ ] Promover a matriz QA inicial para checklist executável específico da fase.
-- [x] UI mínima do cliente: criar e acompanhar pedidos (Conta → Solicitações). → `LoanRequestsClientPanel.jsx`, `loanRequestsFirestore.js`
-- [ ] Planejar/implementar UI mínima do fornecedor para listar e responder pedidos em subfase futura.
+- [x] UI mínima do cliente e do fornecedor para `loanRequest` v1 (Conta). → `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx`, `loanRequestsFirestore.js`
+- [ ] Polimento / QA formal / empacotamento (sem expansão de escopo).
 
 ---
 

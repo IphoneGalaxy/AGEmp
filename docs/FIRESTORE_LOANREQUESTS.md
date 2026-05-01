@@ -1,7 +1,7 @@
 # Firestore — `loanRequests` (v1 pré-financeira)
 
 **Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
-**Helpers:** [`src/firebase/loanRequests.js`](../src/firebase/loanRequests.js)  
+**Helpers:** [`src/firebase/loanRequests.js`](../src/firebase/loanRequests.js) · **Firestore (CRUD cliente/fornecedor):** [`src/firebase/loanRequestsFirestore.js`](../src/firebase/loanRequestsFirestore.js)  
 **Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)
 
 ## Coleção
@@ -42,14 +42,16 @@ As **rules não verificam unicidade entre documentos** (limitação do Firestore
 
 Índice composto: `linkId` + `status` — ver [`firestore.indexes.json`](../firestore.indexes.json).
 
-**UI cliente (Subfase 3):** em Configurações → Conta → “Abrir solicitações”, o painel chama `findOpenLoanRequestForLinkId` antes de gravar; se existir documento, a criação é bloqueada com mensagem ao usuário.
+**UI cliente (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`) — chama `findOpenLoanRequestForLinkId` antes de gravar.
+
+**UI fornecedor (Subfase 4):** Configurações → Conta → “Abrir pedidos recebidos” (`LoanRequestsSupplierPanel.jsx`). Transições: `pending` → `under_review`; `pending` | `under_review` → `approved` (com `approvedAmount` igual ao `requestedAmount` do documento) ou `rejected`; `supplierNote` opcional (até 1000 caracteres).
 
 ## Índices compostos
 
 Arquivo: [`firestore.indexes.json`](../firestore.indexes.json)
 
 - `clientId` ASC, `createdAt` DESC — lista do cliente.
-- `supplierId` ASC, `createdAt` DESC — lista do fornecedor.
+- `supplierId` ASC, `createdAt` DESC — lista do fornecedor (**UI Subfase 4**: Conta → Pedidos recebidos).
 - `linkId` ASC, `status` ASC — checagem de duplicidade aberta.
 
 Após alterar índices: `firebase deploy --only firestore:indexes` (ou deploy completo do Firestore).

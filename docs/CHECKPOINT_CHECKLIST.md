@@ -24,6 +24,8 @@ Leitura recomendada junto com:
 
 **UI cliente — solicitações (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`).
 
+**UI fornecedor — pedidos recebidos (Subfase 4):** Configurações → Conta → “Abrir pedidos recebidos” (`LoanRequestsSupplierPanel.jsx`).
+
 ---
 
 ## 1. Visão geral consolidada
