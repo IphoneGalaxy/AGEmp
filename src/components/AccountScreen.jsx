@@ -25,6 +25,7 @@ import {
   setUserRole,
   updateUserDisplayNameWithAuthMirror,
 } from '../firebase/users';
+import LoanRequestsClientPanel from './LoanRequestsClientPanel';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -112,8 +113,16 @@ function AccountScreen({ onBack, showToast }) {
   const [linkRequestError, setLinkRequestError] = useState('');
   const [linkActionId, setLinkActionId] = useState(null);
   const [uidCopyFeedback, setUidCopyFeedback] = useState('idle');
+  /** 'main' | 'loanRequests' — fluxo isolado sem nova aba principal. */
+  const [accountSubView, setAccountSubView] = useState('main');
 
   const bumpLinksReload = () => setLinksReloadToken((t) => t + 1);
+
+  useEffect(() => {
+    if (!user) {
+      setAccountSubView('main');
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user?.uid || !authAvailable) {
@@ -487,6 +496,34 @@ function AccountScreen({ onBack, showToast }) {
     roleSaving ||
     addRoleSaving;
 
+  if (authReady && authAvailable && user && accountSubView === 'loanRequests') {
+    return (
+      <div className="space-y-6 p-4 pb-20">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAccountSubView('main')}
+            className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-design-md text-sm font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            aria-label="Voltar à conta"
+          >
+            ←
+          </button>
+          <h2 className="text-lg font-semibold tracking-tight text-content">Solicitações</h2>
+        </div>
+        <p className="text-xs leading-relaxed text-content-muted">
+          Pedidos na plataforma entre contas. Não confunda com contratos ou caixa do app — seu
+          financeiro continua só neste aparelho.
+        </p>
+        <LoanRequestsClientPanel
+          user={user}
+          showToast={showToast}
+          links={links}
+          linksLoading={linksLoading}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 pb-20">
       <div className="flex items-center gap-2">
@@ -703,6 +740,31 @@ function AccountScreen({ onBack, showToast }) {
                   </div>
                 )}
               </div>
+
+              {canActAsClient && (
+                <div className={sectionCardClass}>
+                  <h3 className="mb-1 text-base font-semibold text-content">
+                    Solicitações de empréstimo (plataforma)
+                  </h3>
+                  <p className="mb-4 text-xs leading-relaxed text-content-muted">
+                    Envie um pedido ao fornecedor com vínculo aprovado. Isso não cria contrato no
+                    app, não altera caixa e não sincroniza seu financeiro local.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAccountSubView('loanRequests')}
+                    disabled={!hasPlatformRole || linkGlobalBusy}
+                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                  >
+                    Abrir solicitações
+                  </button>
+                  {!hasPlatformRole && (
+                    <p className="mt-3 text-xs leading-relaxed text-content-muted">
+                      Defina seu papel na plataforma acima para usar solicitações.
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className={sectionCardClass}>
                 <h3 className="mb-1 text-base font-semibold text-content">Vínculos</h3>

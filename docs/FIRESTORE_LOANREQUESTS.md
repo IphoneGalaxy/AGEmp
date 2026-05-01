@@ -42,6 +42,8 @@ As **rules não verificam unicidade entre documentos** (limitação do Firestore
 
 Índice composto: `linkId` + `status` — ver [`firestore.indexes.json`](../firestore.indexes.json).
 
+**UI cliente (Subfase 3):** em Configurações → Conta → “Abrir solicitações”, o painel chama `findOpenLoanRequestForLinkId` antes de gravar; se existir documento, a criação é bloqueada com mensagem ao usuário.
+
 ## Índices compostos
 
 Arquivo: [`firestore.indexes.json`](../firestore.indexes.json)

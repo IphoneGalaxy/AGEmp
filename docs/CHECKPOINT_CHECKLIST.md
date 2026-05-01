@@ -22,6 +22,8 @@ Leitura recomendada junto com:
 
 **Camada técnica remota `loanRequests` (Subfase 2 — rules/modelo):** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md).
 
+**UI cliente — solicitações (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`).
+
 ---
 
 ## 1. Visão geral consolidada
