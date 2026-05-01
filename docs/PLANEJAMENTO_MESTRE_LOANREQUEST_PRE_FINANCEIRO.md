@@ -677,3 +677,11 @@ Saída esperada dessa primeira subfase:
 - transformar a matriz QA acima em checklist curto de aceite para o primeiro PR.
 
 Depois dela, a implementação deve seguir pela camada remota/rules antes da UI. Isso evita que a experiência visual empurre decisões técnicas frágeis e preserva a fronteira central do projeto: solicitação remota é relacionamento pré-financeiro, não domínio financeiro sincronizado.
+
+---
+
+## 10. Histórico de execução do pacote v1 (referência)
+
+| Data | Nota |
+|------|------|
+| 2026-05-01 | Pacote **`loanRequest` v1** (contrato congelado + Firestore + UI cliente/fornecedor) **formalmente fechado** após **smoke manual real** bem-sucedido (dois usuários; sem NOK crítico). Registro: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**. Próximas subfases numeradas neste planejamento (ex.: contraproposta v1.1, leitura) **não** fazem parte deste fechamento. |

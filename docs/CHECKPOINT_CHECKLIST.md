@@ -14,7 +14,7 @@ Leitura recomendada junto com:
 4. Project Rule (guardrail: limites, cautela, direção futura — trechos de “estado atual” na rule podem estar defasados; priorizar código + handoff)  
 5. `DESIGN.md`, `BRAND.md`, `PROJECT_OVERRIDES.md` (UX/UI)
 
-**Base estável de referência (LKG):** `lkg-2026-04-30-clientview-operational-link-block-complete` — commit exato: `git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete` (sincronizar tags ao retomar; cadeia anterior relevante: `lkg-2026-04-28-link-operational-view` · `28f7936`; pacotes intermediários `lkg-2026-04-29-clientview-operational-link-reading`, `lkg-2026-04-30-clientview-payment-derived-reading`).
+**Base estável de referência (LKG):** `lkg-2026-05-01-loanrequest-v1-complete` — commit exato: `git rev-parse lkg-2026-05-01-loanrequest-v1-complete` (inclui registro formal do pacote **`loanRequest` v1** após smoke manual OK). Marco histórico do bloco **ClientView:** `lkg-2026-04-30-clientview-operational-link-block-complete`. Cadeia anterior relevante: `lkg-2026-04-28-link-operational-view` · `28f7936`; pacotes intermediários `lkg-2026-04-29-clientview-operational-link-reading`, `lkg-2026-04-30-clientview-payment-derived-reading`.
 
 **Proxima fase oficial:** [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental.
 
@@ -26,7 +26,7 @@ Leitura recomendada junto com:
 
 **UI fornecedor — pedidos recebidos (Subfase 4):** Configurações → Conta → “Abrir pedidos recebidos” (`LoanRequestsSupplierPanel.jsx`).
 
-**Fechamento pacote v1 — QA específico (Subfase operacional de encerramento):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) — executar antes de promover LKG que cite esta fatia; smoke obrigatório com **dois usuários reais** (fornecedor + cliente).
+**Pacote `loanRequest` v1 — FECHADO:** smoke manual real com **dois usuários** **OK integral**, **sem NOK crítico**; registro em [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**.
 
 ---
 
@@ -254,11 +254,11 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 
 | Dimensão | Situação |
 |----------|----------|
-| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); **bloco `ClientView`** com resumo operacional, espelho explícito em pagamentos e estados vazio/erro/divergência; testes e LKGs na linha. |
-| **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
+| **Concluído (alto nível)** | Base remota identidade/vínculo; escopo local + legado; clareza de contexto; `linkContext` v1 em cliente, contrato e UI de pagamentos (derivada); visão operacional derivada por vínculo (`linkOperationalDerive` + refinamento em `ClientsList`); **bloco `ClientView`** com resumo operacional, espelho explícito em pagamentos e estados vazio/erro/divergência; **pacote `loanRequest` v1** (pré-financeiro remoto + UI Conta) **fechado** com smoke manual OK — [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); testes e LKGs na linha. |
+| **Validado** | Automático recorrente (`vitest`/build); QA manual [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); fatia vínculo [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); fatia **`loanRequest` v1** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) (smoke real **OK integral**, sem NOK crítico); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco** | Ciclo local-first **praticamente encerrado** no gate geral (**F2**/**F5** OK conforme [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)); proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto. |
+| **Próximo foco** | Ciclo local-first **praticamente encerrado** no gate geral (**F2**/**F5** OK conforme [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)); **pacote `loanRequest` v1 fechado** — evoluções futuras (ex.: v1.1 contraproposta, `readBy*`) só com decisão explícita; direção documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) e [`PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md). |
 
 ### Decisão de fechamento local-first
 
@@ -296,3 +296,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-30 | Gate final **manual** OK integral: **F2**/**F5** conforme matriz geral; ciclo local-first **praticamente encerrado**; sem NOK crítico declarado pelo operador. |
 | 2026-04-30 | Proxima fase oficial registrada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente como camada pre-financeira, sem codigo de produto nesta etapa documental. |
 | 2026-04-30 | **`loanRequest` v1:** matriz QA executável [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); polimento leve UI/documentação; recomendação de smoke dois usuários antes de novo LKG da fatia (`HANDOFF_MASTER.md` §9). |
+| 2026-05-01 | **`loanRequest` v1 formalmente fechado:** smoke manual real bem-sucedido; LKG **`lkg-2026-05-01-loanrequest-v1-complete`**; base estável principal atualizada no checkpoint e em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4. |

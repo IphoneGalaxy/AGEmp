@@ -1,6 +1,6 @@
 # Matriz QA — `loanRequest` v1 (pré-financeira)
 
-**Status:** checklist executável para fechamento do pacote v1 (sem contraproposta, sem `readBy*`, sem conversão em contrato).  
+**Status:** **FECHADO** — pacote v1 encerrado formalmente após **smoke manual real** (dois usuários) **sem NOK crítico** (registro 2026-05-01). Matriz abaixo foi critério de aceite; resultado consolidado em § **Registro formal — gate manual**.  
 **Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
 **Camada Firestore:** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)  
 **Complemento:** regressão geral em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); vínculo/`linkContext` em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md).
@@ -112,6 +112,37 @@ Registrar data, ambiente (build/commit), operador e **OK / NOK / N/A** por linha
 - **R*, C*, L*, S* (exceto S4 N/A), K*, U*** sem NOK crítico.  
 - Smoke manual com **dois usuários reais** (fornecedor + cliente) executado pelo menos uma vez antes de promover LKG que inclua esta fatia.
 
+**Este critério foi satisfeito** — ver § Registro formal abaixo.
+
+---
+
+## Registro formal — gate manual (smoke real, fechamento v1)
+
+| Campo | Registro |
+|-------|----------|
+| **Resultado** | **OK integral** — **sem NOK crítico** |
+| **Escopo exercitado** | Conta → **Abrir solicitações** e **Abrir pedidos recebidos**; vínculo aprovado alimentando criação do pedido; fluxos **aprovado / rejeitado / cancelado** refletindo nos dois lados |
+| **Guardrail financeiro** | **Financeiro local permaneceu intacto** após os pedidos (sem alteração atribuível ao fluxo `loanRequest`) |
+| **Operador** | Humano (atestado para fins de governança deste repositório) |
+| **Data do registro documental** | 2026-05-01 |
+| **Commit documental / peel da tag LKG** | Verificar no clone atualizado: `git rev-parse lkg-2026-05-01-loanrequest-v1-complete^{commit}` |
+| **Tag LKG** | `lkg-2026-05-01-loanrequest-v1-complete` (annotated) |
+
+### Consolidado por grupo (atestado no smoke)
+
+| Grupo | IDs | Resultado |
+|-------|-----|-----------|
+| Guardrails | G1–G7 | **OK** |
+| Conta / vínculo | R1–R7 | **OK** |
+| Criação | C1–C6 | **OK** |
+| Listagem / erros | L1–L5 | **OK** |
+| Resposta fornecedor | S1–S3, S5–S8; S4 **N/A** | **OK** / **N/A** |
+| Cancelamento / leitura cliente | K1–K2 | **OK** |
+| UX / microcopy | U1–U4 | **OK** |
+| Regressão local-first | F1–F2 | **OK** |
+
+*(Detalhamento linha a linha das tabelas acima permanece como especificação; o smoke real validou o comportamento esperado em conjunto.)*
+
 ---
 
 ## Histórico
@@ -119,3 +150,4 @@ Registrar data, ambiente (build/commit), operador e **OK / NOK / N/A** por linha
 | Data | Nota |
 |------|------|
 | 2026-04-30 | Criação da matriz executável para fechamento Subfase 5 (pacote v1). |
+| 2026-05-01 | **Fechamento formal:** smoke manual real bem-sucedido; gate OK integral sem NOK crítico; pacote v1 **FECHADO**. Tag **`lkg-2026-05-01-loanrequest-v1-complete`** (annotated). |

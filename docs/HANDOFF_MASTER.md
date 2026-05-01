@@ -90,6 +90,7 @@ A diretriz central do projeto continua sendo:
 - perfil remoto funcionando;
 - `accountRoles` funcionando com fallback para role;
 - vínculos fornecedor/cliente funcionando no Firestore;
+- coleção **`loanRequests`** (camada **pré-financeira** v1): implementação alinhada ao contrato congelado — **pacote v1 formalmente fechado** após smoke manual real OK (ver §4 LKG e [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md));
 - o domínio financeiro **não** é salvo remotamente nesta fase.
 
 ### Estado atual do vínculo local
@@ -180,14 +181,16 @@ sempre como:
 - `lkg-2026-04-28-link-operational-view` (visão operacional na lista de clientes; commit `28f7936`)
 - `lkg-2026-04-29-clientview-operational-link-reading` (leitura operacional de contratos no `ClientView`)
 - `lkg-2026-04-30-clientview-payment-derived-reading` (espelho explícito em pagamentos)
-- **`lkg-2026-04-30-clientview-operational-link-block-complete`** ← base estável principal atual (fechamento documental + código do bloco `ClientView`).
+- **`lkg-2026-04-30-clientview-operational-link-block-complete`** ← marco histórico do bloco `ClientView` (leitura operacional por vínculo).
+- **`lkg-2026-05-01-loanrequest-v1-complete`** ← fechamento formal do pacote **`loanRequest` v1** (pré-financeiro), com **smoke manual real OK** e **sem NOK crítico**; ver [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md).
 
 ### Base estável principal atual
 
 A base estável principal recomendada neste momento é:
 
-- **`lkg-2026-04-30-clientview-operational-link-block-complete`**
-- **commit:** o mesmo apontado pela tag (`git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete`).
+- **`lkg-2026-05-01-loanrequest-v1-complete`**
+- **commit:** o apontado pela tag após criá-la no commit de **fechamento documental** do smoke (`git rev-parse lkg-2026-05-01-loanrequest-v1-complete`).
+- **Nota:** esta tag consolida o estado do repositório já estável anteriormente (inclui o marco `ClientView`) e acrescenta o **registro formal** de aceite do pacote `loanRequest` v1. O marco anterior **`lkg-2026-04-30-clientview-operational-link-block-complete`** permanece referência explícita da fatia `ClientView` na cadeia histórica.
 
 ### Proxima fase oficial documentada
 
@@ -379,7 +382,7 @@ Fatia **relacional remota** alinhada ao contrato congelado [`LOANREQUEST_V1_CONT
 
 **Congelado:** sem contraproposta v1, sem `readBy*`, sem conversão pedido → contrato, sem sync financeiro remoto e sem impacto em `calculations.js` ou `payment.linkContext`.
 
-**Fechamento do pacote v1:** após polimento leve de copy/empty states e atualização documental, recomenda-se **smoke manual com dois usuários reais** conforme a matriz antes de promover **novo LKG** que inclua explicitamente esta fatia (ver recomendação na matriz e no checkpoint).
+**Fechamento do pacote v1:** **concluído** — smoke manual com **dois usuários reais** executado com **OK integral** e **sem NOK crítico** (registro em [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`** (§4).
 
 ---
 
@@ -517,3 +520,4 @@ Ele funciona como:
 | 2026-04-30 | Gate final **manual**: operador atesta **OK integral** §§ 1–9 (**1.1–9.1**); **F2 satisfeito** · **F5** — ciclo local-first **praticamente encerrado** (sem NOK crítico declarado). |
 | 2026-04-30 | Proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental. |
 | 2026-04-30 | Pacote **`loanRequest` v1** (UI cliente/fornecedor + rules/modelo) consolidado para fechamento; matriz QA específica [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); smoke dois usuários recomendado antes de novo LKG incluindo a fatia. |
+| 2026-05-01 | **Fechamento formal do pacote `loanRequest` v1:** smoke manual real OK sem NOK crítico; matriz atualizada; base estável principal recomendada **`lkg-2026-05-01-loanrequest-v1-complete`** (§4). |

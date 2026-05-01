@@ -5,6 +5,8 @@
 **Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)  
 **QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)
 
+**Pacote v1:** **fechado formalmente** após smoke manual real OK (sem NOK crítico) — ver [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) e LKG **`lkg-2026-05-01-loanrequest-v1-complete`** em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4.
+
 ## Coleção
 
 - Path: `loanRequests/{loanRequestId}` (`loanRequestId` gerado pelo cliente, ex. ID auto do Firestore).
