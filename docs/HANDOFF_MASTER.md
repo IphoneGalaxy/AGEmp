@@ -378,7 +378,8 @@ Fatia **relacional remota** alinhada ao contrato congelado [`LOANREQUEST_V1_CONT
 
 - modelo e rules: [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md);
 - UI cliente e fornecedor: `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx`, integradas em `AccountScreen.jsx` (Configurações → Conta);
-- checklist QA executável da fatia: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md).
+- checklist QA executável da fatia: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md);
+- planejamento-mestre da execução v1 (**referência histórica**, não plano ativo): [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md).
 
 **Congelado:** sem contraproposta v1, sem `readBy*`, sem conversão pedido → contrato, sem sync financeiro remoto e sem impacto em `calculations.js` ou `payment.linkContext`.
 
@@ -521,3 +522,4 @@ Ele funciona como:
 | 2026-04-30 | Proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental. |
 | 2026-04-30 | Pacote **`loanRequest` v1** (UI cliente/fornecedor + rules/modelo) consolidado para fechamento; matriz QA específica [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); smoke dois usuários recomendado antes de novo LKG incluindo a fatia. |
 | 2026-05-01 | **Fechamento formal do pacote `loanRequest` v1:** smoke manual real OK sem NOK crítico; matriz atualizada; base estável principal recomendada **`lkg-2026-05-01-loanrequest-v1-complete`** (§4). |
+| 2026-05-01 | Planejamento-mestre `loanRequest` pré-financeiro arquivado em [`plans/completed/`](./plans/completed/) como histórico; ver [`plans/README.md`](./plans/README.md). |

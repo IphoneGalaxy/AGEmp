@@ -1,8 +1,14 @@
 # Planejamento-Mestre LoanRequest Pré-Financeiro
 
-**Tipo:** planejamento-mestre para implementação incremental (referência entre chats).
+**Status:** **concluído** para o pacote **`loanRequest` v1**. Este documento é **referência histórica** da execução da v1 — **não** é plano ativo nem fonte prioritária para trabalho novo (use [`HANDOFF_MASTER.md`](../../HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](../../CHECKPOINT_CHECKLIST.md) e [`NEXT_PHASE_OFFICIAL.md`](../../NEXT_PHASE_OFFICIAL.md)).
 
-**Documentos relacionados:** [NEXT_PHASE_OFFICIAL.md](./NEXT_PHASE_OFFICIAL.md), [HANDOFF_MASTER.md](./HANDOFF_MASTER.md), [CHECKPOINT_CHECKLIST.md](./CHECKPOINT_CHECKLIST.md), [ADR_PAYMENT_LINK_CONTEXT.md](./ADR_PAYMENT_LINK_CONTEXT.md).
+**Fechamento formal:** smoke manual real OK, sem NOK crítico — registro em [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md). **LKG:** `lkg-2026-05-01-loanrequest-v1-complete`.
+
+**Localização:** `docs/plans/completed/` (planejamentos encerrados).
+
+**Tipo:** planejamento-mestre arquivado.
+
+**Documentos relacionados:** [NEXT_PHASE_OFFICIAL.md](../../NEXT_PHASE_OFFICIAL.md), [HANDOFF_MASTER.md](../../HANDOFF_MASTER.md), [CHECKPOINT_CHECKLIST.md](../../CHECKPOINT_CHECKLIST.md), [ADR_PAYMENT_LINK_CONTEXT.md](../../ADR_PAYMENT_LINK_CONTEXT.md).
 
 **Origem:** cópia estável do artefato de planejamento gerado no Cursor (plan `loanrequest_master_plan_087bd534`).
 
@@ -12,9 +18,9 @@
 
 - [x] Fechar recorte funcional v1 de `loanRequest`: status, duplicidade, limites, contraproposta e leitura. → `docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`
 - [x] Desenhar modelo remoto, rules e índices de `loanRequests` antes de UI. → `docs/FIRESTORE_LOANREQUESTS.md`, `firestore.rules`, `firestore.indexes.json`, `src/firebase/loanRequests.js`
-- [ ] Promover a matriz QA inicial para checklist executável específico da fase.
+- [x] Promover a matriz QA inicial para checklist executável específico da fase. → [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md)
 - [x] UI mínima do cliente e do fornecedor para `loanRequest` v1 (Conta). → `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx`, `loanRequestsFirestore.js`
-- [ ] Polimento / QA formal / empacotamento (sem expansão de escopo).
+- [x] Polimento / QA formal / empacotamento (sem expansão de escopo). → LKG `lkg-2026-05-01-loanrequest-v1-complete`
 
 ---
 
@@ -25,20 +31,20 @@
 - O AGEmp / Finanças Pro é hoje um app web/PWA com **núcleo financeiro local-first**.
 - Dados financeiros continuam locais em `localStorage`, separados por escopo **`anonymous`** e **`account:{uid}`**.
 - Firebase já existe e está ativo para **Auth**, perfil remoto em `users/{uid}`, `accountRoles` com fallback para `role` legado e vínculos remotos fornecedor/cliente em `links`.
-- O código real confirma essa base em [`src/auth/AuthContext.jsx`](../src/auth/AuthContext.jsx), [`src/firebase/users.js`](../src/firebase/users.js), [`src/firebase/roles.js`](../src/firebase/roles.js), [`src/firebase/links.js`](../src/firebase/links.js) e [`firestore.rules`](../firestore.rules).
+- O código real confirma essa base em [`src/auth/AuthContext.jsx`](../../../src/auth/AuthContext.jsx), [`src/firebase/users.js`](../../../src/firebase/users.js), [`src/firebase/roles.js`](../../../src/firebase/roles.js), [`src/firebase/links.js`](../../../src/firebase/links.js) e [`firestore.rules`](../../../firestore.rules).
 - A camada remota atual é relacional/identidade; ela **não** é fonte financeira.
 - `client.linkContext` existe como metadado local opcional.
 - `loan.linkContext` existe como snapshot local opcional do contrato.
-- Pagamento **não** persiste `payment.linkContext`; a exibição em pagamentos é derivada de `loan.linkContext` conforme [ADR_PAYMENT_LINK_CONTEXT.md](./ADR_PAYMENT_LINK_CONTEXT.md).
+- Pagamento **não** persiste `payment.linkContext`; a exibição em pagamentos é derivada de `loan.linkContext` conforme [ADR_PAYMENT_LINK_CONTEXT.md](../../ADR_PAYMENT_LINK_CONTEXT.md).
 - `calculations.js` segue como motor financeiro crítico e fora de mudança nesta linha.
 - A trilha local-first de `linkContext` no fluxo do cliente foi formalmente encerrada.
-- A próxima fase oficial documentada é a ponte controlada fornecedor/cliente, pré-financeira, sem sync financeiro remoto, conforme [NEXT_PHASE_OFFICIAL.md](./NEXT_PHASE_OFFICIAL.md).
+- A próxima fase oficial documentada é a ponte controlada fornecedor/cliente, pré-financeira, sem sync financeiro remoto, conforme [NEXT_PHASE_OFFICIAL.md](../../NEXT_PHASE_OFFICIAL.md).
 
 ### Confirmar o que já foi validado
 
-- O gate manual geral registrou OK integral dos cenários 1.1 a 9.1 em [QA_MATRIX_GENERAL.md](./QA_MATRIX_GENERAL.md), sem NOK crítico.
+- O gate manual geral registrou OK integral dos cenários 1.1 a 9.1 em [QA_MATRIX_GENERAL.md](../../QA_MATRIX_GENERAL.md), sem NOK crítico.
 - O ciclo local-first atual pode ser tratado como praticamente encerrado segundo F2/F5 da matriz geral.
-- A matriz específica [QA_MATRIX_LINK_OPERATIONAL_VIEW.md](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) permanece como checklist regressivo para a linha de vínculo local.
+- A matriz específica [QA_MATRIX_LINK_OPERATIONAL_VIEW.md](../../QA_MATRIX_LINK_OPERATIONAL_VIEW.md) permanece como checklist regressivo para a linha de vínculo local.
 - A base de identidade/vínculos remotos já possui regras Firestore e funções utilitárias com transições de vínculo conservadoras.
 
 ### Confirmar o que continua fora do escopo
@@ -305,11 +311,11 @@ flowchart TD
 
 ### Componentes/superfícies envolvidos
 
-- [`src/auth/AuthContext.jsx`](../src/auth/AuthContext.jsx): sessão e disponibilidade de conta.
-- [`src/firebase/users.js`](../src/firebase/users.js): perfil remoto.
-- [`src/firebase/roles.js`](../src/firebase/roles.js): papéis efetivos.
-- [`src/firebase/links.js`](../src/firebase/links.js): vínculo aprovado como pré-condição relacional.
-- [`firestore.rules`](../firestore.rules): regras remotas para nova coleção.
+- [`src/auth/AuthContext.jsx`](../../../src/auth/AuthContext.jsx): sessão e disponibilidade de conta.
+- [`src/firebase/users.js`](../../../src/firebase/users.js): perfil remoto.
+- [`src/firebase/roles.js`](../../../src/firebase/roles.js): papéis efetivos.
+- [`src/firebase/links.js`](../../../src/firebase/links.js): vínculo aprovado como pré-condição relacional.
+- [`firestore.rules`](../../../firestore.rules): regras remotas para nova coleção.
 - Superfície provável de UI: área de Conta/Configurações, evitando nova navegação principal pesada na primeira fase.
 - Componentes futuros pequenos: lista de solicitações, formulário de criação e painel de resposta.
 
@@ -684,4 +690,4 @@ Depois dela, a implementação deve seguir pela camada remota/rules antes da UI.
 
 | Data | Nota |
 |------|------|
-| 2026-05-01 | Pacote **`loanRequest` v1** (contrato congelado + Firestore + UI cliente/fornecedor) **formalmente fechado** após **smoke manual real** bem-sucedido (dois usuários; sem NOK crítico). Registro: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**. Próximas subfases numeradas neste planejamento (ex.: contraproposta v1.1, leitura) **não** fazem parte deste fechamento. |
+| 2026-05-01 | Pacote **`loanRequest` v1** (contrato congelado + Firestore + UI cliente/fornecedor) **formalmente fechado** após **smoke manual real** bem-sucedido (dois usuários; sem NOK crítico). Registro: [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**. Próximas subfases numeradas neste planejamento (ex.: contraproposta v1.1, leitura) **não** fazem parte deste fechamento. |

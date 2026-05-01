@@ -5,6 +5,8 @@
 **Camada Firestore:** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)  
 **Complemento:** regressão geral em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); vínculo/`linkContext` em [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md).
 
+**Planejamento histórico (execução v1):** [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) — arquivo concluído em `docs/plans/completed/`; não substitui docs vivos como fonte prioritária.
+
 Registrar data, ambiente (build/commit), operador e **OK / NOK / N/A** por linha. NOK crítico bloqueia promoção a LKG que inclua esta fatia.
 
 ---
@@ -151,3 +153,4 @@ Registrar data, ambiente (build/commit), operador e **OK / NOK / N/A** por linha
 |------|------|
 | 2026-04-30 | Criação da matriz executável para fechamento Subfase 5 (pacote v1). |
 | 2026-05-01 | **Fechamento formal:** smoke manual real bem-sucedido; gate OK integral sem NOK crítico; pacote v1 **FECHADO**. Tag **`lkg-2026-05-01-loanrequest-v1-complete`** (annotated). |
+| 2026-05-01 | Planejamento-mestre da execução v1 movido para [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) (`docs/plans/completed/`); ver [`plans/README.md`](./plans/README.md). |

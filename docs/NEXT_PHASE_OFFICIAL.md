@@ -175,3 +175,4 @@ Continuam fora desta fase:
 | Data | Nota |
 |------|------|
 | 2026-04-30 | Criacao do documento de proxima fase oficial: ponte controlada fornecedor/cliente, pre-financeira, sem implementacao e sem sync financeiro remoto. |
+| 2026-05-01 | Planejamento-mestre da execucao `loanRequest` v1 movido para [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) como referencia historica; direcao atual continua neste documento, [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) e [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md). |

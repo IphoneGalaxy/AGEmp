@@ -5,6 +5,8 @@
 **Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)  
 **QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)
 
+**Planejamento histórico (execução v1, não plano ativo):** [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md)
+
 **Pacote v1:** **fechado formalmente** após smoke manual real OK (sem NOK crítico) — ver [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) e LKG **`lkg-2026-05-01-loanrequest-v1-complete`** em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4.
 
 ## Coleção
