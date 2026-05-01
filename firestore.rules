@@ -265,6 +265,247 @@ service cloud.firestore {
         );
     }
 
+    // --- loanRequests (pré-financeiro v1; ver docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md) ---
+
+    function loanRequestLinkPath(linkId) {
+      return /databases/$(database)/documents/links/$(linkId);
+    }
+
+    function loanRequestTerminalStatus(s) {
+      return s == 'approved' || s == 'rejected' || s == 'cancelled_by_client';
+    }
+
+    function loanRequestOpenStatus(s) {
+      return s == 'pending' || s == 'under_review';
+    }
+
+    function loanRequestAmountCentsValid(n) {
+      return n is int && n >= 1 && n <= 9999999999;
+    }
+
+    function loanRequestNoteValid(note) {
+      return note is string && note.size() <= 1000;
+    }
+
+    function loanRequestV1ForbiddenKeysCreate(data) {
+      return data.keys().hasAny([
+        'approvedAmount',
+        'respondedAt',
+        'cancelledAt',
+        'supplierNote',
+        'counterofferAmount',
+        'readByClientAt',
+        'readBySupplierAt'
+      ]);
+    }
+
+    function loanRequestV1ForbiddenKeysAlways(data) {
+      return data.keys().hasAny([
+        'counterofferAmount',
+        'readByClientAt',
+        'readBySupplierAt'
+      ]);
+    }
+
+    function loanRequestLinkApprovedForLoanRequest(linkId, supplierId, clientId) {
+      let link = get(loanRequestLinkPath(linkId));
+      return link.exists &&
+        link.data.status == 'approved' &&
+        link.data.supplierId == supplierId &&
+        link.data.clientId == clientId;
+    }
+
+    function loanRequestCreateShapeValid() {
+      return request.resource.data.keys().hasOnly([
+          'supplierId',
+          'clientId',
+          'linkId',
+          'requestedAmount',
+          'clientNote',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        !loanRequestV1ForbiddenKeysCreate(request.resource.data) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data) &&
+        request.resource.data.supplierId is string &&
+        request.resource.data.supplierId.size() > 0 &&
+        request.resource.data.clientId is string &&
+        request.resource.data.clientId.size() > 0 &&
+        request.resource.data.linkId is string &&
+        request.resource.data.linkId.size() > 0 &&
+        request.resource.data.supplierId != request.resource.data.clientId &&
+        loanRequestAmountCentsValid(request.resource.data.requestedAmount) &&
+        loanRequestNoteValid(request.resource.data.clientNote) &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.createdAt == request.time &&
+        request.resource.data.updatedAt == request.time;
+    }
+
+    function loanRequestCreateAuthorized() {
+      return request.auth.uid == request.resource.data.clientId &&
+        userHasEffectiveAccountRole(request.resource.data.clientId, 'client') &&
+        userHasEffectiveAccountRole(request.resource.data.supplierId, 'supplier') &&
+        loanRequestLinkApprovedForLoanRequest(
+          request.resource.data.linkId,
+          request.resource.data.supplierId,
+          request.resource.data.clientId
+        );
+    }
+
+    function loanRequestParticipantRead() {
+      return isSignedIn() &&
+        (
+          request.auth.uid == resource.data.clientId ||
+          request.auth.uid == resource.data.supplierId
+        );
+    }
+
+    function loanRequestCoreImmutableOnUpdate() {
+      return request.resource.data.supplierId == resource.data.supplierId &&
+        request.resource.data.clientId == resource.data.clientId &&
+        request.resource.data.linkId == resource.data.linkId &&
+        request.resource.data.requestedAmount == resource.data.requestedAmount &&
+        request.resource.data.clientNote == resource.data.clientNote &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function loanRequestSupplierNoteOkAfter() {
+      return !request.resource.data.keys().hasAny(['supplierNote']) ||
+        loanRequestNoteValid(request.resource.data.supplierNote);
+    }
+
+    function loanRequestAllowedV1Keys(data) {
+      return data.keys().hasOnly([
+        'supplierId',
+        'clientId',
+        'linkId',
+        'requestedAmount',
+        'clientNote',
+        'status',
+        'createdAt',
+        'updatedAt',
+        'supplierNote',
+        'approvedAmount',
+        'respondedAt',
+        'cancelledAt'
+      ]);
+    }
+
+    function loanRequestClientCancelValid() {
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        loanRequestOpenStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == 'cancelled_by_client' &&
+        request.resource.data.cancelledAt == request.time &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'cancelledAt']) &&
+        !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestSupplierToUnderReviewValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        resource.data.status == 'pending' &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == 'under_review' &&
+        request.resource.data.updatedAt == request.time &&
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) ||
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'updatedAt', 'supplierNote'])
+        ) &&
+        loanRequestSupplierNoteOkAfter() &&
+        !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt', 'cancelledAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestSupplierApproveDiffOk(keys) {
+      return keys.hasOnly(['status', 'updatedAt', 'respondedAt', 'approvedAmount']) ||
+        keys.hasOnly(['status', 'updatedAt', 'respondedAt', 'approvedAmount', 'supplierNote']);
+    }
+
+    function loanRequestSupplierApproveValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        loanRequestOpenStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == 'approved' &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.respondedAt == request.time &&
+        loanRequestAmountCentsValid(request.resource.data.approvedAmount) &&
+        request.resource.data.approvedAmount == resource.data.requestedAmount &&
+        loanRequestSupplierApproveDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        loanRequestSupplierNoteOkAfter() &&
+        !request.resource.data.keys().hasAny(['cancelledAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestSupplierRejectDiffOk(keys) {
+      return keys.hasOnly(['status', 'updatedAt', 'respondedAt']) ||
+        keys.hasOnly(['status', 'updatedAt', 'respondedAt', 'supplierNote']);
+    }
+
+    function loanRequestSupplierRejectValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        loanRequestOpenStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == 'rejected' &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.respondedAt == request.time &&
+        !request.resource.data.keys().hasAny(['approvedAmount']) &&
+        loanRequestSupplierRejectDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        loanRequestSupplierNoteOkAfter() &&
+        !request.resource.data.keys().hasAny(['cancelledAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestUpdateValid() {
+      return loanRequestAllowedV1Keys(request.resource.data) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data) &&
+        loanRequestCoreImmutableOnUpdate() &&
+        !loanRequestTerminalStatus(resource.data.status) &&
+        request.resource.data.keys().hasAll([
+          'supplierId',
+          'clientId',
+          'linkId',
+          'requestedAmount',
+          'clientNote',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        (
+          loanRequestClientCancelValid() ||
+          loanRequestSupplierToUnderReviewValid() ||
+          loanRequestSupplierApproveValid() ||
+          loanRequestSupplierRejectValid()
+        );
+    }
+
     // Leitura por documento (get) liberada para qualquer usuário autenticado, para
     // validar papel na etapa de vínculo sem Cloud Function. list permanece bloqueado
     // para evitar varredura da coleção.
@@ -315,6 +556,19 @@ service cloud.firestore {
       allow update: if isLinkParticipant(resource.data) &&
         linkDataIsValid(request.resource.data) &&
         linkStatusTransitionIsValid();
+
+      allow delete: if false;
+    }
+
+    match /loanRequests/{loanRequestId} {
+      allow read: if loanRequestParticipantRead();
+
+      allow create: if isSignedIn() &&
+        loanRequestCreateShapeValid() &&
+        loanRequestCreateAuthorized() &&
+        loanRequestAllowedV1Keys(request.resource.data);
+
+      allow update: if isSignedIn() && loanRequestUpdateValid();
 
       allow delete: if false;
     }

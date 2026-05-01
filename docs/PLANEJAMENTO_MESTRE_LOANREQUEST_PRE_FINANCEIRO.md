@@ -11,7 +11,7 @@
 ## Checklist de continuidade (subfases planejadas)
 
 - [x] Fechar recorte funcional v1 de `loanRequest`: status, duplicidade, limites, contraproposta e leitura. → `docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`
-- [ ] Desenhar modelo remoto, rules e índices de `loanRequests` antes de UI.
+- [x] Desenhar modelo remoto, rules e índices de `loanRequests` antes de UI. → `docs/FIRESTORE_LOANREQUESTS.md`, `firestore.rules`, `firestore.indexes.json`, `src/firebase/loanRequests.js`
 - [ ] Promover a matriz QA inicial para checklist executável específico da fase.
 - [ ] Planejar/implementar UI mínima do cliente para criar e acompanhar pedidos em subfase futura.
 - [ ] Planejar/implementar UI mínima do fornecedor para listar e responder pedidos em subfase futura.

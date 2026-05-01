@@ -20,6 +20,8 @@ Leitura recomendada junto com:
 
 **Contrato funcional loanRequest v1 (Subfase 1 documental concluída):** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md).
 
+**Camada técnica remota `loanRequests` (Subfase 2 — rules/modelo):** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md).
+
 ---
 
 ## 1. Visão geral consolidada
