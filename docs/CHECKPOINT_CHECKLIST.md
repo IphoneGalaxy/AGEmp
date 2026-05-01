@@ -18,6 +18,8 @@ Leitura recomendada junto com:
 
 **Proxima fase oficial:** [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental.
 
+**Contrato funcional loanRequest v1 (Subfase 1 documental concluída):** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md).
+
 ---
 
 ## 1. Visão geral consolidada
