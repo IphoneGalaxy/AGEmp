@@ -2,7 +2,8 @@
 
 **Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
 **Helpers:** [`src/firebase/loanRequests.js`](../src/firebase/loanRequests.js) · **Firestore (CRUD cliente/fornecedor):** [`src/firebase/loanRequestsFirestore.js`](../src/firebase/loanRequestsFirestore.js)  
-**Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)
+**Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)  
+**QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)
 
 ## Coleção
 

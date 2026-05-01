@@ -212,6 +212,12 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                         </p>
                       )}
 
+                      {!isOpen && (
+                        <p className="text-xs leading-relaxed text-content-muted">
+                          Pedido encerrado — não há ações disponíveis neste fluxo.
+                        </p>
+                      )}
+
                       {isOpen && (
                         <>
                           <div>

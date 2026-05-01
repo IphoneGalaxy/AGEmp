@@ -13,6 +13,7 @@ import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
   LOAN_REQUEST_MIN_AMOUNT_CENTS,
+  LOAN_REQUEST_STATUSES,
   getLoanRequestStatusLabelPt,
   isLoanRequestOpenStatusV1,
 } from '../firebase/loanRequests';
@@ -322,8 +323,9 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
         {requestsLoading && requests.length === 0 ? (
           <p className="text-center text-sm text-content-muted">Carregando pedidos…</p>
         ) : requests.length === 0 ? (
-          <p className="text-sm text-content-muted">
-            Você ainda não enviou pedidos ou a lista está vazia neste aparelho.
+          <p className="text-sm leading-relaxed text-content-muted">
+            Nenhum pedido enviado ainda. Depois que você enviar um pedido a um fornecedor com vínculo
+            aprovado, ele aparece aqui para acompanhamento.
           </p>
         ) : (
           <ul className="space-y-3">
@@ -335,6 +337,10 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
               const statusLabel = getLoanRequestStatusLabelPt(r.status);
               const canCancel =
                 typeof r.status === 'string' && isLoanRequestOpenStatusV1(r.status);
+              const isApproved = r.status === LOAN_REQUEST_STATUSES.APPROVED;
+              const showRespondedAt =
+                r.status === LOAN_REQUEST_STATUSES.APPROVED ||
+                r.status === LOAN_REQUEST_STATUSES.REJECTED;
               const busy = cancellingId === r.id;
               return (
                 <li
@@ -358,6 +364,24 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                     <p className="mt-2 text-xs leading-relaxed text-content-muted">
                       <span className="font-medium text-content-soft">Sua observação: </span>
                       {r.clientNote}
+                    </p>
+                  )}
+                  {typeof r.supplierNote === 'string' && r.supplierNote.length > 0 && (
+                    <p className="mt-2 text-xs leading-relaxed text-content-muted">
+                      <span className="font-medium text-content-soft">Mensagem do fornecedor: </span>
+                      {r.supplierNote}
+                    </p>
+                  )}
+                  {showRespondedAt && (
+                    <p className="mt-1 text-xs text-content-muted">
+                      Resposta em {formatRequestTimestamp(r.respondedAt)}
+                    </p>
+                  )}
+                  {isApproved && (
+                    <p className="mt-2 rounded-design-sm border border-edge/70 bg-surface px-2 py-1.5 text-xs leading-relaxed text-content-muted">
+                      Aprovação na plataforma{' '}
+                      <span className="font-medium text-content-soft">não cria contrato</span> no app
+                      nem altera caixa — combine os próximos passos fora deste fluxo, se precisar.
                     </p>
                   )}
                   {canCancel && (

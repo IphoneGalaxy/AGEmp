@@ -369,6 +369,18 @@ A proxima fase oficial:
 - nao grava clientes, contratos, pagamentos, caixa ou dashboard no Firestore;
 - exige novo plano aprovado antes de qualquer implementacao.
 
+### Pacote `loanRequest` v1 (pré-financeira — implementação)
+
+Fatia **relacional remota** alinhada ao contrato congelado [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md):
+
+- modelo e rules: [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md);
+- UI cliente e fornecedor: `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx`, integradas em `AccountScreen.jsx` (Configurações → Conta);
+- checklist QA executável da fatia: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md).
+
+**Congelado:** sem contraproposta v1, sem `readBy*`, sem conversão pedido → contrato, sem sync financeiro remoto e sem impacto em `calculations.js` ou `payment.linkContext`.
+
+**Fechamento do pacote v1:** após polimento leve de copy/empty states e atualização documental, recomenda-se **smoke manual com dois usuários reais** conforme a matriz antes de promover **novo LKG** que inclua explicitamente esta fatia (ver recomendação na matriz e no checkpoint).
+
 ---
 
 ## 10. Riscos e cuidados para continuidade
@@ -504,3 +516,4 @@ Ele funciona como:
 | 2026-04-30 | Gate final assistido (ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)): **F2 pendente** — §§ 1–9 da matriz geral sem execução humana completa neste ciclo; não declarar encerramento do ciclo local-first só com evidência automatizada. |
 | 2026-04-30 | Gate final **manual**: operador atesta **OK integral** §§ 1–9 (**1.1–9.1**); **F2 satisfeito** · **F5** — ciclo local-first **praticamente encerrado** (sem NOK crítico declarado). |
 | 2026-04-30 | Proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental. |
+| 2026-04-30 | Pacote **`loanRequest` v1** (UI cliente/fornecedor + rules/modelo) consolidado para fechamento; matriz QA específica [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); smoke dois usuários recomendado antes de novo LKG incluindo a fatia. |

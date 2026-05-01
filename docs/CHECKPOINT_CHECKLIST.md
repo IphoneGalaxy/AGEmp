@@ -26,6 +26,8 @@ Leitura recomendada junto com:
 
 **UI fornecedor — pedidos recebidos (Subfase 4):** Configurações → Conta → “Abrir pedidos recebidos” (`LoanRequestsSupplierPanel.jsx`).
 
+**Fechamento pacote v1 — QA específico (Subfase operacional de encerramento):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) — executar antes de promover LKG que cite esta fatia; smoke obrigatório com **dois usuários reais** (fornecedor + cliente).
+
 ---
 
 ## 1. Visão geral consolidada
@@ -293,3 +295,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-30 | Gate final assistido: ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — **F2 pendente**; decisão formal — não declarar encerramento do ciclo local-first sem execução/registro humano mínimo §§ 1–9 ou equivalente governado. |
 | 2026-04-30 | Gate final **manual** OK integral: **F2**/**F5** conforme matriz geral; ciclo local-first **praticamente encerrado**; sem NOK crítico declarado pelo operador. |
 | 2026-04-30 | Proxima fase oficial registrada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente como camada pre-financeira, sem codigo de produto nesta etapa documental. |
+| 2026-04-30 | **`loanRequest` v1:** matriz QA executável [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); polimento leve UI/documentação; recomendação de smoke dois usuários antes de novo LKG da fatia (`HANDOFF_MASTER.md` §9). |
