@@ -189,6 +189,17 @@ A base estável principal recomendada neste momento é:
 - **`lkg-2026-04-30-clientview-operational-link-block-complete`**
 - **commit:** o mesmo apontado pela tag (`git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete`).
 
+### Proxima fase oficial documentada
+
+A proxima fase oficial esta definida em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md):
+
+- ponte controlada fornecedor/cliente;
+- camada remota **pre-financeira** de solicitacoes;
+- sem sync financeiro remoto;
+- sem `payment.linkContext`;
+- sem alteracao em `calculations.js`;
+- sem implementacao automatica nesta etapa documental.
+
 ### Até onde a trilha já foi consolidada
 
 A trilha consolidada atual vai:
@@ -313,16 +324,18 @@ Continuam fora do escopo atual:
 
 ---
 
-## 9. Decisão estratégica atual — consolidação final local-first
+## 9. Decisão estratégica atual — proxima fase oficial
 
-A decisão estratégica atual é seguir o **Caminho 1**: consolidar e praticamente encerrar o ciclo **local-first** atual, sem abrir agora a visão futura multiusuário financeira.
+O **Caminho 1** foi encerrado praticamente pelo gate manual geral. A decisão estratégica atual passa a ser abrir, em documentação e planejamento, a **ponte controlada fornecedor/cliente** descrita em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md).
 
-### Direção recomendada
+Essa nova fase permanece dentro do produto atual e preserva o financeiro local-first. Ela prepara a visão futura por meio de uma camada remota **pre-financeira** de solicitações entre cliente e fornecedor, sem transformar Firebase em fonte financeira.
 
-- A base atual é considerada **madura o suficiente** para encerramento prático do ciclo local-first, desde que passe pelo gate operacional final de QA/manualidade registrado em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md).
-- Não há, neste momento, recomendação para abrir uma nova trilha funcional local-first.
-- Uma nova trilha só deve ser aberta se a QA manual geral revelar **bloqueador real de uso diário**, e ainda assim como correção pontual/cirúrgica, não como nova frente de produto.
-- A matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) permanece como complemento de regressão para vínculo; a matriz geral é o gate principal de encerramento.
+### Fechamento do Caminho 1
+
+- A base atual foi considerada madura o suficiente para encerramento prático do ciclo local-first após o gate em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md).
+- Não há recomendação para abrir nova trilha funcional local-first por inércia.
+- Uma nova trilha local só deve ser aberta se a QA manual geral revelar bloqueador real de uso diário, e ainda assim como correção pontual/cirúrgica.
+- A matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) permanece como complemento de regressão para vínculo.
 
 ### Critério de decisão
 
@@ -345,6 +358,16 @@ Se no futuro o produto exigir responder à pergunta abaixo de forma nova, será 
 **Pagamentos devem eventualmente ter snapshot próprio (`payment.linkContext`) ou permanecem apenas como espelho visual derivado permanente só do contrato?**
 
 Qualquer código futuro relacionado só após esse passo oficial de revisão decidida conscientemente pela governança (nunca automática só por aparecer novo chat).
+
+### Recorte oficial da proxima fase
+
+A proxima fase oficial:
+
+- planeja solicitacoes remotas de emprestimo como **intencao relacional pre-financeira**;
+- usa vinculos remotos aprovados apenas como contexto relacional;
+- nao cria contrato local ou remoto automaticamente;
+- nao grava clientes, contratos, pagamentos, caixa ou dashboard no Firestore;
+- exige novo plano aprovado antes de qualquer implementacao.
 
 ---
 
@@ -480,3 +503,4 @@ Ele funciona como:
 | 2026-04-30 | Decisão estratégica Caminho 1: próxima fase deve ser **consolidação/encerramento local-first**, não nova feature; gate final passa pela QA manual geral e correções apenas se houver bloqueador real. |
 | 2026-04-30 | Gate final assistido (ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)): **F2 pendente** — §§ 1–9 da matriz geral sem execução humana completa neste ciclo; não declarar encerramento do ciclo local-first só com evidência automatizada. |
 | 2026-04-30 | Gate final **manual**: operador atesta **OK integral** §§ 1–9 (**1.1–9.1**); **F2 satisfeito** · **F5** — ciclo local-first **praticamente encerrado** (sem NOK crítico declarado). |
+| 2026-04-30 | Proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental. |

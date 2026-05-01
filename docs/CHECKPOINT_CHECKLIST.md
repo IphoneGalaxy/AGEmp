@@ -16,6 +16,8 @@ Leitura recomendada junto com:
 
 **Base estável de referência (LKG):** `lkg-2026-04-30-clientview-operational-link-block-complete` — commit exato: `git rev-parse lkg-2026-04-30-clientview-operational-link-block-complete` (sincronizar tags ao retomar; cadeia anterior relevante: `lkg-2026-04-28-link-operational-view` · `28f7936`; pacotes intermediários `lkg-2026-04-29-clientview-operational-link-reading`, `lkg-2026-04-30-clientview-payment-derived-reading`).
 
+**Proxima fase oficial:** [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental.
+
 ---
 
 ## 1. Visão geral consolidada
@@ -198,27 +200,31 @@ Sempre como: metadado local opcional, leitura operacional; **sem** alterar `calc
 
 ---
 
-## 9. Próxima fase — consolidação/encerramento local-first
+## 9. Próxima fase — ponte controlada fornecedor/cliente
 
 ### 9.1. Decisão estratégica atual
 
-A próxima fase deve ser **consolidação final e encerramento prático do ciclo local-first atual**, não uma nova trilha funcional.
+O ciclo local-first atual foi considerado **praticamente encerrado** pelo gate manual geral. A proxima fase oficial passa a ser a **ponte controlada fornecedor/cliente** descrita em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md).
 
-Critério recomendado:
+Direcao recomendada:
 
-- executar/registrar a regressão final em [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md);
-- revisar a matriz específica [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md) como complemento da trilha de vínculo;
-- se não houver NOK crítico, considerar o ciclo local-first **praticamente encerrado**;
-- se houver NOK crítico, abrir apenas correção pontual e documentada, sem transformar isso em nova frente de produto.
+- manter o app atual como produto local-first;
+- planejar solicitacoes remotas de emprestimo como camada **pre-financeira** e relacional;
+- usar vinculos remotos aprovados como contexto de relacionamento, nao como regra financeira;
+- nao iniciar sync financeiro remoto;
+- nao criar `payment.linkContext`;
+- nao alterar `calculations.js`;
+- nao implementar codigo antes de plano/ADR/QA especificos.
 
 ### 9.2. Decisão de produto (quando houver demanda; **não** implementação automática)
 
 - Pagamentos permanecem apenas derivados conforme snapshot contrato atual; [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) define quando reabrir oficialmente cenário próprio campo pagamento antes de novo código relacionado aparecer aceitável segundo governança.
+- Solicitacoes remotas futuras permanecem separadas de clientes, contratos, pagamentos, caixa, dashboard e backups locais ate decisao propria de conversao/sync.
 
 ### 9.3. Médio prazo (direção, não compromisso de sprint)
 
-- Aproximação gradual entre contexto relacional remoto e domínio financeiro local **só** com desenho explícito.
-- Leituras operacionais adicionais por vínculo **sem** virar backend financeiro autoritativo até decisão contrária.
+- Planejar modelo remoto de solicitacao, status, regras e UX minima antes de qualquer implementacao.
+- Definir uma matriz QA executavel para a fase futura, preservando os guardrails ja congelados.
 
 ### 9.4. Longo prazo (alinhado à visão do produto / Project Rule)
 
@@ -242,7 +248,7 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | **Validado** | Automático recorrente (`vitest`/build); QA manual registra novo template [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) + revisão rápida possível específico [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); ADR atual [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco** | Ciclo local-first **praticamente encerrado** no gate geral (**F2**/**F5** OK conforme [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)); próxima mudança só com **nova fase/decisão explícita** — não abrir trilha funcional só por inércia. |
+| **Próximo foco** | Ciclo local-first **praticamente encerrado** no gate geral (**F2**/**F5** OK conforme [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md)); proxima fase oficial documentada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto. |
 
 ### Decisão de fechamento local-first
 
@@ -250,7 +256,7 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 |----------|---------|
 | **Estado do gate final (`QA_MATRIX_GENERAL`)** | **2026-04-30:** execução manual §§ 1–9 com **OK integral** atestado pelo operador; **F2 satisfeito**, **F5 atendido** — ciclo local-first **praticamente encerrado** nesta etapa. **Sem NOK crítico** declarado. Evidência assistida (`vitest`/build) permanece complementar no histórico da matriz. |
 | **Recomendação principal** | Considerar **encerrado** o gate de consolidação local-first atual; qualquer evolução futura só com decisão de produto/arquitetura explícita (fora do Caminho 1 neste registro). |
-| **Última trilha funcional** | Não recomendada neste momento. |
+| **Última trilha funcional** | Não recomendada como continuidade local-first; proxima frente e documental/arquitetural para ponte controlada. |
 | **Quando abrir correção** | Apenas se a QA manual geral revelar bloqueador real de uso diário. |
 | **Riscos aceitos nesta etapa** | Pagamento segue como espelho derivado do contrato; vínculo não é auditoria imutável por pagamento; Firebase não é fonte financeira; regressões futuras exigem novo ciclo de QA conforme matrizes. |
 | **Guardrails inegociáveis** | Sem sync financeiro; sem `payment.linkContext`; sem regra financeira por vínculo; sem alteração em `calculations.js`; sem dashboard/caixa por vínculo; sem redesign amplo. |
@@ -278,3 +284,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-04-30 | Decisão Caminho 1 registrada: fase atual deve ser **consolidação/encerramento local-first**, não nova feature; uma correção pontual só se justifica por bloqueador real encontrado na QA manual geral. |
 | 2026-04-30 | Gate final assistido: ver [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md) — **F2 pendente**; decisão formal — não declarar encerramento do ciclo local-first sem execução/registro humano mínimo §§ 1–9 ou equivalente governado. |
 | 2026-04-30 | Gate final **manual** OK integral: **F2**/**F5** conforme matriz geral; ciclo local-first **praticamente encerrado**; sem NOK crítico declarado pelo operador. |
+| 2026-04-30 | Proxima fase oficial registrada em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): ponte controlada fornecedor/cliente como camada pre-financeira, sem codigo de produto nesta etapa documental. |
