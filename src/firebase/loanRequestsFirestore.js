@@ -14,7 +14,9 @@ import {
 
 import { db } from './index';
 import {
+  LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
+  LOAN_REQUEST_MIN_AMOUNT_CENTS,
   LOAN_REQUEST_OPEN_STATUSES,
   LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD,
   LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD,
@@ -119,6 +121,173 @@ export async function supplierApproveLoanRequest({ requestId, supplierUid, suppl
  */
 export async function supplierRejectLoanRequest({ requestId, supplierUid, supplierNote }) {
   return supplierTransitionFromDoc(requestId, supplierUid, 'rejected', supplierNote);
+}
+
+/**
+ * Fatia CN v1.1 — fornecedor propõe contraposta (única rodada prevista pelo contrato atual).
+ *
+ * @param {{
+ *   requestId: string;
+ *   supplierUid: string;
+ *   counterofferAmountCents: number;
+ *   supplierNote?: string;
+ * }} params
+ */
+export async function supplierProposeLoanRequestCounteroffer({
+  requestId,
+  supplierUid,
+  counterofferAmountCents,
+  supplierNote,
+}) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !supplierUid || typeof counterofferAmountCents !== 'number') {
+    return { ok: false, message: 'Pedido ou valor da contraproposta inválido.' };
+  }
+  const cents = Math.round(counterofferAmountCents);
+  if (
+    cents < LOAN_REQUEST_MIN_AMOUNT_CENTS ||
+    cents > LOAN_REQUEST_MAX_AMOUNT_CENTS ||
+    Number.isNaN(cents)
+  ) {
+    return { ok: false, message: 'Valor da contraproposta fora dos limites permitidos.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.supplierId !== supplierUid) {
+      return { ok: false, message: 'Este pedido não pertence à sua conta como fornecedor.' };
+    }
+    const status = typeof data.status === 'string' ? data.status : '';
+    if (
+      status !== LOAN_REQUEST_STATUSES.PENDING &&
+      status !== LOAN_REQUEST_STATUSES.UNDER_REVIEW
+    ) {
+      return {
+        ok: false,
+        message:
+          'Só é possível enviar uma contraproposta quando o pedido está pendente ou em análise.',
+      };
+    }
+    if (typeof data.counterofferAmount === 'number' || data.counterofferedAt != null) {
+      return {
+        ok: false,
+        message: 'Este pedido já registrou uma contraproposta (apenas uma rodada é permitida).',
+      };
+    }
+    if (typeof data.requestedAmount !== 'number') {
+      return { ok: false, message: 'Valor original do pedido inválido.' };
+    }
+    if (cents === data.requestedAmount) {
+      return {
+        ok: false,
+        message: 'Informe um valor diferente do valor solicitado (senão seria apenas aprovado).',
+      };
+    }
+
+    await updateDoc(ref, {
+      status: LOAN_REQUEST_STATUSES.COUNTEROFFER,
+      counterofferAmount: cents,
+      counterofferedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      ...buildOptionalSupplierNoteUpdate(supplierNote),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] supplierProposeLoanRequestCounteroffer', e);
+    }
+    return { ok: false, message: mapSupplierLoanRequestError(e) };
+  }
+}
+
+/**
+ * @param {{ requestId: string; clientUid: string }} params
+ */
+export async function clientAcceptLoanRequestCounteroffer({ requestId, clientUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !clientUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.clientId !== clientUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de cliente aqui.' };
+    }
+    if (data.status !== LOAN_REQUEST_STATUSES.COUNTEROFFER) {
+      return { ok: false, message: 'Neste momento não há contraproposta pendente neste pedido.' };
+    }
+    if (typeof data.counterofferAmount !== 'number') {
+      return { ok: false, message: 'Valor da contraproposta indisponível.' };
+    }
+    await updateDoc(ref, {
+      status: LOAN_REQUEST_STATUSES.APPROVED,
+      approvedAmount: data.counterofferAmount,
+      respondedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] clientAcceptLoanRequestCounteroffer', e);
+    }
+    return { ok: false, message: mapCreateLoanRequestError(e) };
+  }
+}
+
+/**
+ * @param {{ requestId: string; clientUid: string }} params
+ */
+export async function clientDeclineLoanRequestCounteroffer({ requestId, clientUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !clientUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.clientId !== clientUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de cliente aqui.' };
+    }
+    if (data.status !== LOAN_REQUEST_STATUSES.COUNTEROFFER) {
+      return { ok: false, message: 'Neste momento não há contraproposta pendente neste pedido.' };
+    }
+    await updateDoc(ref, {
+      status: LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED,
+      respondedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] clientDeclineLoanRequestCounteroffer', e);
+    }
+    return { ok: false, message: mapCreateLoanRequestError(e) };
+  }
 }
 
 /**

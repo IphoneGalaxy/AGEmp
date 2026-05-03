@@ -26,17 +26,19 @@
 | `clientNote` | string | obrigatório | até 1000 caracteres; imutável; pode ser `""` |
 | `status` | string | obrigatório (`pending`) | ver transições nas rules |
 | `createdAt` | timestamp | obrigatório (`request.time` no servidor) | imutável |
-| `updatedAt` | timestamp | obrigatório | atualizado a cada escrita |
+| `updatedAt` | timestamp | obrigatório | nas transições negociais (cancelamento / fornecedor / CN) atualiza (`serverTimestamp`). **Exceção v1.1 RB:** marcadores `readBy*` não alteram `updatedAt`. |
 | `supplierNote` | string | opcional | até 1000 caracteres; só fornecedor; ausente na criação |
-| `approvedAmount` | int | opcional | só em `approved`; igual a `requestedAmount` |
-| `respondedAt` | timestamp | opcional | `approved` / `rejected` |
+| `approvedAmount` | int | opcional | só em `approved`: igual a **`requestedAmount`** (aprovação direta pelo fornecedor) **ou** igual a **`counterofferAmount`** (cliente aceitou contraposta) |
+| `respondedAt` | timestamp | opcional | `approved` · `rejected`; na fatia CN também quando o cliente aceita ou declina a contraposta a partir de `counteroffer`. |
 | `cancelledAt` | timestamp | opcional | `cancelled_by_client` |
+| `counterofferAmount` | int (centavos BRL) | opcional (**v1.1 CN**) | só após ramo dedicado **fornecedor** → `counteroffer`; mesmos limites que `requestedAmount`; **≠** `requestedAmount`; **rodada única** |
+| `counterofferedAt` | timestamp | opcional (**v1.1 CN**) | preenchido quando o fornecedor envia a contraposta |
 | `readByClientAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do cliente (`clientId`), sem relação jurídica; ausente para pedidos só v1 anterior |
 | `readBySupplierAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do fornecedor (`supplierId`) |
 
-**Proibido na v1 até v1.1 CN:** `counterofferAmount`, status `counteroffer` / converter remoto como produto financiado autoritativo (`converted_to_contract` continua não usado conforme próxima fase).
+**Status pré-financeiros** (`loanRequests`): incluem `pending`, `under_review`, `counteroffer` (efeito de “aberto” no app também para duplicidade por `linkId`), terminais `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **`converted_to_contract`** não é usado (continua fora deste modelo).
 
-**Marcadores `readBy*`** atualizados só pela fatia RB (Firestore Rules + cliente): apenas o papel correspondente pode escrever o próprio campo; updates de RB **não** alteram `updatedAt` (política B); permitidos também quando o pedido está em estado terminal, desde que o diff seja apenas o marcador próprio (`firestore.rules` — ramo `loanRequestReadBy*`).
+**Fatia RB (`readBy*`)**: apenas o papel correspondente pode escrever o próprio campo; diff **somente** o marcador; **`updatedAt` não muda** (política B); estados permitidos incluem **`counteroffer`** e **`counteroffer_declined`** (ver `loanRequestStatusAllowsReadMarkers` em `firestore.rules`).
 
 ## Valores em centavos
 
@@ -46,14 +48,16 @@ Ex.: R$ 100,00 → `10000`. Limites alinhados ao contrato Subfase 1 (0,01 a 99.9
 
 As **rules não verificam unicidade entre documentos** (limitação do Firestore Security Rules). Na **Subfase 3 (UI + fluxo)**, antes de criar:
 
-1. Consultar `loanRequests` com `where('linkId', '==', linkId)` e `where('status', 'in', ['pending', 'under_review'])`, `limit(1)`.
+1. Consultar `loanRequests` com `where('linkId', '==', linkId)` e `where('status', 'in', ['pending', 'under_review', 'counteroffer'])`, `limit(1)`.
 2. Se existir documento, abortar criação ou orientar o usuário.
 
 Índice composto: `linkId` + `status` — ver [`firestore.indexes.json`](../firestore.indexes.json).
 
 **UI cliente (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`) — chama `findOpenLoanRequestForLinkId` antes de gravar.
 
-**UI fornecedor (Subfase 4):** Configurações → Conta → “Abrir pedidos recebidos” (`LoanRequestsSupplierPanel.jsx`). Transições: `pending` → `under_review`; `pending` | `under_review` → `approved` (com `approvedAmount` igual ao `requestedAmount` do documento) ou `rejected`; `supplierNote` opcional (até 1000 caracteres).
+**UI fornecedor:** `LoanRequestsSupplierPanel.jsx` — além das transições v1 (`pending` → `under_review`; `pending` | `under_review` → `approved` com **`approvedAmount` = `requestedAmount`** ou → `rejected`), **fatia CN v1.1**: `pending` | `under_review` → **`counteroffer`** com `counterofferAmount`, `counterofferedAt`, `supplierNote` opcional; **uma rodada**: rules impedem segundo envio se `counterofferAmount` / `counterofferedAt` já existem.
+
+**UI cliente — contraposta pendente (`counteroffer`):** `LoanRequestsClientPanel.jsx`: aceitar → `approved` com **`approvedAmount` = valor armazenado em `counterofferAmount`**; ou declinar → **`counteroffer_declined`** (terminal). **Cancelar pelo cliente não está disponível** nesse estado (só `pending` | `under_review`).
 
 ## Índices compostos
 
@@ -76,8 +80,10 @@ firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
 
-## Planejamento v1.1 (implementação gradual)
+**Contrato forma v1 / v1.1:** Subfase 1 — [`plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md); **v1.1 RB + CN** — [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md).
 
-Fatia RB (`readBy*`) já refletida no código de app + `firestore.rules` deste repo; próximos incrementos continuam definidos apenas em especificação (ex.: contraposta — **[`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md)**).
+**Pacote loanRequest v1** (baseline): **fechado** — QA em [`plans/completed/QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md).
 
-Modelo atual do documento quando RB está vivo: ver tabela §Modelo (`readBy*` opcionais). Demais capacidades nomeadas v1.1 **ainda não** estão todas no código até promoção própria da governança.
+**Fatias v1.1 em código neste repo:** **RB** (`readBy*`); **CN**: estados `counteroffer` e `counteroffer_declined` com contraposta de rodada única. **Sem suite automatizada das Security Rules**: validação RB/CN conforme código + QA manual/deploy de rules como na RB.
+
+Modelo atual: tabela acima inclui **`counterofferAmount`**, **`counterofferedAt`** e estados CN; escritas CN atualizam `updatedAt` como demais transições negociais **fora RB**.

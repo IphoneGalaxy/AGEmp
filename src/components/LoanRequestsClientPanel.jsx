@@ -5,6 +5,8 @@ import { normalizeNoteForLoanRequest, parseBrlMoneyInputToCents } from '../utils
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
   cancelLoanRequestByClient,
+  clientAcceptLoanRequestCounteroffer,
+  clientDeclineLoanRequestCounteroffer,
   createLoanRequest,
   findOpenLoanRequestForLinkId,
   listLoanRequestsForClient,
@@ -16,7 +18,7 @@ import {
   LOAN_REQUEST_MIN_AMOUNT_CENTS,
   LOAN_REQUEST_STATUSES,
   getLoanRequestStatusLabelPt,
-  isLoanRequestOpenStatusV1,
+  canClientCancelLoanRequestV1,
 } from '../firebase/loanRequests';
 import { LINK_STATUSES } from '../firebase/links';
 
@@ -91,6 +93,7 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
   const [submitting, setSubmitting] = useState(false);
 
   const [cancellingId, setCancellingId] = useState(null);
+  const [counterofferBusyId, setCounterofferBusyId] = useState(null);
 
   const approvedAsClient = useMemo(
     () =>
@@ -206,6 +209,52 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
       showToast?.(mapFirestoreError(e));
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const handleAcceptCounteroffer = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setCounterofferBusyId(requestId);
+    try {
+      const result = await clientAcceptLoanRequestCounteroffer({
+        requestId,
+        clientUid: user.uid,
+      });
+      if (result.ok) {
+        showToast?.(
+          'Você aceitou o valor contraposto na plataforma. Isso não cria contrato no aplicativo nem altera seu financeiro local.',
+        );
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setCounterofferBusyId(null);
+    }
+  };
+
+  const handleDeclineCounteroffer = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setCounterofferBusyId(requestId);
+    try {
+      const result = await clientDeclineLoanRequestCounteroffer({
+        requestId,
+        clientUid: user.uid,
+      });
+      if (result.ok) {
+        showToast?.(
+          'Contraproposta recusada. O pedido fica encerrado neste fluxo pré-financeiro (sem criar contrato no app).',
+        );
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setCounterofferBusyId(null);
     }
   };
 
@@ -363,18 +412,32 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
         ) : (
           <ul className="space-y-3">
             {requests.map((r) => {
-              const amount =
+              const requestedMoney =
                 typeof r.requestedAmount === 'number'
                   ? formatMoney(r.requestedAmount / 100)
                   : '—';
+              const counterofferMoney =
+                typeof r.counterofferAmount === 'number'
+                  ? formatMoney(r.counterofferAmount / 100)
+                  : null;
               const statusLabel = getLoanRequestStatusLabelPt(r.status);
               const canCancel =
-                typeof r.status === 'string' && isLoanRequestOpenStatusV1(r.status);
+                typeof r.status === 'string' && canClientCancelLoanRequestV1(r.status);
+              const isCounteroffer = r.status === LOAN_REQUEST_STATUSES.COUNTEROFFER;
               const isApproved = r.status === LOAN_REQUEST_STATUSES.APPROVED;
+              const declinedCounteroffer =
+                r.status === LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED;
+              const approvedViaCounteroffer =
+                isApproved &&
+                typeof r.approvedAmount === 'number' &&
+                typeof r.requestedAmount === 'number' &&
+                r.approvedAmount !== r.requestedAmount;
               const showRespondedAt =
                 r.status === LOAN_REQUEST_STATUSES.APPROVED ||
-                r.status === LOAN_REQUEST_STATUSES.REJECTED;
+                r.status === LOAN_REQUEST_STATUSES.REJECTED ||
+                declinedCounteroffer;
               const busy = cancellingId === r.id;
+              const counterBusy = counterofferBusyId === r.id;
               return (
                 <li
                   key={r.id}
@@ -387,7 +450,17 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                     onMarked={loadRequests}
                   />
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <p className="text-sm font-semibold text-content">{amount}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-content">{requestedMoney}</p>
+                      <p className="text-xs text-content-muted">
+                        Valor que você solicitou
+                        {isCounteroffer && counterofferMoney ? (
+                          <span className="mt-0.5 block font-medium text-content-soft">
+                            Valor contraposto pelo fornecedor: {counterofferMoney}
+                          </span>
+                        ) : null}
+                      </p>
+                    </div>
                     <p className="text-xs font-medium text-content-soft">{statusLabel}</p>
                   </div>
                   <p className="mt-1 text-xs text-content-muted">
@@ -422,11 +495,80 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                       Resposta em {formatRequestTimestamp(r.respondedAt)}
                     </p>
                   )}
+                  {declinedCounteroffer && (
+                    <p className="mt-2 rounded-design-sm border border-edge/70 bg-surface px-2 py-1.5 text-xs leading-relaxed text-content-muted">
+                      Você encerrou este pedido ao recusar a contraproposta. Fluxo apenas pré-financeiro na
+                      plataforma — <span className="font-medium text-content-soft">não cria contrato</span> no app
+                      nem sincroniza financeiro local.
+                    </p>
+                  )}
+                  {isCounteroffer ? (
+                    <div className="mt-3 space-y-2 rounded-design-md border border-edge/80 bg-surface px-3 py-2">
+                      {counterofferMoney ? (
+                        <>
+                          <p className="text-xs font-medium text-content-soft">
+                            Decidir sobre a contraproposta
+                          </p>
+                          <ul className="list-inside list-disc space-y-1 text-xs text-content-muted">
+                            <li>Valor solicitado: {requestedMoney}</li>
+                            <li>Valor contraposto: {counterofferMoney}</li>
+                          </ul>
+                          <p className="text-xs leading-relaxed text-content-muted">
+                            Aceitar confirma o{' '}
+                            <span className="font-medium text-content-soft">valor contraposto</span> como intenção
+                            na plataforma. Isso{' '}
+                            <span className="font-medium text-content-soft">
+                              não cria contrato no aplicativo, não altera caixa nem grava financeiro na nuvem
+                            </span>
+                            .
+                          </p>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              type="button"
+                              disabled={counterBusy}
+                              onClick={() => void handleAcceptCounteroffer(r.id)}
+                              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md bg-primary px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                            >
+                              {counterBusy ? 'Salvando…' : 'Aceitar valor contraposto'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={counterBusy}
+                              onClick={() => void handleDeclineCounteroffer(r.id)}
+                              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                            >
+                              {counterBusy ? 'Salvando…' : 'Recusar contraproposta'}
+                            </button>
+                          </div>
+                          <p className="text-[11px] leading-relaxed text-content-muted">
+                            Enquanto houver uma contraproposta pendente, o cancelamento do pedido fica indisponível
+                            nesta tela — escolha aceitar ou recusar.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-xs text-content-muted">
+                          Há uma contraproposta pendente, mas o valor ainda não pôde ser exibido. Atualize a lista ou tente novamente em instantes.
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
                   {isApproved && (
                     <p className="mt-2 rounded-design-sm border border-edge/70 bg-surface px-2 py-1.5 text-xs leading-relaxed text-content-muted">
-                      Aprovação na plataforma{' '}
-                      <span className="font-medium text-content-soft">não cria contrato</span> no app
-                      nem altera caixa — combine os próximos passos fora deste fluxo, se precisar.
+                      {approvedViaCounteroffer ? (
+                        <>
+                          Aprovação referente ao <span className="font-medium text-content-soft">valor contraposto</span>{' '}
+                          ({typeof r.approvedAmount === 'number' ? formatMoney(r.approvedAmount / 100) : '—'}) na
+                          plataforma —{' '}
+                          <span className="font-medium text-content-soft">não cria contrato</span> no app nem altera
+                          caixa.
+                        </>
+                      ) : (
+                        <>
+                          Aprovação na plataforma{' '}
+                          <span className="font-medium text-content-soft">não cria contrato</span> no app nem altera
+                          caixa — combine os próximos passos fora deste fluxo, se precisar.
+                        </>
+                      )}
                     </p>
                   )}
                   {canCancel && (

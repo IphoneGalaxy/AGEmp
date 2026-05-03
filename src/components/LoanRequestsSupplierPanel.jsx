@@ -7,14 +7,19 @@ import {
   markLoanRequestReadBySupplier,
   supplierApproveLoanRequest,
   supplierMarkLoanRequestUnderReview,
+  supplierProposeLoanRequestCounteroffer,
   supplierRejectLoanRequest,
 } from '../firebase/loanRequestsFirestore';
 import {
+  LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
+  LOAN_REQUEST_MIN_AMOUNT_CENTS,
   LOAN_REQUEST_STATUSES,
   getLoanRequestStatusLabelPt,
-  isLoanRequestOpenStatusV1,
+  isLoanRequestSupplierNegotiationStatesV1,
+  isLoanRequestTerminalStatusV1,
 } from '../firebase/loanRequests';
+import { parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -51,6 +56,7 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
   const [requestsError, setRequestsError] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [notesDraft, setNotesDraft] = useState({});
+  const [counterofferInput, setCounterofferInput] = useState({});
   const [actingId, setActingId] = useState(null);
 
   const loadRequests = useCallback(async () => {
@@ -97,6 +103,12 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
 
   const supplierNoteFor = (id) => notesDraft[id] ?? '';
 
+  const counterofferDraftFor = (id) => counterofferInput[id] ?? '';
+
+  const setCounterofferFor = (id, value) => {
+    setCounterofferInput((prev) => ({ ...prev, [id]: value }));
+  };
+
   const runSupplierAction = async (requestId, action) => {
     if (!user?.uid) return;
     setActingId(requestId);
@@ -123,6 +135,38 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
               : 'Pedido recusado.';
         showToast?.(msg);
         setExpandedId(null);
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const runSupplierCounteroffer = async (requestId) => {
+    if (!user?.uid) return;
+    setActingId(requestId);
+    try {
+      const raw = counterofferDraftFor(requestId);
+      const parsed = parseBrlMoneyInputToCents(raw, {
+        minCents: LOAN_REQUEST_MIN_AMOUNT_CENTS,
+        maxCents: LOAN_REQUEST_MAX_AMOUNT_CENTS,
+      });
+      if (!parsed.ok) {
+        showToast?.(parsed.message);
+        return;
+      }
+      const result = await supplierProposeLoanRequestCounteroffer({
+        requestId,
+        supplierUid: user.uid,
+        counterofferAmountCents: parsed.cents,
+        supplierNote: supplierNoteFor(requestId),
+      });
+      if (result.ok) {
+        showToast?.('Contraproposta enviada. Aguarde a decisão do cliente na plataforma.');
+        setExpandedId(null);
+        setCounterofferFor(requestId, '');
         await loadRequests();
       } else {
         showToast?.(result.message);
@@ -181,8 +225,14 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                 typeof r.requestedAmount === 'number'
                   ? formatMoney(r.requestedAmount / 100)
                   : '—';
+              const counterOfferMoney =
+                typeof r.counterofferAmount === 'number'
+                  ? formatMoney(r.counterofferAmount / 100)
+                  : null;
               const statusLabel = getLoanRequestStatusLabelPt(r.status);
-              const isOpen = typeof r.status === 'string' && isLoanRequestOpenStatusV1(r.status);
+              const supplierNegotiation = isLoanRequestSupplierNegotiationStatesV1(r.status);
+              const awaitingClientDecision = r.status === LOAN_REQUEST_STATUSES.COUNTEROFFER;
+              const isTerminal = isLoanRequestTerminalStatusV1(r.status);
               const isPending = r.status === LOAN_REQUEST_STATUSES.PENDING;
               const isUnderReview = r.status === LOAN_REQUEST_STATUSES.UNDER_REVIEW;
               const expanded = expandedId === r.id;
@@ -203,6 +253,12 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                       <p className="text-sm font-semibold text-content">{amount}</p>
                       <p className="text-xs font-medium text-content-soft">{statusLabel}</p>
                     </div>
+                    {counterOfferMoney ? (
+                      <p className="text-xs text-content-muted">
+                        Contraproposta na plataforma:{' '}
+                        <span className="font-semibold text-content-soft">{counterOfferMoney}</span>
+                      </p>
+                    ) : null}
                     <p className="text-xs text-content-muted">
                       Cliente (UID):{' '}
                       <span className="break-all font-medium text-content-soft">
@@ -243,13 +299,29 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                         </p>
                       )}
 
-                      {!isOpen && (
+                      {!isTerminal && awaitingClientDecision && (
                         <p className="text-xs leading-relaxed text-content-muted">
-                          Pedido encerrado — não há ações disponíveis neste fluxo.
+                          Você enviou uma <span className="font-medium text-content-soft">contraproposta</span>{' '}
+                          neste pedido. Isso continua sendo apenas um fluxo pré-financeiro na plataforma —{' '}
+                          <span className="font-medium text-content-soft">não abre contrato</span> no app do
+                          cliente nem no seu, <span className="font-medium text-content-soft">não mexe em caixa</span>{' '}
+                          nem sincroniza o financeiro local. Aguardando o cliente aceitar ou recusar a contraproposta.
+                          {counterOfferMoney ? (
+                            <span className="mt-1 block">
+                              Valor contraposto:{' '}
+                              <span className="font-semibold text-content-soft">{counterOfferMoney}</span>
+                            </span>
+                          ) : null}
                         </p>
                       )}
 
-                      {isOpen && (
+                      {isTerminal && (
+                        <p className="text-xs leading-relaxed text-content-muted">
+                          Pedido encerrado neste fluxo — não há ações disponíveis.
+                        </p>
+                      )}
+
+                      {supplierNegotiation && (
                         <>
                           <div>
                             <label
@@ -271,6 +343,41 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                             <p className="mt-1 text-xs text-content-muted">
                               {supplierNoteFor(r.id).length}/{LOAN_REQUEST_MAX_NOTE_CHARS}
                             </p>
+                          </div>
+
+                          <div className="rounded-design-md border border-edge/80 bg-surface-muted/40 px-3 py-2">
+                            <p className="mb-2 text-xs font-medium text-content-soft">
+                              Contraproposta (opcional na plataforma)
+                            </p>
+                            <p className="mb-2 text-xs leading-relaxed text-content-muted">
+                              Um valor diferente do solicitado. Não equivale a marcar este pedido como aprovado com
+                              o mesmo valor solicitado nem a um contrato no aplicativo — é apenas negociação neste fluxo pré-financeiro.
+                            </p>
+                            <label
+                              htmlFor={`sr-counter-${r.id}`}
+                              className="mb-2 block text-sm font-medium text-content-soft"
+                            >
+                              Valor da contraproposta (R$)
+                            </label>
+                            <input
+                              id={`sr-counter-${r.id}`}
+                              type="text"
+                              inputMode="decimal"
+                              autoComplete="off"
+                              placeholder="Ex.: 450,00"
+                              disabled={busy}
+                              value={counterofferDraftFor(r.id)}
+                              onChange={(e) => setCounterofferFor(r.id, e.target.value)}
+                              className="mb-3 min-h-[44px] w-full rounded-design-md border border-edge bg-surface px-4 py-2 text-sm text-content focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                            />
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => void runSupplierCounteroffer(r.id)}
+                              className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                            >
+                              {busy ? 'Enviando…' : 'Enviar contraproposta ao cliente'}
+                            </button>
                           </div>
 
                           <div className="flex flex-col gap-2">
@@ -303,8 +410,10 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                           </div>
                           {(isPending || isUnderReview) && (
                             <p className="text-xs leading-relaxed text-content-muted">
-                              Aprovar apenas confirma a intenção na plataforma com o mesmo valor
-                              solicitado — não abre contrato no aplicativo.
+                              “Aprovar pedido” confirma a intenção na plataforma com o{' '}
+                              <span className="font-medium text-content-soft">mesmo valor solicitado</span> pelo
+                              cliente — não abre contrato no aplicativo. Para propor outro valor, use a contraproposta
+                              acima.
                             </p>
                           )}
                         </>

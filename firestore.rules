@@ -272,7 +272,10 @@ service cloud.firestore {
     }
 
     function loanRequestTerminalStatus(s) {
-      return s == 'approved' || s == 'rejected' || s == 'cancelled_by_client';
+      return s == 'approved' ||
+        s == 'rejected' ||
+        s == 'cancelled_by_client' ||
+        s == 'counteroffer_declined';
     }
 
     function loanRequestOpenStatus(s) {
@@ -299,20 +302,19 @@ service cloud.firestore {
       ]);
     }
 
-    // Contrafase CN: `counterofferAmount` permanece vedado até implementação futura (v1.1 CN).
-    // Timestamps RB (`readBy*`) são tratados apenas em ramo dedicado.
     function loanRequestV1ForbiddenKeysAlways(data) {
-      return data.keys().hasAny([
-        'counterofferAmount'
-      ]);
+      // Controlo granular por ramo (RB/CN/v1): não há veto global único sobre subconjuntos válidos da whitelist.
+      return false;
     }
 
     function loanRequestStatusAllowsReadMarkers(s) {
       return s == 'pending' ||
         s == 'under_review' ||
+        s == 'counteroffer' ||
         s == 'approved' ||
         s == 'rejected' ||
-        s == 'cancelled_by_client';
+        s == 'cancelled_by_client' ||
+        s == 'counteroffer_declined';
     }
 
     function loanRequestLinkApprovedForLoanRequest(linkId, supplierId, clientId) {
@@ -397,6 +399,8 @@ service cloud.firestore {
         'approvedAmount',
         'respondedAt',
         'cancelledAt',
+        'counterofferAmount',
+        'counterofferedAt',
         'readByClientAt',
         'readBySupplierAt'
       ]);
@@ -493,6 +497,102 @@ service cloud.firestore {
         !loanRequestV1ForbiddenKeysAlways(request.resource.data);
     }
 
+    function loanRequestSupplierCounterofferDiffOk(keys) {
+      return keys.hasOnly([
+            'status',
+            'updatedAt',
+            'counterofferAmount',
+            'counterofferedAt'
+          ]) ||
+        keys.hasOnly([
+            'status',
+            'updatedAt',
+            'counterofferAmount',
+            'counterofferedAt',
+            'supplierNote'
+          ]);
+    }
+
+    function loanRequestSupplierCounterofferValid() {
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        loanRequestOpenStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        !resource.data.keys().hasAny(['counterofferAmount']) &&
+        !resource.data.keys().hasAny(['counterofferedAt']) &&
+        request.resource.data.status == 'counteroffer' &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.counterofferedAt == request.time &&
+        loanRequestAmountCentsValid(request.resource.data.counterofferAmount) &&
+        request.resource.data.counterofferAmount != resource.data.requestedAmount &&
+        !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt', 'cancelledAt']) &&
+        loanRequestSupplierCounterofferDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        loanRequestSupplierNoteOkAfter() &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestClientAcceptCounterofferDiffOk(keys) {
+      return keys.hasOnly(['status', 'updatedAt', 'respondedAt', 'approvedAmount']);
+    }
+
+    function loanRequestClientAcceptCounterofferValid() {
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        resource.data.status == 'counteroffer' &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        resource.data.keys().hasAny(['counterofferAmount']) &&
+        resource.data.keys().hasAny(['counterofferedAt']) &&
+        request.resource.data.status == 'approved' &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.respondedAt == request.time &&
+        request.resource.data.approvedAmount == resource.data.counterofferAmount &&
+        loanRequestAmountCentsValid(request.resource.data.approvedAmount) &&
+        request.resource.data.counterofferAmount == resource.data.counterofferAmount &&
+        request.resource.data.counterofferedAt == resource.data.counterofferedAt &&
+        loanRequestClientAcceptCounterofferDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        !request.resource.data.keys().hasAny(['cancelledAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
+    function loanRequestClientDeclineCounterofferDiffOk(keys) {
+      return keys.hasOnly(['status', 'updatedAt', 'respondedAt']);
+    }
+
+    function loanRequestClientDeclineCounterofferValid() {
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        resource.data.status == 'counteroffer' &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        resource.data.keys().hasAny(['counterofferAmount']) &&
+        resource.data.keys().hasAny(['counterofferedAt']) &&
+        request.resource.data.status == 'counteroffer_declined' &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.respondedAt == request.time &&
+        request.resource.data.counterofferAmount == resource.data.counterofferAmount &&
+        request.resource.data.counterofferedAt == resource.data.counterofferedAt &&
+        loanRequestClientDeclineCounterofferDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        !request.resource.data.keys().hasAny(['approvedAmount', 'cancelledAt']) &&
+        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+    }
+
     function loanRequestReadMarkerTsMonotone(prevHad, previousTs, marker) {
       return marker is timestamp &&
         marker <= request.time &&
@@ -572,7 +672,10 @@ service cloud.firestore {
               loanRequestClientCancelValid() ||
               loanRequestSupplierToUnderReviewValid() ||
               loanRequestSupplierApproveValid() ||
-              loanRequestSupplierRejectValid()
+              loanRequestSupplierRejectValid() ||
+              loanRequestSupplierCounterofferValid() ||
+              loanRequestClientAcceptCounterofferValid() ||
+              loanRequestClientDeclineCounterofferValid()
             )
           )
         );
