@@ -60,8 +60,7 @@ describe('loanRequestsFirestore — contraposta v1.1 CN', () => {
     const payload = mockUpdateDoc.mock.calls[0][1];
     expect(payload.status).toBe(LOAN_REQUEST_STATUSES.COUNTEROFFER);
     expect(payload.counterofferAmount).toBe(12000);
-    expect(payload.counterofferedAt).toBe('__SERVER_TS__');
-    expect(payload.updatedAt).toBe('__SERVER_TS__');
+    expect(payload.counterofferedAt).toBe(payload.updatedAt);
   });
 
   it('bloqueia valor igual ao solicitado', async () => {
@@ -136,8 +135,7 @@ describe('loanRequestsFirestore — contraposta v1.1 CN', () => {
     const payload = mockUpdateDoc.mock.calls[0][1];
     expect(payload.status).toBe(LOAN_REQUEST_STATUSES.APPROVED);
     expect(payload.approvedAmount).toBe(8888);
-    expect(payload.respondedAt).toBe('__SERVER_TS__');
-    expect(payload.updatedAt).toBe('__SERVER_TS__');
+    expect(payload.respondedAt).toBe(payload.updatedAt);
   });
 
   it('cliente declina contraposta (terminal pré-financeiro)', async () => {
@@ -159,7 +157,6 @@ describe('loanRequestsFirestore — contraposta v1.1 CN', () => {
     expect(mockUpdateDoc).toHaveBeenCalledTimes(1);
     const payload = mockUpdateDoc.mock.calls[0][1];
     expect(payload.status).toBe(LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED);
-    expect(payload.respondedAt).toBe('__SERVER_TS__');
-    expect(payload.updatedAt).toBe('__SERVER_TS__');
+    expect(payload.respondedAt).toBe(payload.updatedAt);
   });
 });

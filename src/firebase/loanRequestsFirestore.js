@@ -197,11 +197,12 @@ export async function supplierProposeLoanRequestCounteroffer({
       };
     }
 
+    const committedAt = serverTimestamp();
     await updateDoc(ref, {
       status: LOAN_REQUEST_STATUSES.COUNTEROFFER,
       counterofferAmount: cents,
-      counterofferedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      counterofferedAt: committedAt,
+      updatedAt: committedAt,
       ...buildOptionalSupplierNoteUpdate(supplierNote),
     });
     return { ok: true };
@@ -241,11 +242,12 @@ export async function clientAcceptLoanRequestCounteroffer({ requestId, clientUid
     if (typeof data.counterofferAmount !== 'number') {
       return { ok: false, message: 'Valor da contraproposta indisponível.' };
     }
+    const committedAt = serverTimestamp();
     await updateDoc(ref, {
       status: LOAN_REQUEST_STATUSES.APPROVED,
       approvedAmount: data.counterofferAmount,
-      respondedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      respondedAt: committedAt,
+      updatedAt: committedAt,
     });
     return { ok: true };
   } catch (e) {
@@ -281,10 +283,11 @@ export async function clientDeclineLoanRequestCounteroffer({ requestId, clientUi
     if (data.status !== LOAN_REQUEST_STATUSES.COUNTEROFFER) {
       return { ok: false, message: 'Neste momento não há contraproposta pendente neste pedido.' };
     }
+    const committedAt = serverTimestamp();
     await updateDoc(ref, {
       status: LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED,
-      respondedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      respondedAt: committedAt,
+      updatedAt: committedAt,
     });
     return { ok: true };
   } catch (e) {
