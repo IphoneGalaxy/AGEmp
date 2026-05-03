@@ -19,8 +19,6 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('../index', () => ({
-  app: null,
-  auth: { currentUser: null },
   db: { name: 'mock-db' },
 }));
 

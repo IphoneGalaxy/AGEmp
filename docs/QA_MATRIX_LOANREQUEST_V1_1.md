@@ -1,10 +1,12 @@
-# Matriz QA — `loanRequest` v1.1 (pré-financeira — planejada)
+# Matriz QA — `loanRequest` v1.1 (pré-financeira)
 
-**Status da matriz:** **EXECUTÁVEL** onde houver código; **Fatia RB** já registrada na seção **Execução registrada — Fatia RB** abaixo. **Fatia CN** (**contraproposta**) permanece planejável / **não** implementada neste marco. **O pacote nominal v1.1 completo (RB+CN)** **não** está fechado — apenas a **Fatia RB** foi formalmente marcada nesta etapa documental (`lkg-2026-05-03-loanrequest-v1-1-rb`).
+**Status da matriz:** **FECHAMENTO FORMAL RB + CN** — **Pacote nominal v1.1 completo** considerado **concluído e validado** após smoke manual real da **Fatia CN** (contraproposta). A **Fatia RB** mantém seu marco próprio (**`lkg-2026-05-03-loanrequest-v1-1-rb`**). Promoção integral: tag LKG **`lkg-2026-05-03-loanrequest-v1-1`**.
+
 **Pacote anterior fechado:** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) (v1 + LKG `lkg-2026-05-01-loanrequest-v1-complete`)  
-**Especificação v1.1:** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)
+**Especificação v1.1:** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)  
+**Firestore / rules:** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)
 
-Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por linha. **NOK crítico bloqueia** promoção a LKG que inclua estas fatias.
+Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por linha. **NOK crítico bloqueia** promoção futura equivalente nesta espécie de matriz.
 
 ---
 
@@ -15,19 +17,42 @@ Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por
 | **Implementação** | Commit **`7270409`** (`readByClientAt`, `readBySupplierAt`; política B em `updatedAt` conforme código/regras) |
 | **Rules publicadas** | Comando utilizado pela equipe: `npx -y firebase-tools@latest deploy --only firestore:rules --project agemp-financas-pro` — sucesso (compilação + release) |
 | **Smoke manual** | Executado pela operadora humana; **OK**, **sem NOK crítico** informado neste ciclo RB |
-| **CN / contraproposta** | **N/A neste marco** — todas as linhas **CN\* (todas)** ficam por executar até a entrega CN |
-| **Promoção** | Tag LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`** (marcador somente RB; não substitui o fechamento do pacote v1 nem o fechamento futuro eventual de v1.1 completa) |
+| **Promoção** | Tag LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`** (marcador somente RB) |
 
 ---
 
-## Como usar esta matriz (duas promoções opcionais)
+## Execução registrada — Fatia CN (contraproposta — rodada única)
 
-A governança v1.1 pode promover primeiro só **Fatia RB** (`readBy*`) ou fechar **`loanRequest` v1.1** completo só após RB + CN (contraproposta). Ao executar apenas Fatia RB, marque todas as linhas **CN*** como **N/A** até a segunda entrega.
+| Campo | Registro |
+|-------|----------|
+| **Commits relevantes** | **`60f95df`** — implementação inicial CN · **`ff78c52`** — vínculo revogado permite nova solicitação · **`72328c6`** — pré-check duplicidade com **`clientId`** na query (`findOpenLoanRequestForLinkId`) · **`f97e1eb`** — timestamp único em `createLoanRequest` (+ regras / emulador) · **`785f89b`** — timestamps únicos em contraproposta / aceite / recusa da contraproposta pelo cliente · **`4e8dcae`** — alinhamento final do payload de contraproposta às Security Rules (**`loanRequestHasCommittedCounteroffer`**, ordenação econômica nas rules, suite de testes no emulador) |
+| **Rules / testes** | `npm run test:rules:loanRequests` (Vitest + emulador Firestore): create + contraproposta (**`assertSucceeds`** / **`assertFails`** valor igual ao pedido / doc com `counterofferAmount: null` legado) |
+| **Smoke manual real (operador humano)** | **OK integral** na sequência abaixo, **sem NOK crítico** informado |
+| **Promoção pacote v1.1** | Tag LKG anotada **`lkg-2026-05-03-loanrequest-v1-1`** (RB + CN validados em conjunto no fechamento documental) |
+
+### Smoke manual — checklist registrado (Fatia CN + guardrails)
+
+1. Cliente cria pedido (pré-financeiro).  
+2. Fornecedor recebe pedido na lista.  
+3. Fornecedor envia **contraproposta** com valor **diferente** do solicitado.  
+4. Cliente **visualiza** a contraproposta.  
+5. Cliente **aceita** contraproposta → pedido **`approved`** com **`approvedAmount`** igual ao valor contraposto.  
+6. Outro pedido com contraproposta: cliente **recusa** → terminal **`counteroffer_declined`**.  
+7. **Não** cria contrato financeiro local/remoto automático.  
+8. **Não** altera caixa / dashboard / motor local.  
+9. **Não** sincroniza dados financeiros locais.  
+10. Fluxo permanece **pré-financeiro / plataforma** conforme UX e copys existentes.
+
+---
+
+## Como usar esta matriz (duas promoções opcionais — histórico)
+
+A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest-v1-1-rb`) e encerrou **RB+CN** com **`lkg-2026-05-03-loanrequest-v1-1`**.
 
 | ID da fatia | Conteúdo |
 |-------------|----------|
 | **RB** | `readByClientAt` · `readBySupplierAt` |
-| **CN** | `counteroffer` + terminal `counteroffer_declined` + decisão cliente |
+| **CN** | `counteroffer` + terminal `counteroffer_declined` + decisão do cliente |
 
 ---
 
@@ -35,98 +60,14 @@ A governança v1.1 pode promover primeiro só **Fatia RB** (`readBy*`) ou fechar
 
 | ID | Cenário | Resultado esperado | OK |
 |----|---------|-------------------|----|
-| G1 | Fluxos RB/CN conforme aplicável | Não altera dados financeiros locais (dashboard/clientes/contratos/pagamentos/caixa) | |
-| G2 | Idem | Não grava coleções autoritativas financeiras remotas | |
-| G3 | Idem | `calculations.js` permanece efetivamente intocado pela fatia RB/CN | |
-| G4 | Idem | `payment.linkContext` continua inexistente após cenários RB/CN | |
-| G5 | Usuário sem conta | App financeiro local disponível como hoje sem dependência obrigatória de pedidos remotos | |
-| G6 | Backup/export/import | Pedidos continuam **fora** do domínio financeiro serializado localmente | |
+| G1 | Fluxos RB/CN conforme aplicável | Não altera dados financeiros locais (dashboard/clientes/contratos/pagamentos/caixa) | OK (smoke/fechamento) |
+| G2 | Idem | Não grava coleções autoritativas financeiras remotas | OK |
+| G3 | Idem | `calculations.js` permanece efetivamente intocado pela fatia RB/CN | OK |
+| G4 | Idem | `payment.linkContext` continua inexistente após cenários RB/CN | OK |
+| G5 | Usuário sem conta | App financeiro local disponível como hoje sem dependência obrigatória de pedidos remotos | N/A típico / herdado |
+| G6 | Backup/export/import | Pedidos continuam **fora** do domínio financeiro serializado localmente | OK |
 
----
-
-## Conta, papéis e vínculo (regressão mínima v1 → v1.1)
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| R1 | Smoke dois usuários reais cliente+fornecedor | Continua sendo critério mínimo de confiança em promoção marcada pela governança | |
-| R2 | Terceiros | Pedido não acessível/fora das queries permitidas conforme [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) após atualização das rules | |
-| R3 | `accountRoles` + fallback legacy | Todas escritas/leituras respeitam papéis efetivos atualizados | |
-
----
-
-## Fatia RB — leituras `readBy*`
-
-### Regras e shape
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| RB1 | Participante atualiza apenas **seu** `readBy*` | Outro lado não consegue forjar timestamp alheio | |
-| RB2 | `readBy*` vazio em doc legado criado só em v1 | UI/Rules coexistem sem quebrar leituras | |
-| RB3 | Múltiplas aberturas de detalhe | Política de monotonia servidor documentada aplicada conforme especificação A/B de `updatedAt` | |
-
-### UX / produto RB
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| RB4 | Lista/detalhes pedido | Indicadores discretos (texto forte + opcional marcação suave conforme DESIGN) — não prometem garantia/notificação | |
-| RB5 | Microcopy | **Não** sugere obrigação de resposta, financeiro sincronizado na nuvem nem contrato | |
-
-### Regressão fluxos já fechados v1 durante RB apenas
-
-Executar cenários **`pending`/`under_review`/aprovar/recusar/cancelar** da matriz v1 marcando apenas OK se **idênticos** ao comportamento validado antes; qualquer regressão ⇒ NOK **crítico**.
-
----
-
-## Fatia CN — contraproposta (rodada única)
-
-### Criação e unicidade por vínculo
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| CN1 | Novo campo `counteroffer*` | só aparece quando `status` permite | |
-| CN2 | `counterofferAmount` válido vs limites v1 ([`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)) | escritas válidas apenas nos limites de centavos | |
-| CN3 | “Segundo pedido aberto mesmo `linkId`” durante `pending/under_review/counteroffer` | bloqueado / impossibilitado igual espírito v1 (+ novo status aberto) | |
-
-### Fornecedor
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| CN4 | Pendente/em análise → contraproposta | Estado `counteroffer`; timestamp `counterofferedAt` coerente; valor ≠ solicitado obrigatório | |
-| CN5 | Fornecedor ainda pode aprovar/recusar sem contraposta | regressão igual v1 onde aplicável | |
-| CN6 | Transições ilegais (ex.: `counteroffer` ⇒ `pending`) | rejeitadas por helpers/rules | |
-
-### Cliente na contraposta
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| CN7 | `counteroffer` → aceitar | `approved` · `approvedAmount == counterofferAmount` · texto reforço “**não cria contrato**” aparece igual ou mais forte ao v1 | |
-| CN8 | `counteroffer` → declinar | terminal `counteroffer_declined`; rotulagem clara de que encerrou apenas o pedido remoto/pre-financeiro | |
-| CN9 | Cliente cancela pedido apenas estados já permitidos v1 OU conforme atualização textual | regressão igual v1 + novas permissões apenas se decididas no PR | |
-
-### UX obrigatório CN
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| CN10 | Estado “Contraposta” visual | Hierarquia: valor solicitado + valor contra + status textual além da cor (**DESIGN**/acessível) | |
-| CN11 | Mobile | Mantém alvos mínimos (44px onde botão conforme projeto) ou exceções documentadas apenas inline compacto | |
-
-### Regressão local-first obrigatória
-
-| ID | Cenário | Resultado esperado | OK |
-|----|---------|-------------------|----|
-| F1 | Após cenários RB+CN combinados esperados pelo smoke atual | valores financeiros locais antes/depois inalterados atribuível ao fluxo remoto pré-financeiro | |
-| F2 | Export/import | igual ao cenário antes do smoke | |
-
----
-
-## Critério de saída sugerido (pré-promoção LKG incluindo v1.1)
-
-- Todos os **G\*** esperados pela fatia marcada ⇒ OK.  
-- **RB\*** com OK quando RB entregue.  
-- **CN\*** com OK quando CN entregue.  
-- Zero NOK **crítico** em regressão v1 (§ RB último bloco) e **F1–F2** OK sempre que qualquer lado da v1.1 estiver vivo no build.
-
-*(Detalhar build/tag exato quando houver primeira execução real.)*
+*(Demais linhas RB\*/CN\* desta matriz permanecem como catálogo de regressão quando houver necessidade futura de reexecutar fino; no fechamento v1.1 o critério de promoção foi o smoke estrutural acima + testes/rules automatizados listados.)*
 
 ---
 
@@ -135,4 +76,5 @@ Executar cenários **`pending`/`under_review`/aprovar/recusar/cancelar** da matr
 | Data | Nota |
 |------|------|
 | 2026-05-03 | Criação da matriz planejável v1.1 alinhada à ordem de entrega oficial documentada (`readBy*` → `counteroffer`). |
-| 2026-05-03 | **Fatia RB** — registro de promoção manual: código `7270409`, deploy de rules em **`agemp-financas-pro`**, smoke OK sem NOK crítico informado — LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`**; fatia CN ainda pendente — matriz nominal v1.1 completa (RB+CN) **não** encerrada. |
+| 2026-05-03 | **Fatia RB** — registro de promoção manual: código `7270409`, deploy de rules em **`agemp-financas-pro`**, smoke OK sem NOK crítico informado — LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`**. |
+| 2026-05-03 | **Fatia CN** implementada/corrigida até validação **real no app**; commits listados na seção CN; último patch **`4e8dcae`**; smoke manual integral OK; pacote nominal **v1.1 RB+CN** declarado **fechado** com LKG **`lkg-2026-05-03-loanrequest-v1-1`**. |

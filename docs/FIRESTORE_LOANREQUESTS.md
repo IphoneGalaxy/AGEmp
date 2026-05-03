@@ -3,11 +3,14 @@
 **Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
 **Helpers:** [`src/firebase/loanRequests.js`](../src/firebase/loanRequests.js) · **Firestore (CRUD cliente/fornecedor):** [`src/firebase/loanRequestsFirestore.js`](../src/firebase/loanRequestsFirestore.js)  
 **Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)  
-**QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)
+**QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)  
+**QA pacote v1.1 (RB + CN — fechado):** [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md)
 
 **Planejamento histórico (execução v1, não plano ativo):** [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md)
 
 **Pacote v1:** **fechado formalmente** após smoke manual real OK (sem NOK crítico) — ver [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) e LKG **`lkg-2026-05-01-loanrequest-v1-complete`** em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4.
+
+**Pacote v1.1 (RB + CN):** **fechado formalmente** — [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); LKG integral **`lkg-2026-05-03-loanrequest-v1-1`** (marco intermediário só RB: **`lkg-2026-05-03-loanrequest-v1-1-rb`**).
 
 ## Coleção
 
@@ -46,16 +49,16 @@ Ex.: R$ 100,00 → `10000`. Limites alinhados ao contrato Subfase 1 (0,01 a 99.9
 
 ## Duplicidade (1 pedido aberto por `linkId`)
 
-As **rules não verificam unicidade entre documentos** (limitação do Firestore Security Rules). Na **Subfase 3 (UI + fluxo)**, antes de criar:
+As **rules não verificam unicidade entre documentos** (limitação do Firestore Security Rules). Na **UI de criação** (`createLoanRequest` / cliente), antes de gravar:
 
-1. Consultar `loanRequests` com `where('clientId', '==', clientUid)` e `where('linkId', '==', linkId)` e `where('status', 'in', ['pending', 'under_review', 'counteroffer'])`, `limit(1)`.
+1. Consultar `loanRequests` com **`where('clientId', '==', clientUid)`** (compatível com as rules ao listar) e **`where('linkId', '==', linkId)`** e **`where('status', 'in', ['pending', 'under_review', 'counteroffer'])`**, `limit(1)` — ver `findOpenLoanRequestForLinkId(linkId, clientUid)`.
 2. Se existir documento, abortar criação ou orientar o usuário.
 
 Índices compostos relevantes em [`firestore.indexes.json`](../firestore.indexes.json) incluem **`clientId` + `linkId` + `status`** (pré-check de duplicidade) e opcionalmente `linkId` + `status` (legado/evolução).
 
 **UI cliente (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`) — chama `findOpenLoanRequestForLinkId(linkId, clientUid)` antes de gravar.
 
-**UI fornecedor:** `LoanRequestsSupplierPanel.jsx` — além das transições v1 (`pending` → `under_review`; `pending` | `under_review` → `approved` com **`approvedAmount` = `requestedAmount`** ou → `rejected`), **fatia CN v1.1**: `pending` | `under_review` → **`counteroffer`** com `counterofferAmount`, `counterofferedAt`, `supplierNote` opcional; **uma rodada**: rules impedem segundo envio se `counterofferAmount` / `counterofferedAt` já existem.
+**UI fornecedor:** `LoanRequestsSupplierPanel.jsx` — além das transições v1 (`pending` → `under_review`; `pending` | `under_review` → `approved` com **`approvedAmount` = `requestedAmount`** ou → `rejected`), **Fatia CN v1.1**: `pending` | `under_review` → **`counteroffer`** com **`counterofferAmount`**, **`counterofferedAt`**, mesmo **`updatedAt`** (sentinela única), `supplierNote` opcional (**omitido se vazio**). **Rodada única**: nas Security Rules só há **nova** contraproposta válida quando **não existe** um par já “commitado” (**valor em centavos inteiro válido** + **`counterofferedAt` timestamp** via `loanRequestHasCommittedCounteroffer` — chaves com **`null`/inválidas** não bloqueiam a primeira rodada).
 
 **UI cliente — contraposta pendente (`counteroffer`):** `LoanRequestsClientPanel.jsx`: aceitar → `approved` com **`approvedAmount` = valor armazenado em `counterofferAmount`**; ou declinar → **`counteroffer_declined`** (terminal). **Cancelar pelo cliente não está disponível** nesse estado (só `pending` | `under_review`).
 
@@ -86,6 +89,6 @@ firebase deploy --only firestore:indexes
 
 **Pacote loanRequest v1** (baseline): **fechado** — QA em [`plans/completed/QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md).
 
-**Fatias v1.1 em código neste repo:** **RB** (`readBy*`); **CN**: estados `counteroffer` e `counteroffer_declined` com contraposta de rodada única. **Sem suite automatizada das Security Rules**: validação RB/CN conforme código + QA manual/deploy de rules como na RB.
+**Fatias v1.1 em código neste repo:** **RB** (`readBy*`); **CN**: estados `counteroffer` e `counteroffer_declined` com contraposta de rodada única. **Suite de rules (emulador):** `npm run test:rules:loanRequests` — executa **`loanRequestsCreate.rules.test.js`** + **`loanRequestsCounteroffer.rules.test.js`** dentro do Firestore Emulator (requer JDK 21+; ver `scripts/run-firestore-rules-tests.ps1`).
 
 Modelo atual: tabela acima inclui **`counterofferAmount`**, **`counterofferedAt`** e estados CN; escritas CN atualizam `updatedAt` como demais transições negociais **fora RB**.

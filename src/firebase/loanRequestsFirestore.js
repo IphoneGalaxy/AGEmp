@@ -12,7 +12,7 @@ import {
   where,
 } from 'firebase/firestore';
 
-import { app, auth, db } from './index';
+import { db } from './index';
 import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
@@ -199,40 +199,15 @@ export async function supplierProposeLoanRequestCounteroffer({
       };
     }
 
-    const supplierNoteNormalized = normalizeNoteForLoanRequest(
-      supplierNote ?? '',
-      LOAN_REQUEST_MAX_NOTE_CHARS,
-    );
     const notePatch = buildOptionalSupplierNoteUpdate(supplierNote);
     const committedAt = serverTimestamp();
-    const payload = {
+    await updateDoc(ref, {
       status: LOAN_REQUEST_STATUSES.COUNTEROFFER,
       counterofferAmount: cents,
       counterofferedAt: committedAt,
       updatedAt: committedAt,
       ...notePatch,
-    };
-
-    if (import.meta.env.DEV) {
-      console.info('[loanRequests][DEV] supplierProposeLoanRequestCounteroffer pre-updateDoc', {
-        requestId,
-        authUid: auth?.currentUser?.uid ?? null,
-        supplierUid,
-        docStatus: status,
-        docSupplierId: data.supplierId,
-        docClientId: data.clientId,
-        docLinkId: data.linkId,
-        requestedAmount: data.requestedAmount,
-        counterofferAmount: cents,
-        typeofCounterofferAmount: typeof cents,
-        counterofferAmountIsInteger: Number.isInteger(cents),
-        supplierNoteNormalized: supplierNoteNormalized || '(omit from payload)',
-        payload,
-        payloadKeys: Object.keys(payload),
-      });
-    }
-
-    await updateDoc(ref, payload);
+    });
     return { ok: true };
   } catch (e) {
     if (import.meta.env.DEV) {
@@ -523,26 +498,6 @@ export async function createLoanRequest({
       createdAt: committedAt,
       updatedAt: committedAt,
     };
-
-    if (import.meta.env.DEV) {
-      const projectId =
-        app && typeof app.options?.projectId === 'string'
-          ? app.options.projectId
-          : '(sem projectId no app)';
-      console.info('[loanRequests] createLoanRequest addDoc (payload preview DEV)', {
-        supplierId,
-        clientId,
-        linkId,
-        requestedAmount: addPayload.requestedAmount,
-        typeofRequestedAmount: typeof addPayload.requestedAmount,
-        isIntegerRequestedAmount: Number.isInteger(/** @type {number} */ (addPayload.requestedAmount)),
-        clientNote: addPayload.clientNote,
-        typeofClientNote: typeof addPayload.clientNote,
-        status: addPayload.status,
-        authUid: auth?.currentUser?.uid ?? null,
-        projectId,
-      });
-    }
 
     const ref = await addDoc(collection(db, LOAN_REQUESTS_COLLECTION), addPayload);
     return { ok: true, id: ref.id };

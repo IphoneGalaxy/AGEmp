@@ -90,7 +90,7 @@ A diretriz central do projeto continua sendo:
 - perfil remoto funcionando;
 - `accountRoles` funcionando com fallback para role;
 - vínculos fornecedor/cliente funcionando no Firestore;
-- coleção **`loanRequests`** (camada **pré-financeira** v1): implementação alinhada ao contrato congelado — **pacote v1 formalmente fechado** após smoke manual real OK (ver §4 LKG e [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md));
+- coleção **`loanRequests`** (camada **pré-financeira**): pacote **v1** alinhado ao contrato congelado — **fechado formalmente** após smoke manual real OK (ver §4 LKG e [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)); **extensão v1.1** (**`readBy*`** + fatia **CN** / `counteroffer`, `counteroffer_declined`) — **fechada** após smoke manual real OK e alinhamento rules — [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md), LKG **`lkg-2026-05-03-loanrequest-v1-1`** (marco só RB: **`lkg-2026-05-03-loanrequest-v1-1-rb`**);
 - o domínio financeiro **não** é salvo remotamente nesta fase.
 
 ### Estado atual do vínculo local
@@ -183,14 +183,18 @@ sempre como:
 - `lkg-2026-04-30-clientview-payment-derived-reading` (espelho explícito em pagamentos)
 - **`lkg-2026-04-30-clientview-operational-link-block-complete`** ← marco histórico do bloco `ClientView` (leitura operacional por vínculo).
 - **`lkg-2026-05-01-loanrequest-v1-complete`** ← fechamento formal do pacote **`loanRequest` v1** (pré-financeiro), com **smoke manual real OK** e **sem NOK crítico**; ver [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md).
+- **`lkg-2026-05-03-loanrequest-v1-1-rb`** ← marco **somente Fatia RB** v1.1 (`readByClientAt` / `readBySupplierAt`).
+- **`lkg-2026-05-03-loanrequest-v1-1`** ← fechamento do **pacote nominal v1.1 completo** (**RB + CN** / contraproposta), smoke manual real OK; ver [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).
 
 ### Base estável principal atual
 
 A base estável principal recomendada neste momento é:
 
-- **`lkg-2026-05-01-loanrequest-v1-complete`**
-- **commit:** o apontado pela tag após criá-la no commit de **fechamento documental** do smoke (`git rev-parse lkg-2026-05-01-loanrequest-v1-complete`).
-- **Nota:** esta tag consolida o estado do repositório já estável anteriormente (inclui o marco `ClientView`) e acrescenta o **registro formal** de aceite do pacote `loanRequest` v1. O marco anterior **`lkg-2026-04-30-clientview-operational-link-block-complete`** permanece referência explícita da fatia `ClientView` na cadeia histórica.
+- **`lkg-2026-05-03-loanrequest-v1-1`** — consolida **`loanRequest` v1.1** completo (**RB + CN**) com **smoke manual real OK** e **sem NOK crítico** informado neste fechamento (ver [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md)).
+- **commit:** o apontado por `git rev-parse lkg-2026-05-03-loanrequest-v1-1` após criar a tag no repositório (conforme fluxo de promoção da governança).
+- **Herança:** inclui o fechamento **`loanRequest` v1** (`lkg-2026-05-01-loanrequest-v1-complete`) e a cadeia **`ClientView`** documentada nas tags anteriores; o marco intermediário **só RB** v1.1 permanece como **`lkg-2026-05-03-loanrequest-v1-1-rb`**.
+
+**Nota histórica:** a base **`lkg-2026-05-01-loanrequest-v1-complete`** continua válida como referência explícita do **primeiro** fechamento só do pacote v1, antes da v1.1.
 
 ### Proxima fase oficial documentada
 
@@ -201,7 +205,9 @@ A proxima fase oficial esta definida em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_
 - sem sync financeiro remoto;
 - sem `payment.linkContext`;
 - sem alteracao em `calculations.js`;
-- sem implementacao automatica nesta etapa documental.
+- veto continuo a conversao automatica de pedido remoto em contrato sem fase propria.
+
+**Factual (codigo existente):** a colecao **`loanRequests`** cobre **v1** e **v1.1** (marcadores de leitura, contraproposta, terminais CN) e permanece **somente pre-financeira**; **nao** substitui decisoes futuras registradas nas fontes vivas acima — a **proxima etapa** de produto continua a ser **escolhida** por governanca/handoff, **nao** por este paragrafo.
 
 ### Até onde a trilha já foi consolidada
 
@@ -211,6 +217,7 @@ A trilha consolidada atual vai:
 - até a visibilidade do vínculo na lista de pagamentos (derivada do contrato);
 - até **visão operacional derivada por vínculo** no refinamento da lista de clientes (contagens locais por `linkId` em [`linkOperationalDerive.js`](../src/utils/linkOperationalDerive.js)); ver [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md);
 - até o **overlay `ClientView`**: resumo operacional, lista remota com estados vazio/erro, divergência cliente/contrato e espelho em pagamentos conforme [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md);
+- até **`loanRequests`** **v1+v1.1** (solicitações pré-financeiras na Conta, marcadores `readBy*`, fatia CN com `counteroffer` / `counteroffer_declined`; ver [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) e [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md));
 - sempre sem sync financeiro remoto;
 - e sem `payment.linkContext` persistido.
 
@@ -385,14 +392,13 @@ Fatia **relacional remota** alinhada ao contrato congelado [`LOANREQUEST_V1_CONT
 
 **Fechamento do pacote v1:** **concluído** — smoke manual com **dois usuários reais** executado com **OK integral** e **sem NOK crítico** (registro em [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`** (§4).
 
-### Próximo recorte **planejado** (documental): `loanRequest` v1.1
+### Pacote `loanRequest` v1.1 (RB + CN — **concluído**)
 
-Este recorte está **somente especificado**: sem impacto até haver decisão formal de iniciar código, revisão complementar das rules/helpers e atualização deste handoff com novo LKG.
+O pacote **`loanRequest` v1.1** (marcadores **`readBy*`** + **contraproposta** + terminais **`counteroffer`** e **`counteroffer_declined`**) encontra-se **implementado**, alinhado ao contrato [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md), com **smoke manual real OK** e registros em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md). **Tags LKG:** **`lkg-2026-05-03-loanrequest-v1-1`** (integral) e **`lkg-2026-05-03-loanrequest-v1-1-rb`** (marco só RB). **Último patch documental de alinhamento rules/app (contraproposta):** **`4e8dcae`**.
 
-- contrato orientador e confronto histórico da ordem de entrega (**`readBy*` antes de contraposta** dentro do pacote v1.1): [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md);
-- matriz QA executável quando houver código: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).
+Guardrails continuam os da ponte pré-financeira ([`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)): sem sync financeiro remoto sem desenho explícito; sem converter pedido em contrato automático; sem persistir `payment.linkContext`; sem impacto direto declarado sobre `calculations.js` nesta linha.
 
-Guardrails continuam iguais à ponte pré-financeira descrita em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): sem sync financeiro remoto sem desenho explícito, sem converter pedido remotamente em contrato automático nesta linha da especificação, sem persistir `payment.linkContext`.
+**Próximo recorte após esta entrega:** **não** definido aqui — seguir apenas [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md) e o **código** como fontes vivas; qualquer nova fase exige decisão explícita de governança.
 
 ---
 
@@ -533,3 +539,4 @@ Ele funciona como:
 | 2026-05-01 | **Fechamento formal do pacote `loanRequest` v1:** smoke manual real OK sem NOK crítico; matriz atualizada; base estável principal recomendada **`lkg-2026-05-01-loanrequest-v1-complete`** (§4). |
 | 2026-05-01 | Planejamento-mestre `loanRequest` pré-financeiro arquivado em [`plans/completed/`](./plans/completed/) como histórico; ver [`plans/README.md`](./plans/README.md). |
 | 2026-05-03 | Planejamento documental **`loanRequest` v1.1** (`readBy*` + contraposta, ordem de execução explícita) em [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · QA planejável em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md). |
+| 2026-05-03 | **Fechamento do pacote `loanRequest` v1.1 (RB + CN):** smoke manual real OK integral; QA [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); base estável principal atualizada para **`lkg-2026-05-03-loanrequest-v1-1`**; próximo recorte de produto **não** escolhido neste arquivo — apenas fontes vivas ([`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), checkpoint, código). |

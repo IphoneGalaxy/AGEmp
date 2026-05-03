@@ -16,6 +16,10 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# Firebase emulator / ferramentas locais (não versionar)
+firestore-debug.log
+.cursor/debug-*.log
+
 # Editor / IDE
 .vscode/
 .idea/
