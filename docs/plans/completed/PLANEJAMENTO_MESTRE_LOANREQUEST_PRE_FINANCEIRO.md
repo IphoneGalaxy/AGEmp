@@ -2,7 +2,7 @@
 
 **Status:** **concluído** para o pacote **`loanRequest` v1**. Este documento é **referência histórica** da execução da v1 — **não** é plano ativo nem fonte prioritária para trabalho novo (use [`HANDOFF_MASTER.md`](../../HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](../../CHECKPOINT_CHECKLIST.md) e [`NEXT_PHASE_OFFICIAL.md`](../../NEXT_PHASE_OFFICIAL.md)).
 
-**Fechamento formal:** smoke manual real OK, sem NOK crítico — registro em [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md). **LKG:** `lkg-2026-05-01-loanrequest-v1-complete`.
+**Fechamento formal:** smoke manual real OK, sem NOK crítico — registro em [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md). **LKG:** `lkg-2026-05-01-loanrequest-v1-complete`.
 
 **Localização:** `docs/plans/completed/` (planejamentos encerrados).
 
@@ -16,9 +16,9 @@
 
 ## Checklist de continuidade (subfases planejadas)
 
-- [x] Fechar recorte funcional v1 de `loanRequest`: status, duplicidade, limites, contraproposta e leitura. → `docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`
+- [x] Fechar recorte funcional v1 de `loanRequest`: status, duplicidade, limites, contraproposta e leitura. → `docs/plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`
 - [x] Desenhar modelo remoto, rules e índices de `loanRequests` antes de UI. → `docs/FIRESTORE_LOANREQUESTS.md`, `firestore.rules`, `firestore.indexes.json`, `src/firebase/loanRequests.js`
-- [x] Promover a matriz QA inicial para checklist executável específico da fase. → [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md)
+- [x] Promover a matriz QA inicial para checklist executável específico da fase. → [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)
 - [x] UI mínima do cliente e do fornecedor para `loanRequest` v1 (Conta). → `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx`, `loanRequestsFirestore.js`
 - [x] Polimento / QA formal / empacotamento (sem expansão de escopo). → LKG `lkg-2026-05-01-loanrequest-v1-complete`
 
@@ -690,4 +690,4 @@ Depois dela, a implementação deve seguir pela camada remota/rules antes da UI.
 
 | Data | Nota |
 |------|------|
-| 2026-05-01 | Pacote **`loanRequest` v1** (contrato congelado + Firestore + UI cliente/fornecedor) **formalmente fechado** após **smoke manual real** bem-sucedido (dois usuários; sem NOK crítico). Registro: [`QA_MATRIX_LOANREQUEST_V1.md`](../../QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**. Próximas subfases numeradas neste planejamento (ex.: contraproposta v1.1, leitura) **não** fazem parte deste fechamento. |
+| 2026-05-01 | Pacote **`loanRequest` v1** (contrato congelado + Firestore + UI cliente/fornecedor) **formalmente fechado** após **smoke manual real** bem-sucedido (dois usuários; sem NOK crítico). Registro: [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`**. Próximas subfases numeradas neste planejamento (ex.: contraproposta v1.1, leitura) **não** fazem parte deste fechamento. |

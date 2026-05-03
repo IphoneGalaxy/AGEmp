@@ -1,7 +1,7 @@
 # LoanRequest v1 — contrato funcional (Subfase 1 concluída)
 
 **Tipo:** especificação curta congelada para o primeiro PR técnico (modelo remoto + rules — Subfase 2).  
-**Origem:** [`docs/plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) (referência histórica da execução v1) + fontes oficiais do repositório.  
+**Origem:** [`PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) (referência histórica da execução v1) + fontes oficiais do repositório.  
 **Data de congelamento:** 2026-04-30.
 
 ---
@@ -130,7 +130,7 @@
 
 ## Referências
 
-- [`docs/plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md)
-- `docs/NEXT_PHASE_OFFICIAL.md`
-- `docs/HANDOFF_MASTER.md`
-- `docs/CHECKPOINT_CHECKLIST.md`
+- [`PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md)
+- [`NEXT_PHASE_OFFICIAL.md`](../../NEXT_PHASE_OFFICIAL.md)
+- [`HANDOFF_MASTER.md`](../../HANDOFF_MASTER.md)
+- [`CHECKPOINT_CHECKLIST.md`](../../CHECKPOINT_CHECKLIST.md)

@@ -1,13 +1,13 @@
 # Firestore — `loanRequests` (v1 pré-financeira)
 
-**Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
+**Contrato funcional:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)  
 **Helpers:** [`src/firebase/loanRequests.js`](../src/firebase/loanRequests.js) · **Firestore (CRUD cliente/fornecedor):** [`src/firebase/loanRequestsFirestore.js`](../src/firebase/loanRequestsFirestore.js)  
 **Rules:** [`firestore.rules`](../firestore.rules) (funções `loanRequest*`)  
-**QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)
+**QA executável (pacote v1):** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)
 
 **Planejamento histórico (execução v1, não plano ativo):** [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md)
 
-**Pacote v1:** **fechado formalmente** após smoke manual real OK (sem NOK crítico) — ver [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) e LKG **`lkg-2026-05-01-loanrequest-v1-complete`** em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4.
+**Pacote v1:** **fechado formalmente** após smoke manual real OK (sem NOK crítico) — ver [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) e LKG **`lkg-2026-05-01-loanrequest-v1-complete`** em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) §4.
 
 ## Coleção
 

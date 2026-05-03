@@ -1,7 +1,7 @@
 # LoanRequest v1.1 — contrato funcional (planejamento aprovável)
 
 **Status:** especificação de produto/rules **para execução futura**. O código do repositório na base estável `lkg-2026-05-01-loanrequest-v1-complete` permanece **`loanRequest` v1**.  
-**Base v1:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md) · [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) · [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)
+**Base v1:** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md) · [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) · [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)
 
 ---
 
@@ -117,7 +117,7 @@ Introdução do status **`counteroffer`** aos **status abertos** (além de `pend
 |-------|--------------------------|
 | `counterofferAmount` | inteiros centavos BRL — mesmos limites de `requestedAmount` |
 | `counterofferedAt` | timestamp servidor quando entrar em `counteroffer` |
-| `supplierNote` | já existe em v1; pode repetir papel de observação opcional até limite atual (`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`) |
+| `supplierNote` | já existe em v1; pode repetir papel de observação opcional até limite atual ([`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)) |
 
 `requestedAmount` e `clientNote` permanecem imutáveis.
 

@@ -1,7 +1,7 @@
 # Matriz QA — `loanRequest` v1.1 (pré-financeira — planejada)
 
 **Status:** **EXECUTÁVEL após implementação** — até lá, apenas planejamento.  
-**Pacote anterior fechado:** [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md) (v1 + LKG `lkg-2026-05-01-loanrequest-v1-complete`)  
+**Pacote anterior fechado:** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) (v1 + LKG `lkg-2026-05-01-loanrequest-v1-complete`)  
 **Especificação v1.1:** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)
 
 Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por linha. **NOK crítico bloqueia** promoção a LKG que inclua estas fatias.
@@ -72,7 +72,7 @@ Executar cenários **`pending`/`under_review`/aprovar/recusar/cancelar** da matr
 | ID | Cenário | Resultado esperado | OK |
 |----|---------|-------------------|----|
 | CN1 | Novo campo `counteroffer*` | só aparece quando `status` permite | |
-| CN2 | `counterofferAmount` válido vs limites v1 (`LOANREQUEST...SUBFASE1`) | escritas válidas apenas nos limites de centavos | |
+| CN2 | `counterofferAmount` válido vs limites v1 ([`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md)) | escritas válidas apenas nos limites de centavos | |
 | CN3 | “Segundo pedido aberto mesmo `linkId`” durante `pending/under_review/counteroffer` | bloqueado / impossibilitado igual espírito v1 (+ novo status aberto) | |
 
 ### Fornecedor
