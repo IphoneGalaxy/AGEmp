@@ -48,12 +48,12 @@ Ex.: R$ 100,00 → `10000`. Limites alinhados ao contrato Subfase 1 (0,01 a 99.9
 
 As **rules não verificam unicidade entre documentos** (limitação do Firestore Security Rules). Na **Subfase 3 (UI + fluxo)**, antes de criar:
 
-1. Consultar `loanRequests` com `where('linkId', '==', linkId)` e `where('status', 'in', ['pending', 'under_review', 'counteroffer'])`, `limit(1)`.
+1. Consultar `loanRequests` com `where('clientId', '==', clientUid)` e `where('linkId', '==', linkId)` e `where('status', 'in', ['pending', 'under_review', 'counteroffer'])`, `limit(1)`.
 2. Se existir documento, abortar criação ou orientar o usuário.
 
-Índice composto: `linkId` + `status` — ver [`firestore.indexes.json`](../firestore.indexes.json).
+Índices compostos relevantes em [`firestore.indexes.json`](../firestore.indexes.json) incluem **`clientId` + `linkId` + `status`** (pré-check de duplicidade) e opcionalmente `linkId` + `status` (legado/evolução).
 
-**UI cliente (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`) — chama `findOpenLoanRequestForLinkId` antes de gravar.
+**UI cliente (Subfase 3):** Configurações → Conta → “Abrir solicitações” (`LoanRequestsClientPanel.jsx`) — chama `findOpenLoanRequestForLinkId(linkId, clientUid)` antes de gravar.
 
 **UI fornecedor:** `LoanRequestsSupplierPanel.jsx` — além das transições v1 (`pending` → `under_review`; `pending` | `under_review` → `approved` com **`approvedAmount` = `requestedAmount`** ou → `rejected`), **fatia CN v1.1**: `pending` | `under_review` → **`counteroffer`** com `counterofferAmount`, `counterofferedAt`, `supplierNote` opcional; **uma rodada**: rules impedem segundo envio se `counterofferAmount` / `counterofferedAt` já existem.
 
@@ -65,7 +65,7 @@ Arquivo: [`firestore.indexes.json`](../firestore.indexes.json)
 
 - `clientId` ASC, `createdAt` DESC — lista do cliente.
 - `supplierId` ASC, `createdAt` DESC — lista do fornecedor (**UI Subfase 4**: Conta → Pedidos recebidos).
-- `linkId` ASC, `status` ASC — checagem de duplicidade aberta.
+- `linkId` ASC, `clientId` ASC, `status` ASC — pré-check duplicidade com escopo cliente (queries compatíveis com rules).
 
 Após alterar índices: `firebase deploy --only firestore:indexes` (ou deploy completo do Firestore).
 

@@ -164,7 +164,7 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
 
     setSubmitting(true);
     try {
-      const dup = await findOpenLoanRequestForLinkId(draftLinkId);
+      const dup = await findOpenLoanRequestForLinkId(draftLinkId, user.uid);
       if (dup.exists) {
         setFormError(
           'Já existe um pedido em aberto para este fornecedor. Aguarde resposta ou cancele o pedido anterior.',

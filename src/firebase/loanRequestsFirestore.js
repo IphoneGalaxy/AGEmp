@@ -30,19 +30,23 @@ import { normalizeNoteForLoanRequest } from '../utils/brlMoneyInput';
 const LOAN_REQUEST_LIST_LIMIT = 100;
 
 /**
- * Verifica se já existe pedido aberto para o vínculo (duplicidade v1).
+ * Verifica se já existe pedido aberto para o vínculo (duplicidade v1/v1.1).
+ * Inclui `clientId` na query para compatibilidade com as Security Rules (`list`/query só
+ * com escopo por participante autenticado).
  *
- * @param {string} linkId
+ * @param {string} linkId id do doc em `links/` (determinístico `supplierId__clientId`).
+ * @param {string} clientId UID Firebase do cliente criador/consultante.
  * @returns {Promise<{ exists: false } | { exists: true; id: string }>}
  */
-export async function findOpenLoanRequestForLinkId(linkId) {
-  if (!db || !linkId) {
+export async function findOpenLoanRequestForLinkId(linkId, clientId) {
+  if (!db || !linkId || !clientId) {
     return { exists: false };
   }
 
   try {
     const q = query(
       collection(db, LOAN_REQUESTS_COLLECTION),
+      where('clientId', '==', clientId),
       where('linkId', '==', linkId),
       where('status', 'in', [...LOAN_REQUEST_OPEN_STATUSES]),
       limit(1),
