@@ -232,6 +232,7 @@ service cloud.firestore {
 
     function supplierStatusTransitionIsValid() {
       return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         (
           request.resource.data.status == 'approved' ||
           request.resource.data.status == 'rejected'
@@ -241,14 +242,29 @@ service cloud.firestore {
 
     function clientStatusTransitionIsValid() {
       return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
         request.resource.data.status == 'cancelled_by_client' &&
         resource.data.status == 'pending';
     }
 
     function supplierRevocationIsValid() {
       return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         request.resource.data.status == 'revoked_by_supplier' &&
         resource.data.status == 'approved';
+    }
+
+    // Cliente reabre o mesmo doc (id fixo supplierId__clientId) após fim pré-financeiro.
+    function clientRestartsEndedLinkIsValid() {
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        request.resource.data.status == 'pending' &&
+        (
+          resource.data.status == 'rejected' ||
+          resource.data.status == 'cancelled_by_client' ||
+          resource.data.status == 'revoked_by_supplier'
+        );
     }
 
     function linkStatusTransitionIsValid() {
@@ -261,7 +277,8 @@ service cloud.firestore {
         (
           supplierStatusTransitionIsValid() ||
           clientStatusTransitionIsValid() ||
-          supplierRevocationIsValid()
+          supplierRevocationIsValid() ||
+          clientRestartsEndedLinkIsValid()
         );
     }
 
@@ -302,7 +319,7 @@ service cloud.firestore {
       ]);
     }
 
-    function loanRequestV1ForbiddenKeysAlways(data) {
+    function loanRequestV1ForbiddenKeysAlways() {
       // Controlo granular por ramo (RB/CN/v1): não há veto global único sobre subconjuntos válidos da whitelist.
       return false;
     }
@@ -337,7 +354,7 @@ service cloud.firestore {
           'updatedAt'
         ]) &&
         !loanRequestV1ForbiddenKeysCreate(request.resource.data) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data) &&
+        !loanRequestV1ForbiddenKeysAlways() &&
         request.resource.data.supplierId is string &&
         request.resource.data.supplierId.size() > 0 &&
         request.resource.data.clientId is string &&
@@ -420,7 +437,7 @@ service cloud.firestore {
         request.resource.data.updatedAt == request.time &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'cancelledAt']) &&
         !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestSupplierToUnderReviewValid() {
@@ -441,7 +458,7 @@ service cloud.firestore {
         ) &&
         loanRequestSupplierNoteOkAfter() &&
         !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt', 'cancelledAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestSupplierApproveDiffOk(keys) {
@@ -468,7 +485,7 @@ service cloud.firestore {
         ) &&
         loanRequestSupplierNoteOkAfter() &&
         !request.resource.data.keys().hasAny(['cancelledAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestSupplierRejectDiffOk(keys) {
@@ -494,7 +511,7 @@ service cloud.firestore {
         ) &&
         loanRequestSupplierNoteOkAfter() &&
         !request.resource.data.keys().hasAny(['cancelledAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestSupplierCounterofferDiffOk(keys) {
@@ -534,7 +551,7 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys()
         ) &&
         loanRequestSupplierNoteOkAfter() &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestClientAcceptCounterofferDiffOk(keys) {
@@ -563,7 +580,7 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys()
         ) &&
         !request.resource.data.keys().hasAny(['cancelledAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestClientDeclineCounterofferDiffOk(keys) {
@@ -590,7 +607,7 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys()
         ) &&
         !request.resource.data.keys().hasAny(['approvedAmount', 'cancelledAt']) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data);
+        !loanRequestV1ForbiddenKeysAlways();
     }
 
     function loanRequestReadMarkerTsMonotone(prevHad, previousTs, marker) {
@@ -651,7 +668,7 @@ service cloud.firestore {
 
     function loanRequestUpdateValid() {
       return loanRequestAllowedV1Keys(request.resource.data) &&
-        !loanRequestV1ForbiddenKeysAlways(request.resource.data) &&
+        !loanRequestV1ForbiddenKeysAlways() &&
         loanRequestCoreImmutableOnUpdate() &&
         request.resource.data.keys().hasAll([
           'supplierId',

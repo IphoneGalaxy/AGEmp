@@ -73,6 +73,8 @@ Após alterar índices: `firebase deploy --only firestore:indexes` (ou deploy co
 
 Toda **escrita** que altera o pedido exige `links/{linkId}` com `status == 'approved'` e participantes coerentes. Se o vínculo deixar de estar aprovado, **updates** passam a falhar; **leitura** do histórico continua permitida para participantes.
 
+Para **nova solicitação após vínculo encerrado** (`rejected`, `cancelled_by_client`, `revoked_by_supplier`), o mesmo documento deterministic `links/{supplierId__clientId}` é reaberto pelo cliente como `pending` (ver `createLinkRequest` em `links.js` e transição nas rules).
+
 ## Deploy
 
 ```bash

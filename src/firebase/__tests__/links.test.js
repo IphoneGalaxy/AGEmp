@@ -208,6 +208,22 @@ describe('firebase/links', () => {
       ).toBe(true);
     });
 
+    it('permite novo pedido pelo cliente depois de recusado pelo fornecedor', () => {
+      expect(
+        canActorTransitionLinkStatus('client', LINK_STATUSES.REJECTED, LINK_STATUSES.PENDING)
+      ).toBe(true);
+    });
+
+    it('permite novo pedido depois de revogação pelo fornecedor', () => {
+      expect(
+        canActorTransitionLinkStatus(
+          'client',
+          LINK_STATUSES.REVOKED_BY_SUPPLIER,
+          LINK_STATUSES.PENDING
+        )
+      ).toBe(true);
+    });
+
     it('permite revogação pelo fornecedor depois de approved', () => {
       expect(
         canActorTransitionLinkStatus(
@@ -258,13 +274,20 @@ describe('firebase/links', () => {
       expect(mockGetUserProfile).not.toHaveBeenCalled();
     });
 
-    it('não duplica vínculo existente', async () => {
+    it('não duplica quando já existe vínculo pendente', async () => {
       mockRunTransaction.mockImplementation(async (_database, callback) => {
         const transaction = {
           get: vi.fn().mockResolvedValue({
             exists: () => true,
+            data: () => ({
+              supplierId: 'supplier-1',
+              clientId: 'client-1',
+              status: LINK_STATUSES.PENDING,
+              requestedBy: LINK_REQUESTED_BY.CLIENT,
+            }),
           }),
           set: vi.fn(),
+          update: vi.fn(),
         };
         return callback(transaction);
       });
@@ -275,6 +298,86 @@ describe('firebase/links', () => {
         ok: false,
         message: 'Já existe um vínculo ou solicitação entre estas contas.',
       });
+    });
+
+    it('não duplica quando já existe vínculo aprovado', async () => {
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              supplierId: 'supplier-1',
+              clientId: 'client-1',
+              status: LINK_STATUSES.APPROVED,
+              requestedBy: LINK_REQUESTED_BY.CLIENT,
+            }),
+          }),
+          set: vi.fn(),
+          update: vi.fn(),
+        };
+        return callback(transaction);
+      });
+
+      await expect(
+        createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
+      ).resolves.toEqual({
+        ok: false,
+        message: 'Já existe um vínculo ou solicitação entre estas contas.',
+      });
+    });
+
+    it('reabre solicitação após vínculo recusado (mesmo doc)', async () => {
+      const transactionUpdate = vi.fn();
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              supplierId: 'supplier-1',
+              clientId: 'client-1',
+              status: LINK_STATUSES.REJECTED,
+              requestedBy: LINK_REQUESTED_BY.CLIENT,
+            }),
+          }),
+          set: vi.fn(),
+          update: transactionUpdate,
+        };
+        return callback(transaction);
+      });
+
+      await expect(
+        createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
+      ).resolves.toEqual({ ok: true, id: 'supplier-1__client-1' });
+
+      expect(transactionUpdate).toHaveBeenCalledTimes(1);
+      expect(transactionUpdate.mock.calls[0][1]).toMatchObject({
+        status: LINK_STATUSES.PENDING,
+        updatedAt: 'SERVER_TIMESTAMP',
+      });
+      expect(transactionUpdate.mock.calls[0][1].supplierId).toBeUndefined();
+    });
+
+    it('reabre após vínculo revogado pelo fornecedor', async () => {
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => true,
+            data: () => ({
+              supplierId: 'supplier-1',
+              clientId: 'client-1',
+              status: LINK_STATUSES.REVOKED_BY_SUPPLIER,
+              requestedBy: LINK_REQUESTED_BY.CLIENT,
+            }),
+          }),
+          set: vi.fn(),
+          update: vi.fn(),
+        };
+        return callback(transaction);
+      });
+
+      await expect(
+        createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
+      ).resolves.toEqual({ ok: true, id: 'supplier-1__client-1' });
     });
 
     it('cria a solicitação pendente com id determinístico', async () => {

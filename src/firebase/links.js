@@ -53,9 +53,19 @@ export const LINK_REQUESTED_BY = Object.freeze({
 const LINK_REQUESTED_BY_VALUES = Object.freeze(Object.values(LINK_REQUESTED_BY));
 const REMOTE_LINKS_UNAVAILABLE_MESSAGE = 'Vínculos remotos indisponíveis neste ambiente.';
 
+/** Vínculo encerrado: nova solicitação reaproveita o mesmo doc `supplierId__clientId`. */
+export const LINK_RESTARTABLE_AFTER_END_STATUSES = Object.freeze([
+  LINK_STATUSES.REJECTED,
+  LINK_STATUSES.CANCELLED_BY_CLIENT,
+  LINK_STATUSES.REVOKED_BY_SUPPLIER,
+]);
+
 const LINK_STATUS_TRANSITIONS = Object.freeze({
   [USER_ROLES.CLIENT]: Object.freeze({
     [LINK_STATUSES.PENDING]: Object.freeze([LINK_STATUSES.CANCELLED_BY_CLIENT]),
+    [LINK_STATUSES.REJECTED]: Object.freeze([LINK_STATUSES.PENDING]),
+    [LINK_STATUSES.CANCELLED_BY_CLIENT]: Object.freeze([LINK_STATUSES.PENDING]),
+    [LINK_STATUSES.REVOKED_BY_SUPPLIER]: Object.freeze([LINK_STATUSES.PENDING]),
   }),
   [USER_ROLES.SUPPLIER]: Object.freeze({
     [LINK_STATUSES.PENDING]: Object.freeze([LINK_STATUSES.APPROVED, LINK_STATUSES.REJECTED]),
@@ -102,6 +112,16 @@ export function canActorTransitionLinkStatus(actorRole, currentStatus, nextStatu
   }
 
   return LINK_STATUS_TRANSITIONS[actorRole]?.[currentStatus]?.includes(nextStatus) ?? false;
+}
+
+/**
+ * Cliente pode pedir novo vínculo (doc único por par): só quando o atual não está
+ * `pending` nem `approved`.
+ *
+ * @param {unknown} status
+ */
+export function canClientRestartLinkAfterEndedStatus(status) {
+  return typeof status === 'string' && LINK_RESTARTABLE_AFTER_END_STATUSES.includes(status);
 }
 
 /**
@@ -351,21 +371,57 @@ export async function createLinkRequest({
       const linkRef = getLinkRef(supplierId, clientId);
       const snapshot = await transaction.get(linkRef);
 
-      if (snapshot.exists()) {
+      if (!snapshot.exists()) {
+        const linkPayload = buildLinkData({ supplierId, clientId, requestedBy });
+        if (import.meta.env.DEV) {
+          console.info(
+            '[links] createLinkRequest: payload antes do transaction.set',
+            formatLinkWritePayloadForDevLog(linkPayload)
+          );
+        }
+        transaction.set(linkRef, linkPayload);
+        return { ok: true, id: linkRef.id };
+      }
+
+      const prev = snapshot.data();
+      if (prev.supplierId !== supplierId || prev.clientId !== clientId) {
+        return {
+          ok: false,
+          message:
+            'Registro de vínculo inconsistente com o par fornecedor/cliente. Recarregue a lista.',
+        };
+      }
+
+      const st =
+        typeof prev.status === 'string' && LINK_STATUS_VALUES.includes(prev.status)
+          ? prev.status
+          : '';
+
+      if (st === LINK_STATUSES.PENDING || st === LINK_STATUSES.APPROVED) {
         return {
           ok: false,
           message: 'Já existe um vínculo ou solicitação entre estas contas.',
         };
       }
 
-      const linkPayload = buildLinkData({ supplierId, clientId, requestedBy });
-      if (import.meta.env.DEV) {
-        console.info(
-          '[links] createLinkRequest: payload antes do transaction.set',
-          formatLinkWritePayloadForDevLog(linkPayload)
-        );
+      if (!canClientRestartLinkAfterEndedStatus(st)) {
+        return {
+          ok: false,
+          message: `Não é possível solicitar novo vínculo neste estado (${st}). Recarregue a lista.`,
+        };
       }
-      transaction.set(linkRef, linkPayload);
+
+      if (prev.requestedBy !== LINK_REQUESTED_BY.CLIENT) {
+        return {
+          ok: false,
+          message: 'Este registro de vínculo não segue o modelo esperado (solicitação inicial).',
+        };
+      }
+
+      transaction.update(linkRef, {
+        status: LINK_STATUSES.PENDING,
+        updatedAt: serverTimestamp(),
+      });
       return { ok: true, id: linkRef.id };
     });
   } catch (e) {

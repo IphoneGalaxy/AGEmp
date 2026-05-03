@@ -545,9 +545,19 @@ function mapLoanRequestWriteError(e) {
 
 /** @param {unknown} e */
 function mapCreateLoanRequestError(e) {
-  const code = normalizeFirestoreErrorCode(e);
-  if (code === 'permission-denied') {
-    return 'Permissão negada. Confira se o vínculo ainda está aprovado e se você está conectado como cliente.';
+  const normalized = normalizeFirestoreErrorCode(e);
+  const rawCode =
+    e && typeof e === 'object' && 'code' in e && typeof e.code === 'string' ? e.code : '';
+  const isPermissionDenied =
+    normalized === 'permission-denied' ||
+    rawCode === 'permission-denied' ||
+    rawCode.endsWith('/permission-denied');
+  if (isPermissionDenied) {
+    return (
+      'Permissão negada pelo servidor. Confira: projeto Firebase correto; vínculo aprovado ' +
+      'em links/{UID do fornecedor}__{seu UID}; sua conta como cliente com papel Cliente; ' +
+      'perfil remoto do fornecedor com papel Fornecedor (conta).'
+    );
   }
   return mapFirestoreError(e);
 }
