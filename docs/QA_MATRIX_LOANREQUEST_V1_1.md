@@ -1,10 +1,22 @@
 # Matriz QA — `loanRequest` v1.1 (pré-financeira — planejada)
 
-**Status:** **EXECUTÁVEL após implementação** — até lá, apenas planejamento.  
+**Status da matriz:** **EXECUTÁVEL** onde houver código; **Fatia RB** já registrada na seção **Execução registrada — Fatia RB** abaixo. **Fatia CN** (**contraproposta**) permanece planejável / **não** implementada neste marco. **O pacote nominal v1.1 completo (RB+CN)** **não** está fechado — apenas a **Fatia RB** foi formalmente marcada nesta etapa documental (`lkg-2026-05-03-loanrequest-v1-1-rb`).
 **Pacote anterior fechado:** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) (v1 + LKG `lkg-2026-05-01-loanrequest-v1-complete`)  
 **Especificação v1.1:** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)
 
 Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por linha. **NOK crítico bloqueia** promoção a LKG que inclua estas fatias.
+
+---
+
+## Execução registrada — Fatia RB (`readBy*`)
+
+| Campo | Registro |
+|-------|----------|
+| **Implementação** | Commit **`7270409`** (`readByClientAt`, `readBySupplierAt`; política B em `updatedAt` conforme código/regras) |
+| **Rules publicadas** | Comando utilizado pela equipe: `npx -y firebase-tools@latest deploy --only firestore:rules --project agemp-financas-pro` — sucesso (compilação + release) |
+| **Smoke manual** | Executado pela operadora humana; **OK**, **sem NOK crítico** informado neste ciclo RB |
+| **CN / contraproposta** | **N/A neste marco** — todas as linhas **CN\* (todas)** ficam por executar até a entrega CN |
+| **Promoção** | Tag LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`** (marcador somente RB; não substitui o fechamento do pacote v1 nem o fechamento futuro eventual de v1.1 completa) |
 
 ---
 
@@ -123,3 +135,4 @@ Executar cenários **`pending`/`under_review`/aprovar/recusar/cancelar** da matr
 | Data | Nota |
 |------|------|
 | 2026-05-03 | Criação da matriz planejável v1.1 alinhada à ordem de entrega oficial documentada (`readBy*` → `counteroffer`). |
+| 2026-05-03 | **Fatia RB** — registro de promoção manual: código `7270409`, deploy de rules em **`agemp-financas-pro`**, smoke OK sem NOK crítico informado — LKG **`lkg-2026-05-03-loanrequest-v1-1-rb`**; fatia CN ainda pendente — matriz nominal v1.1 completa (RB+CN) **não** encerrada. |
