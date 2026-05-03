@@ -12,7 +12,7 @@ import {
   where,
 } from 'firebase/firestore';
 
-import { db } from './index';
+import { app, auth, db } from './index';
 import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
@@ -25,6 +25,7 @@ import {
 } from './loanRequests';
 import { mapFirestoreError, normalizeFirestoreErrorCode } from './firestoreErrors';
 import { normalizeNoteForLoanRequest } from '../utils/brlMoneyInput';
+import { LINKS_COLLECTION, LINK_STATUSES, preflightUsersForLinkCreate } from './links';
 
 /** Limite prático de documentos por lista na UI (paginação fora do escopo v1). */
 const LOAN_REQUEST_LIST_LIMIT = 100;
@@ -422,17 +423,80 @@ export async function createLoanRequest({
     return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
   }
 
+  const cents = Math.round(Number(requestedAmountCents));
+  if (
+    !Number.isFinite(cents) ||
+    cents < LOAN_REQUEST_MIN_AMOUNT_CENTS ||
+    cents > LOAN_REQUEST_MAX_AMOUNT_CENTS
+  ) {
+    return { ok: false, message: 'Valor do pedido inválido.' };
+  }
+
   try {
-    const ref = await addDoc(collection(db, LOAN_REQUESTS_COLLECTION), {
+    const profileGate = await preflightUsersForLinkCreate(clientId, supplierId);
+    if (!profileGate.ok) {
+      return profileGate;
+    }
+
+    const linkSnap = await getDoc(doc(db, LINKS_COLLECTION, linkId));
+    if (!linkSnap.exists()) {
+      return {
+        ok: false,
+        message:
+          'Não encontramos o vínculo na nuvem com este ID. Recarregue a página ou confira se o projeto Firebase do app (.env.local) é o mesmo do console.',
+      };
+    }
+    const ld = linkSnap.data();
+    const ls = typeof ld?.status === 'string' ? ld.status : '';
+    if (ls !== LINK_STATUSES.APPROVED) {
+      return {
+        ok: false,
+        message:
+          'O vínculo precisa estar aprovado para enviar um pedido. Atualize em Conta e tente novamente.',
+      };
+    }
+    if (ld?.supplierId !== supplierId || ld?.clientId !== clientId) {
+      return {
+        ok: false,
+        message:
+          'Os dados do vínculo (fornecedor/cliente) não batem com a lista atual. Recarregue os vínculos em Conta.',
+      };
+    }
+
+    const committedAt = serverTimestamp();
+    /** @type {Record<string, unknown>} */
+    const addPayload = {
       supplierId,
       clientId,
       linkId,
-      requestedAmount: requestedAmountCents,
-      clientNote,
+      requestedAmount: cents,
+      clientNote: typeof clientNote === 'string' ? clientNote : '',
       status: LOAN_REQUEST_STATUSES.PENDING,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+      createdAt: committedAt,
+      updatedAt: committedAt,
+    };
+
+    if (import.meta.env.DEV) {
+      const projectId =
+        app && typeof app.options?.projectId === 'string'
+          ? app.options.projectId
+          : '(sem projectId no app)';
+      console.info('[loanRequests] createLoanRequest addDoc (payload preview DEV)', {
+        supplierId,
+        clientId,
+        linkId,
+        requestedAmount: addPayload.requestedAmount,
+        typeofRequestedAmount: typeof addPayload.requestedAmount,
+        isIntegerRequestedAmount: Number.isInteger(/** @type {number} */ (addPayload.requestedAmount)),
+        clientNote: addPayload.clientNote,
+        typeofClientNote: typeof addPayload.clientNote,
+        status: addPayload.status,
+        authUid: auth?.currentUser?.uid ?? null,
+        projectId,
+      });
+    }
+
+    const ref = await addDoc(collection(db, LOAN_REQUESTS_COLLECTION), addPayload);
     return { ok: true, id: ref.id };
   } catch (e) {
     if (import.meta.env.DEV) {
@@ -557,10 +621,17 @@ function mapCreateLoanRequestError(e) {
     rawCode === 'permission-denied' ||
     rawCode.endsWith('/permission-denied');
   if (isPermissionDenied) {
+    const pidRaw =
+      typeof import.meta.env.VITE_FIREBASE_PROJECT_ID === 'string'
+        ? import.meta.env.VITE_FIREBASE_PROJECT_ID.trim()
+        : '';
+    const pidHint =
+      pidRaw !== '' ? ` Projeto configurado neste build: "${pidRaw}" (via VITE_FIREBASE_PROJECT_ID).` : '';
     return (
       'Permissão negada pelo servidor. Confira: projeto Firebase correto; vínculo aprovado ' +
       'em links/{UID do fornecedor}__{seu UID}; sua conta como cliente com papel Cliente; ' +
-      'perfil remoto do fornecedor com papel Fornecedor (conta).'
+      'perfil remoto do fornecedor com papel Fornecedor (conta).' +
+      pidHint
     );
   }
   return mapFirestoreError(e);

@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:rules:loanRequests": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-firestore-rules-tests.ps1"
   },
   "dependencies": {
     "firebase": "^12.12.1",
@@ -17,6 +18,7 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@vitejs/plugin-react": "^4.2.0",
     "autoprefixer": "^10.4.27",
     "jsdom": "^24.1.3",

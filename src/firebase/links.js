@@ -201,13 +201,14 @@ function validateLinkParticipants(supplierId, clientId) {
 }
 
 /**
- * Lê `users/{uid}` (requer rule `get` autenticado) e valida papéis antes da transação.
+ * Lê `users/{uid}` (rule `get` autenticado) e garante papel Cliente na conta cliente e Fornecedor na conta fornecedor.
+ * Reuso: criação de vínculo na transação e checagens pré-write de pedidos em `loanRequests`.
  *
  * @param {string} clientId
  * @param {string} supplierId
  * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
  */
-async function preflightUsersForLinkCreate(clientId, supplierId) {
+export async function preflightUsersForLinkCreate(clientId, supplierId) {
   let clientProfile;
   let supplierProfile;
 

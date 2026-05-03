@@ -188,9 +188,14 @@ service cloud.firestore {
         (request.auth.uid == data.supplierId || request.auth.uid == data.clientId);
     }
 
+    // `exists` primeiro: evitar dependência de resolver `.data` quando o doc pode não existir.
     function userHasEffectiveAccountRole(userId, role) {
-      let d = get(userDocPath(userId)).data;
-      return exists(userDocPath(userId)) && (
+      let path = userDocPath(userId);
+      return exists(path) && userProfileMapHasEffectiveRole(get(path).data, role);
+    }
+
+    function userProfileMapHasEffectiveRole(d, role) {
+      return (
         (
           hasAccountRolesField(d) &&
           d.accountRoles is list &&
@@ -203,6 +208,7 @@ service cloud.firestore {
             !(d.accountRoles is list) ||
             !accountRolesListIsValid(d.accountRoles)
           ) &&
+          hasRoleField(d) &&
           d.role == role
         )
       );
@@ -300,7 +306,11 @@ service cloud.firestore {
     }
 
     function loanRequestAmountCentsValid(n) {
-      return n is int && n >= 1 && n <= 9999999999;
+      // Não usar `floor` (não suportado nas rules); garantir inteiro exato mesmo se vier como double.
+      return n is number &&
+        n >= 1 &&
+        n <= 9999999999 &&
+        (n % 1) == 0;
     }
 
     function loanRequestNoteValid(note) {
@@ -335,11 +345,13 @@ service cloud.firestore {
     }
 
     function loanRequestLinkApprovedForLoanRequest(linkId, supplierId, clientId) {
-      let link = get(loanRequestLinkPath(linkId));
-      return link.exists &&
-        link.data.status == 'approved' &&
-        link.data.supplierId == supplierId &&
-        link.data.clientId == clientId;
+      let p = loanRequestLinkPath(linkId);
+      // Usar exists(path) em vez de get(...).exists: no emulador, get(...) pode falhar assim
+      // ("Property exists is undefined on object") em algumas versões do stack de testes.
+      return exists(p) &&
+        get(p).data.status == 'approved' &&
+        get(p).data.supplierId == supplierId &&
+        get(p).data.clientId == clientId;
     }
 
     function loanRequestCreateShapeValid() {
