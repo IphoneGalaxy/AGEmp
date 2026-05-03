@@ -19,6 +19,8 @@ vi.mock('firebase/firestore', () => ({
 }));
 
 vi.mock('../index', () => ({
+  app: null,
+  auth: { currentUser: null },
   db: { name: 'mock-db' },
 }));
 
@@ -86,6 +88,7 @@ describe('loanRequestsFirestore — contraposta v1.1 CN', () => {
         ...baseSupplierDoc,
         status: LOAN_REQUEST_STATUSES.PENDING,
         counterofferAmount: 12000,
+        counterofferedAt: { seconds: 1, nanoseconds: 0 },
       }),
     });
 

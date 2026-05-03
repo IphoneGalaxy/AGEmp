@@ -150,11 +150,13 @@ export async function supplierProposeLoanRequestCounteroffer({
   if (!requestId || !supplierUid || typeof counterofferAmountCents !== 'number') {
     return { ok: false, message: 'Pedido ou valor da contraproposta inválido.' };
   }
-  const cents = Math.round(counterofferAmountCents);
+  const cents = Math.round(Number(counterofferAmountCents));
   if (
     cents < LOAN_REQUEST_MIN_AMOUNT_CENTS ||
     cents > LOAN_REQUEST_MAX_AMOUNT_CENTS ||
-    Number.isNaN(cents)
+    Number.isNaN(cents) ||
+    !Number.isFinite(cents) ||
+    !Number.isInteger(cents)
   ) {
     return { ok: false, message: 'Valor da contraproposta fora dos limites permitidos.' };
   }
@@ -197,14 +199,40 @@ export async function supplierProposeLoanRequestCounteroffer({
       };
     }
 
+    const supplierNoteNormalized = normalizeNoteForLoanRequest(
+      supplierNote ?? '',
+      LOAN_REQUEST_MAX_NOTE_CHARS,
+    );
+    const notePatch = buildOptionalSupplierNoteUpdate(supplierNote);
     const committedAt = serverTimestamp();
-    await updateDoc(ref, {
+    const payload = {
       status: LOAN_REQUEST_STATUSES.COUNTEROFFER,
       counterofferAmount: cents,
       counterofferedAt: committedAt,
       updatedAt: committedAt,
-      ...buildOptionalSupplierNoteUpdate(supplierNote),
-    });
+      ...notePatch,
+    };
+
+    if (import.meta.env.DEV) {
+      console.info('[loanRequests][DEV] supplierProposeLoanRequestCounteroffer pre-updateDoc', {
+        requestId,
+        authUid: auth?.currentUser?.uid ?? null,
+        supplierUid,
+        docStatus: status,
+        docSupplierId: data.supplierId,
+        docClientId: data.clientId,
+        docLinkId: data.linkId,
+        requestedAmount: data.requestedAmount,
+        counterofferAmount: cents,
+        typeofCounterofferAmount: typeof cents,
+        counterofferAmountIsInteger: Number.isInteger(cents),
+        supplierNoteNormalized: supplierNoteNormalized || '(omit from payload)',
+        payload,
+        payloadKeys: Object.keys(payload),
+      });
+    }
+
+    await updateDoc(ref, payload);
     return { ok: true };
   } catch (e) {
     if (import.meta.env.DEV) {
@@ -394,6 +422,23 @@ function buildOptionalSupplierNoteUpdate(raw) {
     return {};
   }
   return { supplierNote: n };
+}
+
+/**
+ * Par pré-financeiro “commitado”: centavos válidos + timestamp da contraproposta.
+ * Só esse estado bloqueia nova rodada (chave `counterofferAmount` sem número não conta).
+ *
+ * @param {Record<string, unknown>} data
+ */
+function hasCommittedLoanRequestCounterofferPayload(data) {
+  const amt = data.counterofferAmount;
+  const hasValidAmt =
+    typeof amt === 'number' &&
+    Number.isFinite(amt) &&
+    Number.isInteger(amt) &&
+    amt >= LOAN_REQUEST_MIN_AMOUNT_CENTS &&
+    amt <= LOAN_REQUEST_MAX_AMOUNT_CENTS;
+  return hasValidAmt && data.counterofferedAt != null;
 }
 
 /** @param {unknown} e */

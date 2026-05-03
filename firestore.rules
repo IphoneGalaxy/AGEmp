@@ -313,6 +313,16 @@ service cloud.firestore {
         (n % 1) == 0;
     }
 
+    // Contrato v1 CN: primeira rodada; considera já existente apenas valor inteiro válido +
+    // timestamp. Chave com null não conta como contraposta "commitada" (usa hasAny + is number).
+    function loanRequestHasCommittedCounteroffer(data) {
+      return data.keys().hasAny(['counterofferAmount']) &&
+        data.counterofferAmount is number &&
+        loanRequestAmountCentsValid(data.counterofferAmount) &&
+        data.keys().hasAny(['counterofferedAt']) &&
+        data.counterofferedAt is timestamp;
+    }
+
     function loanRequestNoteValid(note) {
       return note is string && note.size() <= 1000;
     }
@@ -437,6 +447,7 @@ service cloud.firestore {
 
     function loanRequestClientCancelValid() {
       return request.auth.uid == resource.data.clientId &&
+        request.resource.data.status == 'cancelled_by_client' &&
         userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
         loanRequestOpenStatus(resource.data.status) &&
         loanRequestLinkApprovedForLoanRequest(
@@ -444,7 +455,6 @@ service cloud.firestore {
           resource.data.supplierId,
           resource.data.clientId
         ) &&
-        request.resource.data.status == 'cancelled_by_client' &&
         request.resource.data.cancelledAt == request.time &&
         request.resource.data.updatedAt == request.time &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt', 'cancelledAt']) &&
@@ -454,14 +464,14 @@ service cloud.firestore {
 
     function loanRequestSupplierToUnderReviewValid() {
       return request.auth.uid == resource.data.supplierId &&
-        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        request.resource.data.status == 'under_review' &&
         resource.data.status == 'pending' &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
           resource.data.supplierId,
           resource.data.clientId
         ) &&
-        request.resource.data.status == 'under_review' &&
         request.resource.data.updatedAt == request.time &&
         (
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) ||
@@ -480,6 +490,7 @@ service cloud.firestore {
 
     function loanRequestSupplierApproveValid() {
       return request.auth.uid == resource.data.supplierId &&
+        request.resource.data.status == 'approved' &&
         userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         loanRequestOpenStatus(resource.data.status) &&
         loanRequestLinkApprovedForLoanRequest(
@@ -487,7 +498,6 @@ service cloud.firestore {
           resource.data.supplierId,
           resource.data.clientId
         ) &&
-        request.resource.data.status == 'approved' &&
         request.resource.data.updatedAt == request.time &&
         request.resource.data.respondedAt == request.time &&
         loanRequestAmountCentsValid(request.resource.data.approvedAmount) &&
@@ -507,6 +517,7 @@ service cloud.firestore {
 
     function loanRequestSupplierRejectValid() {
       return request.auth.uid == resource.data.supplierId &&
+        request.resource.data.status == 'rejected' &&
         userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         loanRequestOpenStatus(resource.data.status) &&
         loanRequestLinkApprovedForLoanRequest(
@@ -514,7 +525,6 @@ service cloud.firestore {
           resource.data.supplierId,
           resource.data.clientId
         ) &&
-        request.resource.data.status == 'rejected' &&
         request.resource.data.updatedAt == request.time &&
         request.resource.data.respondedAt == request.time &&
         !request.resource.data.keys().hasAny(['approvedAmount']) &&
@@ -544,25 +554,25 @@ service cloud.firestore {
 
     function loanRequestSupplierCounterofferValid() {
       return request.auth.uid == resource.data.supplierId &&
-        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        request.resource.data.status == 'counteroffer' &&
+        !loanRequestHasCommittedCounteroffer(resource.data) &&
         loanRequestOpenStatus(resource.data.status) &&
+        loanRequestSupplierCounterofferDiffOk(
+          request.resource.data.diff(resource.data).affectedKeys()
+        ) &&
+        request.resource.data.keys().hasAny(['counterofferAmount']) &&
+        loanRequestAmountCentsValid(request.resource.data.counterofferAmount) &&
+        request.resource.data.counterofferAmount != resource.data.requestedAmount &&
+        request.resource.data.updatedAt == request.time &&
+        request.resource.data.counterofferedAt == request.time &&
+        !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt', 'cancelledAt']) &&
+        loanRequestSupplierNoteOkAfter() &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
           resource.data.supplierId,
           resource.data.clientId
         ) &&
-        !resource.data.keys().hasAny(['counterofferAmount']) &&
-        !resource.data.keys().hasAny(['counterofferedAt']) &&
-        request.resource.data.status == 'counteroffer' &&
-        request.resource.data.updatedAt == request.time &&
-        request.resource.data.counterofferedAt == request.time &&
-        loanRequestAmountCentsValid(request.resource.data.counterofferAmount) &&
-        request.resource.data.counterofferAmount != resource.data.requestedAmount &&
-        !request.resource.data.keys().hasAny(['approvedAmount', 'respondedAt', 'cancelledAt']) &&
-        loanRequestSupplierCounterofferDiffOk(
-          request.resource.data.diff(resource.data).affectedKeys()
-        ) &&
-        loanRequestSupplierNoteOkAfter() &&
         !loanRequestV1ForbiddenKeysAlways();
     }
 
@@ -572,8 +582,9 @@ service cloud.firestore {
 
     function loanRequestClientAcceptCounterofferValid() {
       return request.auth.uid == resource.data.clientId &&
-        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        request.resource.data.status == 'approved' &&
         resource.data.status == 'counteroffer' &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
           resource.data.supplierId,
@@ -581,7 +592,6 @@ service cloud.firestore {
         ) &&
         resource.data.keys().hasAny(['counterofferAmount']) &&
         resource.data.keys().hasAny(['counterofferedAt']) &&
-        request.resource.data.status == 'approved' &&
         request.resource.data.updatedAt == request.time &&
         request.resource.data.respondedAt == request.time &&
         request.resource.data.approvedAmount == resource.data.counterofferAmount &&
@@ -601,8 +611,9 @@ service cloud.firestore {
 
     function loanRequestClientDeclineCounterofferValid() {
       return request.auth.uid == resource.data.clientId &&
-        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        request.resource.data.status == 'counteroffer_declined' &&
         resource.data.status == 'counteroffer' &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
           resource.data.supplierId,
@@ -610,7 +621,6 @@ service cloud.firestore {
         ) &&
         resource.data.keys().hasAny(['counterofferAmount']) &&
         resource.data.keys().hasAny(['counterofferedAt']) &&
-        request.resource.data.status == 'counteroffer_declined' &&
         request.resource.data.updatedAt == request.time &&
         request.resource.data.respondedAt == request.time &&
         request.resource.data.counterofferAmount == resource.data.counterofferAmount &&
@@ -637,6 +647,10 @@ service cloud.firestore {
     function loanRequestReadByClientValid() {
       let prevHad = resource.data.keys().hasAny(['readByClientAt']);
       return request.auth.uid == resource.data.clientId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByClientAt']) &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        request.resource.data.status == resource.data.status &&
+        loanRequestCoreImmutableOnUpdate() &&
         userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
@@ -644,10 +658,6 @@ service cloud.firestore {
           resource.data.clientId
         ) &&
         loanRequestStatusAllowsReadMarkers(resource.data.status) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByClientAt']) &&
-        request.resource.data.updatedAt == resource.data.updatedAt &&
-        request.resource.data.status == resource.data.status &&
-        loanRequestCoreImmutableOnUpdate() &&
         request.resource.data.readByClientAt is timestamp &&
         loanRequestReadMarkerTsMonotone(
           prevHad,
@@ -659,6 +669,10 @@ service cloud.firestore {
     function loanRequestReadBySupplierValid() {
       let prevHad = resource.data.keys().hasAny(['readBySupplierAt']);
       return request.auth.uid == resource.data.supplierId &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBySupplierAt']) &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        request.resource.data.status == resource.data.status &&
+        loanRequestCoreImmutableOnUpdate() &&
         userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
         loanRequestLinkApprovedForLoanRequest(
           resource.data.linkId,
@@ -666,10 +680,6 @@ service cloud.firestore {
           resource.data.clientId
         ) &&
         loanRequestStatusAllowsReadMarkers(resource.data.status) &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBySupplierAt']) &&
-        request.resource.data.updatedAt == resource.data.updatedAt &&
-        request.resource.data.status == resource.data.status &&
-        loanRequestCoreImmutableOnUpdate() &&
         request.resource.data.readBySupplierAt is timestamp &&
         loanRequestReadMarkerTsMonotone(
           prevHad,
@@ -699,10 +709,10 @@ service cloud.firestore {
             !loanRequestTerminalStatus(resource.data.status) &&
             (
               loanRequestClientCancelValid() ||
+              loanRequestSupplierCounterofferValid() ||
               loanRequestSupplierToUnderReviewValid() ||
               loanRequestSupplierApproveValid() ||
               loanRequestSupplierRejectValid() ||
-              loanRequestSupplierCounterofferValid() ||
               loanRequestClientAcceptCounterofferValid() ||
               loanRequestClientDeclineCounterofferValid()
             )
