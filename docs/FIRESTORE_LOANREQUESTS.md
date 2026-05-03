@@ -31,8 +31,12 @@
 | `approvedAmount` | int | opcional | só em `approved`; igual a `requestedAmount` |
 | `respondedAt` | timestamp | opcional | `approved` / `rejected` |
 | `cancelledAt` | timestamp | opcional | `cancelled_by_client` |
+| `readByClientAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do cliente (`clientId`), sem relação jurídica; ausente para pedidos só v1 anterior |
+| `readBySupplierAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do fornecedor (`supplierId`) |
 
-**Proibido na v1:** `counterofferAmount`, `readByClientAt`, `readBySupplierAt` (e status `counteroffer` / `converted_to_contract`).
+**Proibido na v1 até v1.1 CN:** `counterofferAmount`, status `counteroffer` / converter remoto como produto financiado autoritativo (`converted_to_contract` continua não usado conforme próxima fase).
+
+**Marcadores `readBy*`** atualizados só pela fatia RB (Firestore Rules + cliente): apenas o papel correspondente pode escrever o próprio campo; updates de RB **não** alteram `updatedAt` (política B); permitidos também quando o pedido está em estado terminal, desde que o diff seja apenas o marcador próprio (`firestore.rules` — ramo `loanRequestReadBy*`).
 
 ## Valores em centavos
 
@@ -72,11 +76,8 @@ firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
 
-## Planejamento v1.1 (ainda não refletido no código/regras atuais)
+## Planejamento v1.1 (implementação gradual)
 
-Extensões **documentadas apenas** até nova promoção formal; o modelo técnico de **§Modelo de documento (v1)** continua sendo a linha factual do repositório fechado no LKG `lkg-2026-05-01-loanrequest-v1-complete`.
+Fatia RB (`readBy*`) já refletida no código de app + `firestore.rules` deste repo; próximos incrementos continuam definidos apenas em especificação (ex.: contraposta — **[`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md)**).
 
-Ver:
-
-- especificação alinhável às próximas rules/helpers: [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md);
-- matriz QA quando houver implementação: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).
+Modelo atual do documento quando RB está vivo: ver tabela §Modelo (`readBy*` opcionais). Demais capacidades nomeadas v1.1 **ainda não** estão todas no código até promoção própria da governança.

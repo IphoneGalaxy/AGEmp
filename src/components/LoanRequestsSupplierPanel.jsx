@@ -4,6 +4,7 @@ import { formatMoney } from '../utils/format';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
   listLoanRequestsForSupplier,
+  markLoanRequestReadBySupplier,
   supplierApproveLoanRequest,
   supplierMarkLoanRequestUnderReview,
   supplierRejectLoanRequest,
@@ -33,6 +34,10 @@ function formatRequestTimestamp(ts) {
   } catch {
     return '—';
   }
+}
+
+function hasFirestoreTimestampSeconds(ts) {
+  return !!(ts && typeof ts === 'object' && typeof ts.seconds === 'number');
 }
 
 /**
@@ -68,6 +73,23 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
   useEffect(() => {
     void loadRequests();
   }, [loadRequests]);
+
+  useEffect(() => {
+    if (!expandedId || !user?.uid) return;
+    const row = requests.find((x) => x.id === expandedId);
+    if (!row) return;
+    const srSec =
+      row.readBySupplierAt && typeof row.readBySupplierAt.seconds === 'number'
+        ? row.readBySupplierAt.seconds
+        : null;
+    if (srSec != null) return;
+    void markLoanRequestReadBySupplier({
+      requestId: expandedId,
+      supplierUid: user.uid,
+    }).then((r) => {
+      if (r.ok) void loadRequests();
+    });
+  }, [expandedId, user?.uid, requests, loadRequests]);
 
   const setNoteFor = (id, value) => {
     setNotesDraft((prev) => ({ ...prev, [id]: value }));
@@ -191,6 +213,9 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                       Recebido em {formatRequestTimestamp(r.createdAt)} · toque para{' '}
                       {expanded ? 'fechar' : 'ver detalhes'}
                     </p>
+                    {!expanded && hasFirestoreTimestampSeconds(r.readByClientAt) ? (
+                      <p className="text-xs text-content-muted">Cliente já visualizou (registro opcional).</p>
+                    ) : null}
                   </button>
 
                   {expanded ? (
@@ -205,6 +230,12 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                         Vínculo (linkId):{' '}
                         <span className="break-all font-mono text-content-soft">{r.linkId ?? '—'}</span>
                       </p>
+                      {hasFirestoreTimestampSeconds(r.readByClientAt) ? (
+                        <p className="text-xs text-content-muted">
+                          Cliente visualizou em {formatRequestTimestamp(r.readByClientAt)} — registro opcional na
+                          plataforma (sem garantia jurídica ou mensagem obrigatória).
+                        </p>
+                      ) : null}
                       {typeof r.supplierNote === 'string' && r.supplierNote.length > 0 && (
                         <p className="text-xs leading-relaxed text-content-muted">
                           <span className="font-medium text-content-soft">Sua observação registrada: </span>

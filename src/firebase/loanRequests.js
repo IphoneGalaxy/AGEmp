@@ -55,6 +55,11 @@ export const LOAN_REQUEST_MAX_AMOUNT_CENTS = 9999999999;
 
 export const LOAN_REQUEST_MAX_NOTE_CHARS = 1000;
 
+/** v1.1 RB — só metadado operacional; rules são autoritativas sobre escrita */
+export const LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD = 'readByClientAt';
+/** v1.1 RB — só metadado operacional; rules são autoritativas sobre escrita */
+export const LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD = 'readBySupplierAt';
+
 const SUPPLIER_TRANSITIONS = Object.freeze({
   [LOAN_REQUEST_STATUSES.PENDING]: Object.freeze([
     LOAN_REQUEST_STATUSES.UNDER_REVIEW,

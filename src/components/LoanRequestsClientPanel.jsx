@@ -8,6 +8,7 @@ import {
   createLoanRequest,
   findOpenLoanRequestForLinkId,
   listLoanRequestsForClient,
+  markLoanRequestReadByClient,
 } from '../firebase/loanRequestsFirestore';
 import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
@@ -37,6 +38,38 @@ function formatRequestTimestamp(ts) {
   } catch {
     return '—';
   }
+}
+
+/** @returns {boolean} */
+function hasFirestoreTimestampSeconds(ts) {
+  return !!(ts && typeof ts === 'object' && typeof ts.seconds === 'number');
+}
+
+/**
+ * @param {Object} props
+ * @param {string} props.requestId
+ * @param {string} props.clientUid
+ * @param {unknown} props.readByClientAt
+ * @param {() => void} [props.onMarked]
+ */
+function ClientLoanRequestReadEffect({ requestId, clientUid, readByClientAt, onMarked }) {
+  const readClientSec =
+    readByClientAt && typeof readByClientAt.seconds === 'number'
+      ? readByClientAt.seconds
+      : null;
+
+  useEffect(() => {
+    if (!requestId || !clientUid || readClientSec != null) {
+      return;
+    }
+    void markLoanRequestReadByClient({ requestId, clientUid }).then((res) => {
+      if (res.ok && typeof onMarked === 'function') {
+        onMarked();
+      }
+    });
+  }, [requestId, clientUid, readClientSec, onMarked]);
+
+  return null;
 }
 
 /**
@@ -347,6 +380,12 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                   key={r.id}
                   className="rounded-design-md border border-edge bg-surface-muted px-4 py-3"
                 >
+                  <ClientLoanRequestReadEffect
+                    requestId={r.id}
+                    clientUid={user.uid}
+                    readByClientAt={r.readByClientAt}
+                    onMarked={loadRequests}
+                  />
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="text-sm font-semibold text-content">{amount}</p>
                     <p className="text-xs font-medium text-content-soft">{statusLabel}</p>
@@ -354,6 +393,12 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                   <p className="mt-1 text-xs text-content-muted">
                     Enviado em {formatRequestTimestamp(r.createdAt)}
                   </p>
+                  {hasFirestoreTimestampSeconds(r.readBySupplierAt) ? (
+                    <p className="mt-2 text-xs text-content-muted">
+                      Fornecedor visualizou em {formatRequestTimestamp(r.readBySupplierAt)} (registro na
+                      plataforma — sem promessa de mensagem obrigatória).
+                    </p>
+                  ) : null}
                   <p className="mt-2 text-xs font-medium uppercase tracking-wide text-content-muted">
                     Fornecedor (UID)
                   </p>

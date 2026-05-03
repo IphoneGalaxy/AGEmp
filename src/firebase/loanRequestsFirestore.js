@@ -16,6 +16,8 @@ import { db } from './index';
 import {
   LOAN_REQUEST_MAX_NOTE_CHARS,
   LOAN_REQUEST_OPEN_STATUSES,
+  LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD,
+  LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD,
   LOAN_REQUEST_STATUSES,
   LOAN_REQUESTS_COLLECTION,
 } from './loanRequests';
@@ -268,9 +270,77 @@ export async function createLoanRequest({
 }
 
 /**
- * @param {{ requestId: string }} params
+ * Fatia RB v1.1: marca leitura do cliente. Não atualiza `updatedAt` (política B).
+ *
+ * @param {{ requestId: string; clientUid: string }} params
  * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
  */
+export async function markLoanRequestReadByClient({ requestId, clientUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !clientUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.clientId !== clientUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de cliente aqui.' };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD]: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] markLoanRequestReadByClient', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
+/**
+ * Fatia RB v1.1: marca leitura do fornecedor. Não atualiza `updatedAt` (política B).
+ *
+ * @param {{ requestId: string; supplierUid: string }} params
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function markLoanRequestReadBySupplier({ requestId, supplierUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !supplierUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.supplierId !== supplierUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de fornecedor aqui.' };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD]: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] markLoanRequestReadBySupplier', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
 export async function cancelLoanRequestByClient({ requestId }) {
   if (!db) {
     return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
@@ -293,6 +363,15 @@ export async function cancelLoanRequestByClient({ requestId }) {
     }
     return { ok: false, message: mapCreateLoanRequestError(e) };
   }
+}
+
+/** @param {unknown} e */
+function mapLoanRequestWriteError(e) {
+  const code = normalizeFirestoreErrorCode(e);
+  if (code === 'permission-denied') {
+    return 'Permissão negada. Confira papel, vínculo e se o pedido ainda permite esta ação.';
+  }
+  return mapFirestoreError(e);
 }
 
 /** @param {unknown} e */

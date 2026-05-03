@@ -299,12 +299,20 @@ service cloud.firestore {
       ]);
     }
 
+    // Contrafase CN: `counterofferAmount` permanece vedado até implementação futura (v1.1 CN).
+    // Timestamps RB (`readBy*`) são tratados apenas em ramo dedicado.
     function loanRequestV1ForbiddenKeysAlways(data) {
       return data.keys().hasAny([
-        'counterofferAmount',
-        'readByClientAt',
-        'readBySupplierAt'
+        'counterofferAmount'
       ]);
+    }
+
+    function loanRequestStatusAllowsReadMarkers(s) {
+      return s == 'pending' ||
+        s == 'under_review' ||
+        s == 'approved' ||
+        s == 'rejected' ||
+        s == 'cancelled_by_client';
     }
 
     function loanRequestLinkApprovedForLoanRequest(linkId, supplierId, clientId) {
@@ -388,7 +396,9 @@ service cloud.firestore {
         'supplierNote',
         'approvedAmount',
         'respondedAt',
-        'cancelledAt'
+        'cancelledAt',
+        'readByClientAt',
+        'readBySupplierAt'
       ]);
     }
 
@@ -483,11 +493,66 @@ service cloud.firestore {
         !loanRequestV1ForbiddenKeysAlways(request.resource.data);
     }
 
+    function loanRequestReadMarkerTsMonotone(prevHad, previousTs, marker) {
+      return marker is timestamp &&
+        marker <= request.time &&
+        (
+          !prevHad ||
+          (
+            previousTs is timestamp &&
+            previousTs <= marker
+          )
+        );
+    }
+
+    function loanRequestReadByClientValid() {
+      let prevHad = resource.data.keys().hasAny(['readByClientAt']);
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        loanRequestStatusAllowsReadMarkers(resource.data.status) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readByClientAt']) &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        request.resource.data.status == resource.data.status &&
+        loanRequestCoreImmutableOnUpdate() &&
+        request.resource.data.readByClientAt is timestamp &&
+        loanRequestReadMarkerTsMonotone(
+          prevHad,
+          prevHad ? resource.data.readByClientAt : null,
+          request.resource.data.readByClientAt
+        );
+    }
+
+    function loanRequestReadBySupplierValid() {
+      let prevHad = resource.data.keys().hasAny(['readBySupplierAt']);
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        loanRequestStatusAllowsReadMarkers(resource.data.status) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBySupplierAt']) &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        request.resource.data.status == resource.data.status &&
+        loanRequestCoreImmutableOnUpdate() &&
+        request.resource.data.readBySupplierAt is timestamp &&
+        loanRequestReadMarkerTsMonotone(
+          prevHad,
+          prevHad ? resource.data.readBySupplierAt : null,
+          request.resource.data.readBySupplierAt
+        );
+    }
+
     function loanRequestUpdateValid() {
       return loanRequestAllowedV1Keys(request.resource.data) &&
         !loanRequestV1ForbiddenKeysAlways(request.resource.data) &&
         loanRequestCoreImmutableOnUpdate() &&
-        !loanRequestTerminalStatus(resource.data.status) &&
         request.resource.data.keys().hasAll([
           'supplierId',
           'clientId',
@@ -499,10 +564,17 @@ service cloud.firestore {
           'updatedAt'
         ]) &&
         (
-          loanRequestClientCancelValid() ||
-          loanRequestSupplierToUnderReviewValid() ||
-          loanRequestSupplierApproveValid() ||
-          loanRequestSupplierRejectValid()
+          loanRequestReadByClientValid() ||
+          loanRequestReadBySupplierValid() ||
+          (
+            !loanRequestTerminalStatus(resource.data.status) &&
+            (
+              loanRequestClientCancelValid() ||
+              loanRequestSupplierToUnderReviewValid() ||
+              loanRequestSupplierApproveValid() ||
+              loanRequestSupplierRejectValid()
+            )
+          )
         );
     }
 
