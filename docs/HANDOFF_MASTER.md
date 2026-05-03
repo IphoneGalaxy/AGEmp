@@ -385,6 +385,15 @@ Fatia **relacional remota** alinhada ao contrato congelado [`LOANREQUEST_V1_CONT
 
 **Fechamento do pacote v1:** **concluído** — smoke manual com **dois usuários reais** executado com **OK integral** e **sem NOK crítico** (registro em [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md)). Tag LKG: **`lkg-2026-05-01-loanrequest-v1-complete`** (§4).
 
+### Próximo recorte **planejado** (documental): `loanRequest` v1.1
+
+Este recorte está **somente especificado**: sem impacto até haver decisão formal de iniciar código, revisão complementar das rules/helpers e atualização deste handoff com novo LKG.
+
+- contrato orientador e confronto histórico da ordem de entrega (**`readBy*` antes de contraposta** dentro do pacote v1.1): [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md);
+- matriz QA executável quando houver código: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).
+
+Guardrails continuam iguais à ponte pré-financeira descrita em [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md): sem sync financeiro remoto sem desenho explícito, sem converter pedido remotamente em contrato automático nesta linha da especificação, sem persistir `payment.linkContext`.
+
 ---
 
 ## 10. Riscos e cuidados para continuidade
@@ -523,3 +532,4 @@ Ele funciona como:
 | 2026-04-30 | Pacote **`loanRequest` v1** (UI cliente/fornecedor + rules/modelo) consolidado para fechamento; matriz QA específica [`QA_MATRIX_LOANREQUEST_V1.md`](./QA_MATRIX_LOANREQUEST_V1.md); smoke dois usuários recomendado antes de novo LKG incluindo a fatia. |
 | 2026-05-01 | **Fechamento formal do pacote `loanRequest` v1:** smoke manual real OK sem NOK crítico; matriz atualizada; base estável principal recomendada **`lkg-2026-05-01-loanrequest-v1-complete`** (§4). |
 | 2026-05-01 | Planejamento-mestre `loanRequest` pré-financeiro arquivado em [`plans/completed/`](./plans/completed/) como histórico; ver [`plans/README.md`](./plans/README.md). |
+| 2026-05-03 | Planejamento documental **`loanRequest` v1.1** (`readBy*` + contraposta, ordem de execução explícita) em [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · QA planejável em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md). |

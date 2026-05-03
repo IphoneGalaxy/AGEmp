@@ -71,3 +71,12 @@ Toda **escrita** que altera o pedido exige `links/{linkId}` com `status == 'appr
 firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
+
+## Planejamento v1.1 (ainda não refletido no código/regras atuais)
+
+Extensões **documentadas apenas** até nova promoção formal; o modelo técnico de **§Modelo de documento (v1)** continua sendo a linha factual do repositório fechado no LKG `lkg-2026-05-01-loanrequest-v1-complete`.
+
+Ver:
+
+- especificação alinhável às próximas rules/helpers: [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md);
+- matriz QA quando houver implementação: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).

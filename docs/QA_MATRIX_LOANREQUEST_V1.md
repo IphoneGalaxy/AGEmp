@@ -7,6 +7,8 @@
 
 **Planejamento histórico (execução v1):** [`plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md`](./plans/completed/PLANEJAMENTO_MESTRE_LOANREQUEST_PRE_FINANCEIRO.md) — arquivo concluído em `docs/plans/completed/`; não substitui docs vivos como fonte prioritária.
 
+**Próximo planejamento (não altera o fechamento desta matriz):** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md)
+
 Registrar data, ambiente (build/commit), operador e **OK / NOK / N/A** por linha. NOK crítico bloqueia promoção a LKG que inclua esta fatia.
 
 ---
