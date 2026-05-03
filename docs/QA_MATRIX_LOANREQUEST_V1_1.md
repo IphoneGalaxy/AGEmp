@@ -3,7 +3,7 @@
 **Status da matriz:** **FECHAMENTO FORMAL RB + CN** — **Pacote nominal v1.1 completo** considerado **concluído e validado** após smoke manual real da **Fatia CN** (contraproposta). A **Fatia RB** mantém seu marco próprio (**`lkg-2026-05-03-loanrequest-v1-1-rb`**). Promoção integral: tag LKG **`lkg-2026-05-03-loanrequest-v1-1`**.
 
 **Pacote anterior fechado:** [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md) (v1 + LKG `lkg-2026-05-01-loanrequest-v1-complete`)  
-**Especificação v1.1:** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)  
+**Especificação v1.1 (histórico):** [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./plans/completed/LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)  
 **Firestore / rules:** [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)
 
 Registrar data, ambiente (`build`/commit/tag), operador e **OK / NOK / N/A** por linha. **NOK crítico bloqueia** promoção futura equivalente nesta espécie de matriz.

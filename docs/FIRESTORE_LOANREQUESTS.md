@@ -85,7 +85,7 @@ firebase deploy --only firestore:rules
 firebase deploy --only firestore:indexes
 ```
 
-**Contrato forma v1 / v1.1:** Subfase 1 — [`plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md); **v1.1 RB + CN** — [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md).
+**Contrato forma v1 / v1.1:** Subfase 1 — [`plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md); **v1.1 RB + CN** — [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./plans/completed/LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) (histórico / arquivado).
 
 **Pacote loanRequest v1** (baseline): **fechado** — QA em [`plans/completed/QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md).
 
