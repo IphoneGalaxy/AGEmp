@@ -147,11 +147,32 @@ function shouldShowUnreadBadgeSupplierPanel(r) {
 }
 
 /**
+ * Alerta B2 (Bloco 1): comparar pedido (centavos) com Total disponível local (reais).
+ * Só em negociação aberta **pending** ou **under_review** — não em terminal nem em `counteroffer`.
+ *
+ * @param {string} status
+ * @param {unknown} requestedAmountCents
+ * @param {unknown} availableMoneyReais
+ * @returns {boolean}
+ */
+function shouldShowLocalAvailableShortfall(status, requestedAmountCents, availableMoneyReais) {
+  if (typeof status !== 'string') return false;
+  if (isLoanRequestTerminalStatusV1(status)) return false;
+  if (status !== LOAN_REQUEST_STATUSES.PENDING && status !== LOAN_REQUEST_STATUSES.UNDER_REVIEW) {
+    return false;
+  }
+  if (typeof requestedAmountCents !== 'number' || !Number.isFinite(requestedAmountCents)) return false;
+  if (typeof availableMoneyReais !== 'number' || !Number.isFinite(availableMoneyReais)) return false;
+  return requestedAmountCents / 100 > availableMoneyReais;
+}
+
+/**
  * @param {Object} props
  * @param {import('firebase/auth').User | null} props.user
  * @param {(msg: string) => void} [props.showToast]
+ * @param {number} [props.availableMoney] Total disponível local em reais (calculateGlobalStats)
  */
-export default function LoanRequestsSupplierPanel({ user, showToast }) {
+export default function LoanRequestsSupplierPanel({ user, showToast, availableMoney }) {
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
@@ -359,6 +380,11 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
               const expanded = expandedId === r.id;
               const busy = actingId === r.id;
               const showUnreadBadge = shouldShowUnreadBadgeSupplierPanel(r);
+              const showLocalAvailableWarning = shouldShowLocalAvailableShortfall(
+                r.status,
+                r.requestedAmount,
+                availableMoney,
+              );
 
               return (
                 <li
@@ -411,6 +437,21 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
 
                   {expanded ? (
                     <div className="mt-4 space-y-3 border-t border-edge/60 pt-4">
+                      {showLocalAvailableWarning ? (
+                        <div
+                          className="rounded-design-md border border-warning/40 bg-warning/10 px-3 py-2.5"
+                          role="status"
+                        >
+                          <p className="text-xs font-semibold leading-snug text-content-soft">
+                            Total disponível local menor que o pedido.
+                          </p>
+                          <p className="mt-1 text-xs leading-relaxed text-content-muted">
+                            Com base nos seus registros neste aparelho, o Total disponível é menor
+                            que o valor solicitado. Aviso informativo: não valida saldo bancário nem
+                            bloqueia a aprovação.
+                          </p>
+                        </div>
+                      ) : null}
                       {typeof r.clientNote === 'string' && r.clientNote.length > 0 && (
                         <p className="text-xs leading-relaxed text-content-muted">
                           <span className="font-medium text-content-soft">Observação do cliente: </span>

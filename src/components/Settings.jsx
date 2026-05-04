@@ -75,6 +75,7 @@ const OptionGroup = ({ options, value, onChange }) => (
  * @param {Function} props.showToast - Callback para exibir toast.
  * @param {string} [props.localStorageScope] - Escopo ativo (anonymous / account:uid) para backups.
  * @param {string} [props.localDataContextLine] - Linha discreta de contexto local.
+ * @param {number} [props.availableMoney] - Total disponível local (reais), de calculateGlobalStats — painel fornecedor LoanRequest (B2).
  */
 const Settings = ({
   settings,
@@ -85,6 +86,7 @@ const Settings = ({
   showToast,
   localStorageScope = 'anonymous',
   localDataContextLine,
+  availableMoney,
 }) => {
   const fileInputRef = useRef(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
@@ -127,7 +129,13 @@ const Settings = ({
     'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
 
   if (settingsView === 'account') {
-    return <AccountScreen onBack={() => setSettingsView('main')} showToast={showToast} />;
+    return (
+      <AccountScreen
+        onBack={() => setSettingsView('main')}
+        showToast={showToast}
+        availableMoney={availableMoney}
+      />
+    );
   }
 
   return (

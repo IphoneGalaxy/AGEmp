@@ -433,6 +433,7 @@ function App() {
             showToast={showToast}
             localStorageScope={storageScope}
             localDataContextLine={scopeLine}
+            availableMoney={globalStats.availableMoney}
           />
         )}
       </div>

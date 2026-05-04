@@ -82,8 +82,9 @@ const ModeToggle = ({ mode, onModeChange }) => (
  * @param {Object} props
  * @param {() => void} props.onBack — Volta à lista de configurações.
  * @param {(msg: string) => void} [props.showToast]
+ * @param {number} [props.availableMoney] — Total disponível local (reais) para alerta B2 no painel do fornecedor.
  */
-function AccountScreen({ onBack, showToast }) {
+function AccountScreen({ onBack, showToast, availableMoney }) {
   const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
     useAuth();
   const [mode, setMode] = useState('login');
@@ -572,7 +573,11 @@ function AccountScreen({ onBack, showToast }) {
         <p className="text-xs leading-relaxed text-content-muted">
           Respostas na plataforma entre contas. Isso não cria contrato nem altera financeiro local.
         </p>
-        <LoanRequestsSupplierPanel user={user} showToast={showToast} />
+        <LoanRequestsSupplierPanel
+          user={user}
+          showToast={showToast}
+          availableMoney={availableMoney}
+        />
       </div>
     );
   }
