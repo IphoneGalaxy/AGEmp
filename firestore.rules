@@ -172,7 +172,64 @@ service cloud.firestore {
     }
 
     function allowedLinkFields() {
+      return [
+        'supplierId',
+        'clientId',
+        'status',
+        'requestedBy',
+        'createdAt',
+        'updatedAt',
+        'clientDisplayNameSnapshot',
+        'supplierDisplayNameSnapshot'
+      ];
+    }
+
+    function linkRequiredFields() {
       return ['supplierId', 'clientId', 'status', 'requestedBy', 'createdAt', 'updatedAt'];
+    }
+
+    // Snapshots relacionais (ADR identidade pública): null ou string 1–80; sem `.trim()` nas rules.
+    function relationDisplayNameSnapshotValid(value) {
+      return value == null ||
+        (value is string && value.size() >= 1 && value.size() <= 80);
+    }
+
+    function relationDisplayNameSnapshotOptionalClientOk(data) {
+      return !data.keys().hasAny(['clientDisplayNameSnapshot']) ||
+        relationDisplayNameSnapshotValid(data.clientDisplayNameSnapshot);
+    }
+
+    function relationDisplayNameSnapshotOptionalSupplierOk(data) {
+      return !data.keys().hasAny(['supplierDisplayNameSnapshot']) ||
+        relationDisplayNameSnapshotValid(data.supplierDisplayNameSnapshot);
+    }
+
+    function relationClientDisplayNameSnapshotImmutable(prev, next) {
+      return (
+          (
+            !prev.keys().hasAny(['clientDisplayNameSnapshot']) &&
+            !next.keys().hasAny(['clientDisplayNameSnapshot'])
+          ) ||
+          (
+            prev.keys().hasAny(['clientDisplayNameSnapshot']) &&
+            next.keys().hasAny(['clientDisplayNameSnapshot']) &&
+            prev.clientDisplayNameSnapshot == next.clientDisplayNameSnapshot
+          )
+        );
+    }
+
+    function relationSupplierDisplayNameSnapshotImmutable(prev, next) {
+      return (
+          (
+            !prev.keys().hasAny(['supplierDisplayNameSnapshot']) &&
+            !next.keys().hasAny(['supplierDisplayNameSnapshot'])
+          ) ||
+          (
+            prev.keys().hasAny(['supplierDisplayNameSnapshot']) &&
+            next.keys().hasAny(['supplierDisplayNameSnapshot']) &&
+            prev.supplierDisplayNameSnapshot == next.supplierDisplayNameSnapshot
+          )
+        );
     }
 
     function linkParticipantsAreValid(data) {
@@ -215,7 +272,7 @@ service cloud.firestore {
     }
 
     function linkDataIsValid(data) {
-      return data.keys().hasAll(allowedLinkFields()) &&
+      return data.keys().hasAll(linkRequiredFields()) &&
         data.keys().hasOnly(allowedLinkFields()) &&
         linkParticipantsAreValid(data) &&
         data.status is string &&
@@ -223,7 +280,9 @@ service cloud.firestore {
         data.requestedBy is string &&
         data.requestedBy == 'client' &&
         data.createdAt is timestamp &&
-        data.updatedAt is timestamp;
+        data.updatedAt is timestamp &&
+        relationDisplayNameSnapshotOptionalClientOk(data) &&
+        relationDisplayNameSnapshotOptionalSupplierOk(data);
     }
 
     function isPendingLinkCreate() {
@@ -236,14 +295,30 @@ service cloud.firestore {
         userHasEffectiveAccountRole(request.resource.data.supplierId, 'supplier');
     }
 
-    function supplierStatusTransitionIsValid() {
+    function supplierPendingToApprovedTransitionAuth() {
       return request.auth.uid == resource.data.supplierId &&
         userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
-        (
-          request.resource.data.status == 'approved' ||
-          request.resource.data.status == 'rejected'
-        ) &&
+        request.resource.data.status == 'approved' &&
         resource.data.status == 'pending';
+    }
+
+    function supplierPendingToRejectedTransitionAuth() {
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        request.resource.data.status == 'rejected' &&
+        resource.data.status == 'pending';
+    }
+
+    function linkSupplierSnapshotOkAfterUpdate() {
+      let prev = resource.data;
+      let next = request.resource.data;
+
+      return supplierPendingToApprovedTransitionAuth()
+        ? (
+            !next.keys().hasAny(['supplierDisplayNameSnapshot']) ||
+            relationDisplayNameSnapshotValid(next.supplierDisplayNameSnapshot)
+          )
+        : relationSupplierDisplayNameSnapshotImmutable(prev, next);
     }
 
     function clientStatusTransitionIsValid() {
@@ -273,15 +348,28 @@ service cloud.firestore {
         );
     }
 
+    function linkStatusTransitionDiffKeysOk() {
+      let keys = request.resource.data.diff(resource.data).affectedKeys();
+
+      return keys.hasOnly(['status', 'updatedAt']) ||
+        (
+          supplierPendingToApprovedTransitionAuth() &&
+          keys.hasOnly(['status', 'updatedAt', 'supplierDisplayNameSnapshot'])
+        );
+    }
+
     function linkStatusTransitionIsValid() {
-      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']) &&
+      return linkStatusTransitionDiffKeysOk() &&
+        relationClientDisplayNameSnapshotImmutable(resource.data, request.resource.data) &&
+        linkSupplierSnapshotOkAfterUpdate() &&
         request.resource.data.supplierId == resource.data.supplierId &&
         request.resource.data.clientId == resource.data.clientId &&
         request.resource.data.requestedBy == resource.data.requestedBy &&
         request.resource.data.createdAt == resource.data.createdAt &&
         request.resource.data.updatedAt == request.time &&
         (
-          supplierStatusTransitionIsValid() ||
+          supplierPendingToApprovedTransitionAuth() ||
+          supplierPendingToRejectedTransitionAuth() ||
           clientStatusTransitionIsValid() ||
           supplierRevocationIsValid() ||
           clientRestartsEndedLinkIsValid()
@@ -373,7 +461,9 @@ service cloud.firestore {
           'clientNote',
           'status',
           'createdAt',
-          'updatedAt'
+          'updatedAt',
+          'clientDisplayNameSnapshot',
+          'supplierDisplayNameSnapshot'
         ]) &&
         !loanRequestV1ForbiddenKeysCreate(request.resource.data) &&
         !loanRequestV1ForbiddenKeysAlways() &&
@@ -388,7 +478,9 @@ service cloud.firestore {
         loanRequestNoteValid(request.resource.data.clientNote) &&
         request.resource.data.status == 'pending' &&
         request.resource.data.createdAt == request.time &&
-        request.resource.data.updatedAt == request.time;
+        request.resource.data.updatedAt == request.time &&
+        relationDisplayNameSnapshotOptionalClientOk(request.resource.data) &&
+        relationDisplayNameSnapshotOptionalSupplierOk(request.resource.data);
     }
 
     function loanRequestCreateAuthorized() {
@@ -416,7 +508,9 @@ service cloud.firestore {
         request.resource.data.linkId == resource.data.linkId &&
         request.resource.data.requestedAmount == resource.data.requestedAmount &&
         request.resource.data.clientNote == resource.data.clientNote &&
-        request.resource.data.createdAt == resource.data.createdAt;
+        request.resource.data.createdAt == resource.data.createdAt &&
+        relationClientDisplayNameSnapshotImmutable(resource.data, request.resource.data) &&
+        relationSupplierDisplayNameSnapshotImmutable(resource.data, request.resource.data);
     }
 
     function loanRequestSupplierNoteOkAfter() {
@@ -441,7 +535,9 @@ service cloud.firestore {
         'counterofferAmount',
         'counterofferedAt',
         'readByClientAt',
-        'readBySupplierAt'
+        'readBySupplierAt',
+        'clientDisplayNameSnapshot',
+        'supplierDisplayNameSnapshot'
       ]);
     }
 
@@ -691,6 +787,8 @@ service cloud.firestore {
     function loanRequestUpdateValid() {
       return loanRequestAllowedV1Keys(request.resource.data) &&
         !loanRequestV1ForbiddenKeysAlways() &&
+        relationDisplayNameSnapshotOptionalClientOk(request.resource.data) &&
+        relationDisplayNameSnapshotOptionalSupplierOk(request.resource.data) &&
         loanRequestCoreImmutableOnUpdate() &&
         request.resource.data.keys().hasAll([
           'supplierId',
@@ -765,7 +863,8 @@ service cloud.firestore {
 
       allow create: if isSignedIn() &&
         linkDataIsValid(request.resource.data) &&
-        isPendingLinkCreate();
+        isPendingLinkCreate() &&
+        !request.resource.data.keys().hasAny(['supplierDisplayNameSnapshot']);
 
       allow update: if isLinkParticipant(resource.data) &&
         linkDataIsValid(request.resource.data) &&
