@@ -83,7 +83,8 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **`62bacf2`** | `markLoanRequestReadByClient` / `markLoanRequestReadBySupplier`: **`console.warn`** em falha (rede/permissão/vínculo); sem toast nem retry infinito. |
 | **`cd8db7e`** | Painel fornecedor: limpeza de **drafts** locais (observação / valor de contraproposta) ao **recolher** o pedido e após **ação concluída com sucesso** — evita vazamento de texto/valor antigo ao reabrir. |
 | **`dcc9f80`** | **Bloco 1 / A1a:** utilitário **`countUnreadLoanRequests`** (`loanRequestUnreadCount.js`) + testes — mesma filosofia de novidade dos painéis; **sem** rules/schema/`calculations.js`. |
-| **`4951bdf`** | **Bloco 1 / A1b:** badges numéricos discretos em **`AccountScreen`** nos botões **“Abrir solicitações”** / **“Abrir pedidos recebidos”** (somente quando `count > 0` e papel aplicável); carga sob demanda na vista principal; **sem** `App.jsx`/`Settings.jsx`/listener global. |
+| **`4951bdf`** | **Bloco 1 / A1b:** badges numéricos discretos em **`AccountScreen`** nos botões **“Abrir solicitações”** / **“Abrir pedidos recebidos”** (somente quando `count > 0` e papel aplicável); carga sob demanda na vista principal; **sem** `App.jsx`/`Settings.jsx`/listener global na entrega A1. |
+| **`07ef7e5`** | **Bloco 1 / B2:** alerta **informativo** e **não bloqueante** no **`LoanRequestsSupplierPanel`** — repasse **`availableMoney`** (`App` → `Settings` → `AccountScreen` → painel); comparação **`requestedAmount / 100 > availableMoney`**; só **`pending`** / **`under_review`**; **sem** alterar **`calculations.js`**, **`firestore.rules`**, schema, transições, escrita Firestore pelo alerta, **`payment.linkContext`**, sync remoto ou contrato automático. |
 
 ### Smoke manual opcional (regressão leve)
 
@@ -91,6 +92,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 2. **Marcação de leitura com falha simulada:** console com **`warn`** perceptível ao dev; sem novo sistema de notificação ao usuário final.
 3. **Drafts:** recolher pedido ou completar fluxo no fornecedor sem drafts antigos reaparecerem para o mesmo pedido.
 4. **Badges na Conta (A1 — Bloco 1):** com novidade legítima para o papel, número aparece só no botão correspondente (cliente vs fornecedor); após marcar lido no painel e voltar à **Conta**, contagem some ou atualiza **sem** tempo real obrigatório; usuário sem papel não vê badge daquele papel; **sem** badge na tab principal nem em “Gerenciar conta” nesta fatia.
+5. **Alerta disponível local (B2 — Bloco 1):** em pedido **aberto** do fornecedor (`pending` / `under_review`), se disponível local **menor** que valor pedido → aviso visível; com disponível **≥** pedido → **sem** aviso; **aprovar** com aviso permanece permitido; terminais e `counteroffer` **sem** aviso (smoke registrado pela equipe); mobile/dark legível.
 
 ### Fase A1 — Bloco 1 (sinalização na Conta) — concluída (2026-05-04)
 
@@ -99,7 +101,19 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **B2** (alerta fornecedor) **salvo** **A2b** primeiro · **B1 (análise)** concluída — ver § **Subfase B1** |
+| **Próxima subfase do plano** | **A2b** / fechamento Bloco 1 (governança) · **B2 concluída** — **`07ef7e5`** · **B1 (análise)** concluída — ver § **Subfase B1** e **Subfase B2** |
+
+### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
+
+| Campo | Registro |
+|-------|----------|
+| **Commit** | **`07ef7e5`** — `feat(loan-requests): adicionar alerta de disponível local no fornecedor` |
+| **Arquivos** | `src/App.jsx`, `src/components/Settings.jsx`, `src/components/AccountScreen.jsx`, `src/components/LoanRequestsSupplierPanel.jsx` |
+| **Lógica** | **`availableMoney`** desde **`calculateGlobalStats`** / `globalStats`; **`requestedAmount / 100 > availableMoney`**; só **`pending`** e **`under_review`**; números finitos; aprovação **não** bloqueada. |
+| **Fora do escopo (confirmado)** | Alteração **`calculations.js`**; **`firestore.rules`**; schema; gravação **`loanRequest`** pelo alerta; transições; **`payment.linkContext`**; sync financeiro remoto; contrato automático. |
+| **Smoke manual** | Equipa: aviso quando disponível **&lt;** pedido; sem aviso quando **≥**; aprovar com aviso; terminais e `counteroffer` sem aviso; mobile/dark. |
+
+---
 
 ### Subfase B1 — Bloco 1 (métrica para alerta B2 — análise concluída)
 
@@ -107,8 +121,8 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 |-------|----------|
 | **Natureza** | **Só análise/decisão** — **sem** alteração de `calculations.js`, rules, UI ou testes. |
 | **Métrica** | **`availableMoney`** retornado por **`calculateGlobalStats(clients, fundsTransactions, timeInfo)`** — mesmo conceito do Painel (**“Total Disponível”**). |
-| **B2 (futura)** | Comparar **`requestedAmount / 100`** (reais) com **`availableMoney`**; alerta **informativo**, **não bloqueante**; **referência local**; **sem** validação bancária; **sem** escrita Firestore por causa do alerta; **sem** sync/conversão automática/`payment.linkContext`. |
-| **Smoke manual futuro (B2)** | Disponível local &lt; valor pedido → aviso visível; **aprovação** ainda permitida; copy não sugere bloqueio nem dinheiro real na conta; unidades centavos/reais corretas. |
+| **B2 (entregue `07ef7e5`)** | Comparar **`requestedAmount / 100`** (reais) com **`availableMoney`**; alerta **informativo**, **não bloqueante**; **referência local**; **sem** validação bancária; **sem** escrita Firestore por causa do alerta; **sem** sync/conversão automática/`payment.linkContext`. |
+| **Smoke manual (B2)** | Registrado pela equipe após **`07ef7e5`** — disponível local &lt; valor pedido → aviso; **≥** → sem aviso; **aprovação** permitida com aviso; terminais e `counteroffer` sem aviso; mobile/dark. |
 
 ---
 
@@ -119,7 +133,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Natureza** | **Só decisão** — **não** há campos Firestore, rules, helpers, UI nem testes alterados por esta subfase. |
 | **Contrato canônico** | [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) §6 (A2a) — arquivamento **por lado**; terminais apenas (`approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`); **não** arquivar abertos (`pending`, `under_review`, `counteroffer`); **desarquivar** permitido (só o lado do usuário; **não** reabre negócio); **`updatedAt` intocado** no arquivo/desarquivo; **`delete`** fora do produto; `archivedByClient` / `archivedBySupplier` **planejados** para futura **A2b**. |
 | **Futuro QA / smoke (A2b+A2c)** | Rules: papel só grava o próprio campo; cruzamento **falha**; testes **`test:rules:loanRequests`** obrigatórios em A2b; UI A2c: lista oculta arquivados + “Mostrar arquivados”; copys **arquivar** ≠ **excluir**; regressão leve em badges A1 após mudar listagens. |
-| **Estado** | **A2b / A2c** **não** concluídas · **B1** concluída (análise) · **Próxima implementação recomendada:** **B2** (salvo priorizar A2b). |
+| **Estado** | **A2b / A2c** **não** concluídas · **B1** concluída (análise) · **B2** concluída (**`07ef7e5`**) · **Próxima implementação típica:** **A2b** (salvo priorizar fechamento documental do Bloco 1). |
 
 ---
 
@@ -135,3 +149,4 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-04 | **Bloco 1 — Fase A1 concluída:** commits **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta); § “Fase A1 — Bloco 1” e tabela de melhorias estendida. |
 | 2026-05-04 | **Subfase A2a (arquivamento) documentada** — § dedicada; **sem** código. |
 | 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |
+| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke; **Bloco 2** futuro só no roadmap. |
