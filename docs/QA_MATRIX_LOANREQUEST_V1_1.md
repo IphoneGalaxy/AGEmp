@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2** próxima fase recomendada — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2** — ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) **aprovado**; **Bloco2-A** autorizada, **código não iniciado**; **Bloco2-B–E** não concluídas — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -139,7 +139,9 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 
 ## Referência futura — Bloco 2 (Conversão governada)
 
-Após implementação das subfases **Bloco2-A–E**, registar smoke e regressões conforme [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §10 (QA/riscos). **Estado atual:** ADR **proposta**; **nenhuma** linha de código do Bloco 2 nesta matriz até novo ciclo QA dedicado.
+Após implementação das subfases **Bloco2-A–E**, registar smoke e regressões conforme [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §10 (QA/riscos).
+
+**Estado atual (governança):** ADR **aprovado**; **Bloco2-A** é a **próxima subfase autorizada** — **não implementada** até PR dedicado; **Bloco2-B–E** — **não concluídas**. **Sem** contrato automático; **sem** sync financeiro remoto; **sem** `payment.linkContext`; MVP do Bloco 2 **sem** alteração a **`calculations.js`** / **`firestore.rules`** salvo decisão explícita fora do ADR. **Nenhuma** linha de código do Bloco 2 nesta matriz até novo ciclo QA dedicado.
 
 ---
 
@@ -157,4 +159,5 @@ Após implementação das subfases **Bloco2-A–E**, registar smoke e regressõe
 | 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |
 | 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke; **Bloco 2** futuro só no roadmap. |
 | 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); **Bloco 2** próxima fase recomendada. |
-| 2026-05-04 | **Bloco2-0:** referência futura de QA — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**proposto**); implementação **não** iniciada. |
+| 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado (referência futura de QA). |
+| 2026-05-04 | **Governança Bloco 2:** ADR **aprovado**; **Bloco2-A** **autorizada**, **código não iniciado**; **Bloco2-B–E** **não concluídas**; guardrails MVP no ADR (sem contrato automático, sync financeiro remoto, `payment.linkContext`, mudanças `calculations.js`/`firestore.rules`). |

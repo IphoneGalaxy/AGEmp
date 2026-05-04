@@ -10,10 +10,19 @@
 
 | Dimensão | Valor |
 |----------|--------|
-| **Estado da decisão** | **Proposto** — aguardando **aprovação de governança** antes de qualquer implementação de código |
-| **Natureza deste documento** | ADR **e** plano executável (uma única fonte viva para o Bloco 2 até promover matriz QA específica, se aplicável) |
-| **Implementação do produto** | **Bloco 2 não está implementado** — apenas este artefacto documental (**Bloco2-0**) está previsto nesta rodada |
+| **Estado da decisão** | **Aprovado pela governança** para **orientar a implementação** do Bloco 2 em subfases. |
+| **Natureza deste documento** | ADR **e** plano executável (uma única fonte viva para o Bloco 2 até promover matriz QA específica, se aplicável). |
+| **Implementação do produto** | **Bloco2-0** (este ADR/plano documental) **concluído**. **Bloco2-A–E** — **não concluídos**. **Bloco2-A** é a **única próxima subfase autorizada** até novo registo — **sem código nesta rodada**; primeiro incremento de produto será exclusivamente **Bloco2-A** quando iniciado. |
 | **Base de elaboração** | Planeamento Cursor `adr-bloco2-conversao-governada_13970c4c.plan.md` + guardrails do projeto + código/documentação existentes |
+
+### Registo de aprovação (governança)
+
+| Decisão | Registo |
+|---------|---------|
+| ADR Bloco 2 | **Aprovado** — vale como especificação para PRs futuros do Bloco 2, dentro dos guardrails deste documento. |
+| Próxima subfase | **Bloco2-A** autorizada (entrada UX «Registrar contrato local» para `approved` apenas — sem criar contrato, sem modal completo de revisão, sem Firestore, sem `calculations.js`, sem rules). |
+| MVP remoto | **Sem marcação remota** de conversão; **A2b/A2c** permanecem **backlog**. |
+| **D6** — data do contrato | **Fechada:** ver §9 e §7 — **data da conversão local** (= **data atual** no momento do **registo efectivo** do contrato após fluxo de revisão/confirmação futuro Bloco2-B/C). |
 
 ---
 
@@ -151,7 +160,7 @@ flowchart TD
 |---------|----------------|
 | **Identificação da proveniência** | `convertedFromLoanRequestId`: string (id Firestore do `loanRequests/{id}`) |
 | **Valor principal** | `approvedAmount / 100` em **reais** (inteiro Firestore em centavos → modelo local já em reais no fluxo atual de formulários) |
-| **Data do contrato** | Decisão pendente **D6** (sugerido na lista §9): «data de hoje» vs «data da resposta remota» — **aprovar antes do código** |
+| **Data do contrato** | **Decidido (D6):** usar a **data da conversão local** — equivalente à **data atual** no momento em que o fornecedor **confirma** e o produto **persiste** o contrato (Bloco2-B/C futuro). **Justificativa:** a data da **aprovação remota** não prova que a transferência real ocorreu naquele instante; o contrato local representa o **registo confirmado no app**. A revisão futura poderá **mostrar essa data como sugerida** e, se o fluxo manual do app permitir edição de data no mesmo critério que `ClientView`, **permitir revisão** alinhada ao padrão actual. |
 | **`interestRate`** | Número (percentagem), pré-preenchido + editável na revisão, consistente com manual |
 | **`payments`** | `[]` na criação |
 | **`linkContext`** | Objeto v1 opcional no `loan`, obrigatório na prática quando `linkId` + `supplierId` + `clientId` existirem no pedido |
@@ -163,7 +172,7 @@ flowchart TD
 
 ## 8. Subfases futuras (execução sequencial)
 
-Ordem obrigatória após aprovação deste ADR: **Bloco2-0 → A → B → C → D → E**. Nenhuma subfase posterior deve marcarse como concluída neste documento até evidência em código/QA.
+Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** documental **fechado** com **aprovação de governança** registada neste documento e nos docs vivos. Nenhuma subfase **A–E** deve marcarse como concluída até evidência em código/QA.
 
 ### Bloco2-0 — ADR / plano vivo documental
 
@@ -174,21 +183,23 @@ Ordem obrigatória após aprovação deste ADR: **Bloco2-0 → A → B → C →
 | **Fora do escopo** | `src/`, rules, testes, Firestore. |
 | **Arquivos prováveis** | `docs/ADR_BLOCO2_CONVERSAO_GOVERNADA.md`; ponteiros em `HANDOFF_MASTER`, `CHECKPOINT`, etc. |
 | **Riscos** | Baixo (só doc). |
-| **Critérios de aceite** | ADR publicado; governança notificada; próximo passo = Bloco2-A **após** explícito «implementação autorizada». |
+| **Critérios de aceite** | ADR publicado; **aprovação de governança** registada (este § e docs vivos); **Bloco2-A** como próxima subfase **autorizada** — sem obrigar código na mesma rodada. |
 | **QA/smoke** | Revisão lectora cruzada com roadmap/handoff. |
 | **Sugestão de commit** | `docs(adr): Bloco 2 — ADR conversão governada LoanRequest → contrato local` |
 
-### Bloco2-A — Elegibilidade e entrada do fluxo (sem criar contrato)
+### Bloco2-A — Elegibilidade e entrada do fluxo (**autorizada** — não concluída)
 
 | Campo | Conteúdo |
 |-------|-----------|
-| **Objetivo** | Detectar pedidos `approved` elegíveis e expor entrada de UX (botão ou estado desactivado com mensagem). |
-| **Escopo** | UI/leitura de dados já carregados; eventual helper só-leitura de «já convertido localmente». |
-| **Fora do escopo** | Persistência de novo contrato; modal completo de revisão final. |
+| **Estado** | **Autorizada** pela governança como **próximo incremento de código** do Bloco 2 — **não implementada** até PR dedicado. |
+| **Objetivo** | Detectar pedidos **`approved`** elegíveis e expor entrada de UX — botão **«Registrar contrato local»** (ou texto equivalente). |
+| **Escopo** | UI / leitura de dados **já carregados** no painel fornecedor; eventual helper **só-leitura** para «já convertido localmente» (anti-duplicidade **visual**, sem persistir novo contrato). |
+| **Governança explícita** | **Não** criar contrato local; **não** abrir **modal completo** de revisão (Bloco2-B); **não** escrever Firestore; **não** alterar **`calculations.js`** nem **`firestore.rules`**. |
+| **Fora do escopo** | Persistência de novo `loan`; fluxo de confirmação da transferência real; qualquer marcação remota. |
 | **Arquivos prováveis** | `LoanRequestsSupplierPanel.jsx`, encadeamento `AccountScreen` / `Settings` / `App` conforme necessidade de dados. |
 | **Riscos** | Poluição visual na lista — mitigar com padrões [`DESIGN.md`](../DESIGN.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md). |
-| **Critérios de aceite** | Botão só em `approved`; não regressões nos fluxos Bloco 1; testes automáticos se introduzirem util puro. |
-| **QA/smoke** | Mobile/light/dark; pedidos não-approved sem botão. |
+| **Critérios de aceite** | Botão só em `approved`; sem regressões nos fluxos Bloco 1; **clique em Bloco2-A não pode**, por si só, criar contrato nem abrir revisão completa. |
+| **QA/smoke** | Mobile/light/dark; pedidos não-`approved` sem botão de conversão. |
 | **Sugestão de commit** | `feat(loan-requests): entrada UX para conversão governada (Bloco2-A)` |
 
 ### Bloco2-B — Modal / tela de revisão e confirmação (sem persistir contrato)
@@ -245,20 +256,22 @@ Ordem obrigatória após aprovação deste ADR: **Bloco2-0 → A → B → C →
 
 ---
 
-## 9. Decisões pendentes (aprovação humana antes do código)
+## 9. Decisões D1–D10 e estado
 
-| ID | Tema | Recomendação registada neste ADR |
-|----|------|-----------------------------------|
-| **D1** | Marcação remota no MVP | **Não** |
-| **D2** | MVP apenas fornecedor | **Sim** |
-| **D3** | Cliente converte no MVP | **Não** |
-| **D4** | Nome do cliente local | Nome remoto fiável + fallback + edição na revisão; sem escolha automática multi-candidato |
-| **D5** | Taxa de juros | Pré-preenchimento + **edição** na revisão; validação final **igual ao manual** (confirmar no código antes do PR) |
-| **D6** | Data do contrato | **Pendente**: «hoje» vs data derivada do pedido — decidir antes da implementação Bloco2-C |
-| **D7** | `availableMoney` inferior ao montante | **Alertar e permitir** conversão (MVP) |
-| **D8** | Onde vive o modal | **AccountScreen** / ramo Conta (coerente com painéis existentes) |
-| **D9** | Ordem de execução | **Sequencial** A→B→C→D→E |
-| **D10** | Documento único | Este **ADR** como fonte única até derivar matriz QA |
+| ID | Tema | Estado | Registo |
+|----|------|--------|---------|
+| **D1** | Marcação remota no MVP | Fechado | **Não** |
+| **D2** | MVP apenas fornecedor | Fechado | **Sim** |
+| **D3** | Cliente converte no MVP | Fechado | **Não** |
+| **D4** | Nome do cliente local | Fechado para MVP | Nome remoto fiável + fallback + edição na revisão (Bloco2-B/C); sem escolha automática multi-candidato |
+| **D5** | Taxa de juros | Fechado para MVP | Pré-preenchimento + **edição** na revisão; validação **igual ao manual** — **confirmar no código** antes do PR Bloco2-B/C |
+| **D6** | Data do contrato | **Fechado** | **Data da conversão local:** **data actual** no momento do **registo** do contrato após confirmação no fluxo Bloco2-B/C. Não usar automaticamente `respondedAt`/aprovação remota como data do contrato. Revisão futura pode **sugerir** esta data e permitir **ajuste** se alinhado ao fluxo manual (`ClientView`). Ver §7. |
+| **D7** | `availableMoney` inferior ao montante | Fechado | **Alertar e permitir** conversão (MVP) |
+| **D8** | Onde vive o modal de revisão | Fechado | **AccountScreen** / ramo Conta (coerente com painéis existentes) — **Bloco2-B**; Bloco2-A **não** abre modal completo |
+| **D9** | Ordem de execução | Fechado | **Sequencial** Bloco2-0→A→B→C→D→E |
+| **D10** | Documento único | Fechado | Este **ADR** como fonte única até derivar matriz QA |
+
+**Pendências operacionais** (não reabrem D6): antes dos PRs Bloco2-B/C, validar no código os limites exactos de taxa/data iguais ao manual (**D5**).
 
 ---
 
@@ -314,10 +327,10 @@ Ordem obrigatória após aprovação deste ADR: **Bloco2-0 → A → B → C →
 
 ---
 
-## 13. Próxima acção após aprovação de governança
+## 13. Próxima acção
 
-1. Marcar internamente **«implementação Bloco 2 autorizada»**.  
-2. Iniciar **Bloco2-A** (único incremento por prompt / PR recomendado).  
+1. **Registado:** ADR **aprovado**; **Bloco2-A** **autorizada** (docs vivos alinhados nesta rodada).  
+2. **Implementação:** iniciar **somente Bloco2-A** no próximo ciclo de código (um PR/prompt focado), conforme §8 — **sem** modal completo, **sem** criar contrato, **sem** Firestore/rules/`calculations.js`.  
 3. Não promover LKG nem declarar Bloco 2 fechado até **Bloco2-E**.
 
 ---
@@ -327,3 +340,4 @@ Ordem obrigatória após aprovação deste ADR: **Bloco2-0 → A → B → C →
 | Data | Nota |
 |------|------|
 | 2026-05-04 | **Bloco2-0:** criação do ADR + plano executável em `docs/ADR_BLOCO2_CONVERSAO_GOVERNADA.md`; implementação **não** iniciada. |
+| 2026-05-04 | **Governança:** ADR **aprovado** para orientar implementação; **Bloco2-A** **autorizada** como próxima subfase (sem código nesta rodada documental); **D6** fechada — data do contrato = **momento da conversão local** (data actual no registo); MVP **sem** marcação remota; **A2b/A2c** **backlog**. |

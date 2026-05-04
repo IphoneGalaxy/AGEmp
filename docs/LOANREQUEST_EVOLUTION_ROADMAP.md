@@ -8,7 +8,7 @@
 
 Este arquivo **descreve** o que poderá ser construído; **nenhuma linha aqui obriga código** já existente até decisão explícita de governança e critérios de entrada para implementação.
 
-- **Bloco 1 — funcionalmente fechado (Opção A, 2026-05-04):** entregues **A1a, A1b, A2a, B1, B2**; plano **arquivado** (histórico): [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **não** é plano ativo. **A2b/A2c** **não** implementadas — **backlog**; **não** impediram o fechamento funcional. **Próxima fase recomendada:** **Bloco 2** (§ abaixo) — ADR/plano vivo [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**proposto**); **implementação** — **não** iniciada; **Bloco2-A–E** — **não** concluídos.
+- **Bloco 1 — funcionalmente fechado (Opção A, 2026-05-04):** entregues **A1a, A1b, A2a, B1, B2**; plano **arquivado** (histórico): [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **não** é plano ativo. **A2b/A2c** **não** implementadas — **backlog**; **não** impediram o fechamento funcional. **Próxima fase recomendada:** **Bloco 2** (§ abaixo) — ADR/plano vivo [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**aprovado pela governança**); **Bloco2-A** **autorizada**, **código não iniciado**; **Bloco2-B–E** — **não** concluídos.
 
 ---
 
@@ -46,9 +46,9 @@ Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de
 | **D** | Sugestão de contraproposta com base em **recebíveis futuros** (local) | **Não** no escopo típico (contraposta já existe) | **Somente leitura** dos contratos locais para sugestão; sem automação financeira real | Planejamento de utilitários e testes sem tocar motor |
 | **E** | Pendência futura de liberação + lembretes / cancelamentos | **Sim** quase sempre (campos ou estados novos) | **Não** automático | **ADR obrigatória** antes de implementar |
 | **F** | Conversão governada pedido → **contrato local** | Opcional/discutível | **Sim** na fase própria | **ADR completa** + fluxo de revisão + critérios de entrada |
-| **Bloco 2** | **Mesmo tema que F**, nome de execução futura: *Conversão Governada de LoanRequest aprovado em Contrato Local* — ver § **Bloco 2** abaixo | **A definir** na fase | **Sim** (contrato/caixa locais após confirmação humana) | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**proposto**); implementação **não** iniciada |
+| **Bloco 2** | **Mesmo tema que F**, nome de execução futura: *Conversão Governada de LoanRequest aprovado em Contrato Local* — ver § **Bloco 2** abaixo | **A definir** na fase | **Sim** (contrato/caixa locais após confirmação humana) | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**aprovado**); **Bloco2-A** **autorizada**, código **não** iniciado |
 
-**Bloco 1** encerrado funcionalmente — ver plano arquivado. Ordem sugerida para o que segue: **Bloco 2** (conversão governada) quando existir ADR/plano explícitos; **A2b/A2c** quando a equipa priorizar arquivamento na UI/rules; **C** após avaliação da Fase **B** em uso; **D** / **E** conforme decisão e ADR.
+**Bloco 1** encerrado funcionalmente — ver plano arquivado. Ordem sugerida para o que segue: **Bloco 2** (conversão governada — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) **aprovado**; próximo código **Bloco2-A** quando priorizado); **A2b/A2c** quando a equipa priorizar arquivamento na UI/rules; **C** após avaliação da Fase **B** em uso; **D** / **E** conforme decisão e ADR.
 
 ---
 
@@ -228,9 +228,9 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 
 ---
 
-## Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local *(ADR proposta — sem implementação)*
+## Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local *(ADR aprovado — código não iniciado)*
 
-**Status:** **próxima fase recomendada** após **Bloco 1 funcionalmente fechado** (Opção A, 2026-05-04). **Fonte viva:** [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — estado **proposto**, aguardando aprovação de governança para código. **Bloco2-0** (documentação ADR/plano) **registrado**; **Bloco2-A–E** — **não** concluídos; **nenhum** código de produto nesta fase documental; **nenhuma** alteração a **`firestore.rules`**, **schema** ou **`calculations.js`** no MVP até decisões explícitas fora do âmbito deste ADR.
+**Status:** **próxima fase recomendada** após **Bloco 1 funcionalmente fechado** (Opção A, 2026-05-04). **Fonte viva:** [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — **aprovado pela governança** para orientar implementação em subfases. **Bloco2-0** (documentação ADR/plano) **concluído com aprovação**; **Bloco2-A** **autorizada** como próximo incremento (**entrada UX** para `approved` apenas — sem criar contrato, sem modal completo, sem Firestore/`calculations.js`/rules nesta subfase); **Bloco2-B–E** — **não** concluídos; **código de produto do Bloco 2** — **não** iniciado até PR **Bloco2-A**. **MVP:** sem marcação remota de conversão. **Nenhuma** alteração a **`firestore.rules`**, **schema** ou **`calculations.js`** no MVP do Bloco 2 sem decisão explícita fora do âmbito deste ADR.
 
 ### Objetivo (resumo)
 
@@ -257,7 +257,7 @@ Permitir que um pedido **aprovado** (`LoanRequest`) possa ser **transformado** n
 
 ### Alinhamento de UX *(a fixar no ADR/plano)*
 
-Microcopy, revisão e confirmação humana seguem o desenho a aprovar; hierarquia visual do produto: [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md).
+Microcopy, revisão e confirmação humana seguem o [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md); hierarquia visual do produto: [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md).
 
 ---
 
@@ -267,7 +267,8 @@ Microcopy, revisão e confirmação humana seguem o desenho a aprovar; hierarqui
 |------|------|
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
 | 2026-05-04 | Plano **Bloco 1** arquivado: [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — A1, A2a, B1+B2 (**`07ef7e5`**). |
-| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; **A2b/A2c** em **backlog**; **Bloco 2** **próxima fase recomendada** — ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) **proposta**; código **não** iniciado. |
 | 2026-05-04 | **Fase A1 concluída** (Bloco 1): **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta). **Próxima subfase do plano:** **A2a** (decisões de arquivamento, sem código). **A2b/A2c, B–F** não concluídas. |
 | 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** / **`calculateGlobalStats`**; B2 com **`requestedAmount / 100`**; ver Fase B. |
-| 2026-05-04 | **Bloco2-0:** [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado (**proposto**); **Bloco2-A–E** não concluídos; próximo passo após aprovação: **Bloco2-A**. |
+| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; **A2b/A2c** em **backlog**; **Bloco 2** **próxima fase recomendada** — ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**posteriormente aprovado** — ver histórico seguinte); código Bloco 2 **não** iniciado na altura. |
+| 2026-05-04 | **Bloco2-0:** [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado; **Bloco2-A–E** não concluídos na altura. |
+| 2026-05-04 | **Governança Bloco 2:** ADR **aprovado**; **Bloco2-A** **autorizada**; **D6** fechada (data contrato = conversão local); MVP sem marcação remota; **código Bloco2-A** — **não iniciado**. |
