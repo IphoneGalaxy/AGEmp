@@ -25,6 +25,11 @@ import {
   setUserRole,
   updateUserDisplayNameWithAuthMirror,
 } from '../firebase/users';
+import {
+  listLoanRequestsForClient,
+  listLoanRequestsForSupplier,
+} from '../firebase/loanRequestsFirestore';
+import { countUnreadLoanRequests } from '../utils/loanRequestUnreadCount';
 import LoanRequestsClientPanel from './LoanRequestsClientPanel';
 import LoanRequestsSupplierPanel from './LoanRequestsSupplierPanel';
 
@@ -116,6 +121,9 @@ function AccountScreen({ onBack, showToast }) {
   const [uidCopyFeedback, setUidCopyFeedback] = useState('idle');
   /** 'main' | 'loanRequests' (cliente) | 'loanRequestsSupplier' — fluxo isolado sem nova aba principal. */
   const [accountSubView, setAccountSubView] = useState('main');
+  /** null = ainda não carregado ou fora da vista principal; número após fetch (A1b). */
+  const [loanRequestUnreadClientCount, setLoanRequestUnreadClientCount] = useState(null);
+  const [loanRequestUnreadSupplierCount, setLoanRequestUnreadSupplierCount] = useState(null);
 
   const bumpLinksReload = () => setLinksReloadToken((t) => t + 1);
 
@@ -497,6 +505,56 @@ function AccountScreen({ onBack, showToast }) {
     roleSaving ||
     addRoleSaving;
 
+  useEffect(() => {
+    if (!user?.uid || !authAvailable || accountSubView !== 'main' || !profileExtrasReady) {
+      setLoanRequestUnreadClientCount(null);
+      setLoanRequestUnreadSupplierCount(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const load = async () => {
+      setLoanRequestUnreadClientCount(null);
+      setLoanRequestUnreadSupplierCount(null);
+      const uid = user.uid;
+
+      try {
+        const [clientList, supplierList] = await Promise.all([
+          canActAsClient ? listLoanRequestsForClient(uid) : Promise.resolve([]),
+          canActAsSupplier ? listLoanRequestsForSupplier(uid) : Promise.resolve([]),
+        ]);
+        if (cancelled) return;
+        setLoanRequestUnreadClientCount(
+          canActAsClient ? countUnreadLoanRequests(clientList, uid, 'client') : 0,
+        );
+        setLoanRequestUnreadSupplierCount(
+          canActAsSupplier ? countUnreadLoanRequests(supplierList, uid, 'supplier') : 0,
+        );
+      } catch (e) {
+        if (!cancelled) {
+          setLoanRequestUnreadClientCount(canActAsClient ? 0 : null);
+          setLoanRequestUnreadSupplierCount(canActAsSupplier ? 0 : null);
+          if (import.meta.env.DEV) {
+            console.warn('[AccountScreen] loanRequest unread badges load failed', e);
+          }
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    user?.uid,
+    authAvailable,
+    accountSubView,
+    profileExtrasReady,
+    canActAsClient,
+    canActAsSupplier,
+  ]);
+
   if (authReady && authAvailable && user && accountSubView === 'loanRequestsSupplier') {
     return (
       <div className="space-y-6 p-4 pb-20">
@@ -777,9 +835,17 @@ function AccountScreen({ onBack, showToast }) {
                     type="button"
                     onClick={() => setAccountSubView('loanRequests')}
                     disabled={!hasPlatformRole || linkGlobalBusy}
-                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                    className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
                   >
-                    Abrir solicitações
+                    <span>Abrir solicitações</span>
+                    {loanRequestUnreadClientCount > 0 ? (
+                      <span
+                        className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums leading-snug text-primary ring-1 ring-edge/40"
+                        aria-label={`${loanRequestUnreadClientCount} com novidade`}
+                      >
+                        {loanRequestUnreadClientCount}
+                      </span>
+                    ) : null}
                   </button>
                   {!hasPlatformRole && (
                     <p className="mt-3 text-xs leading-relaxed text-content-muted">
@@ -802,9 +868,17 @@ function AccountScreen({ onBack, showToast }) {
                     type="button"
                     onClick={() => setAccountSubView('loanRequestsSupplier')}
                     disabled={!hasPlatformRole || linkGlobalBusy}
-                    className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                    className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
                   >
-                    Abrir pedidos recebidos
+                    <span>Abrir pedidos recebidos</span>
+                    {loanRequestUnreadSupplierCount > 0 ? (
+                      <span
+                        className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums leading-snug text-primary ring-1 ring-edge/40"
+                        aria-label={`${loanRequestUnreadSupplierCount} com novidade`}
+                      >
+                        {loanRequestUnreadSupplierCount}
+                      </span>
+                    ) : null}
                   </button>
                   {!hasPlatformRole && (
                     <p className="mt-3 text-xs leading-relaxed text-content-muted">
