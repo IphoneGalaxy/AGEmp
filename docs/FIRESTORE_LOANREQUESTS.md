@@ -38,12 +38,20 @@
 | `counterofferedAt` | timestamp | opcional (**v1.1 CN**) | preenchido quando o fornecedor envia a contraposta |
 | `readByClientAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do cliente (`clientId`), sem relação jurídica; ausente para pedidos só v1 anterior |
 | `readBySupplierAt` | timestamp | opcional | **v1.1 RB**: metadado de leitura do fornecedor (`supplierId`) |
+| `clientDisplayNameSnapshot` | string \| null | opcional | **Mini ADR snapshots:** na **criação** pelo cliente — herança preferencial de **`links/{linkId}`** + fallback **`users/{clientId}.displayName`**; **imutável** após create; formato nas rules — ver [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md). |
+| `supplierDisplayNameSnapshot` | string \| null | opcional | **Mini ADR snapshots:** na **criação** — preferência **`links/{linkId}.supplierDisplayNameSnapshot`** + fallback **`users/{supplierId}.displayName`**; **imutável** após create. |
+
+**Deploy rules (snapshots):** após commit **`cdc55d9`**, as Security Rules foram publicadas no projeto Firebase **`agemp-financas-pro`** (`npx -y firebase-tools@latest deploy --only firestore:rules --project agemp-financas-pro`). Ambiente real deve estar alinhado ao repo antes de smoke com novos campos — erro **permission denied** típico quando rules antigas não whitelistam snapshots.
+
+**Documentação canónica da mini fase:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) §17 (commits **`6793461`** … **`28f3f4a`**).
+
+Os documentos **`links/{linkId}`** incluem os mesmos dois snapshots com escrita por papel (cliente na criação / fornecedor na aprovação) — detalhe no ADR §7.1 e em `firestore.rules`; modelo focado em **`loanRequests`** permanece neste arquivo.
 
 **Status pré-financeiros** (`loanRequests`): incluem `pending`, `under_review`, `counteroffer` (efeito de “aberto” no app também para duplicidade por `linkId`), terminais `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **`converted_to_contract`** não é usado (continua fora deste modelo).
 
 ### Conversão governada Bloco 2 (só armazenamento local — **sem** mudança neste documento)
 
-O **Bloco 2** permite ao fornecedor registar um contrato **local** a partir de um pedido **`approved`**, com confirmação humana e metadado **`convertedFromLoanRequestId`** apenas no objeto **`loan`** persistido em **`localStorage`** (escopo da conta). **Não** foram adicionados campos novos aos documentos **`loanRequests`** no Firestore; **não** houve alteração a **`firestore.rules`** nem a este quadro de modelo para suportar a conversão. O pedido remoto **não** é marcado como «converted» no MVP.
+O **Bloco 2** permite ao fornecedor registar um contrato **local** a partir de um pedido **`approved`**, com confirmação humana e metadado **`convertedFromLoanRequestId`** apenas no objeto **`loan`** persistido em **`localStorage`** (escopo da conta). **Não** foram adicionados campos novos aos documentos **`loanRequests`** no Firestore para marcar conversão remota; **não** houve alteração a **`firestore.rules`** nem a este quadro de modelo **pelo** MVP Bloco 2 (commits **`624c725`** … **`5dd4c36`**). O nome amigável do **cliente local** criado pela conversão pode vir de **`clientDisplayNameSnapshot`** no pedido quando existir (**`28f3f4a`**) — metadado relacional pré-existente no doc remoto; o financeiro continua só local.
 
 **Fatia RB (`readBy*`)**: apenas o papel correspondente pode escrever o próprio campo; diff **somente** o marcador; **`updatedAt` não muda** (política B); estados permitidos incluem **`counteroffer`** e **`counteroffer_declined`** (ver `loanRequestStatusAllowsReadMarkers` em `firestore.rules`).
 

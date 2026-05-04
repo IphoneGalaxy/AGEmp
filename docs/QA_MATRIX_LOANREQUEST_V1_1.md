@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2 nesta matriz) · **Próximo:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (planejamento §13) |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** — **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2) · **Mini ADR snapshots FECHADA** (`6793461` … `28f3f4a`; § abaixo) · **Próximo:** **«Visão Fornecedores»** |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -143,8 +143,8 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 
 | Campo | Registo |
 |-------|---------|
-| **ADR / guardrails** | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — MVP **sem** marcação remota converted; **sem** escrita Firestore pela conversão; **sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** alteração **`firestore.rules`** / schema **`loanRequests`** / **`calculations.js`** |
-| **Commits** | **`624c725`** — entrada + revisão/modal · **`3badcbc`** — persistência local + `convertedFromLoanRequestId` + anti-duplicidade · **`5dd4c36`** — UX pós-conversão |
+| **ADR / guardrails** | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — MVP **sem** marcação remota converted; **sem** escrita Firestore **pela conversão**; **sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** alteração **`calculations.js`** pelo Bloco 2. *(Campos remotos de snapshot de nome foram acrescentados **depois** pela mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — metadado relacional; não autoritativo financeiro.)* |
+| **Commits** | **`624c725`** — entrada + revisão/modal · **`3badcbc`** — persistência local + `convertedFromLoanRequestId` + anti-duplicidade · **`5dd4c36`** — UX pós-conversão · **`28f3f4a`** — nome amigável na revisão/conversão a partir de **`clientDisplayNameSnapshot`** |
 | **Smoke manual (operador)** | **OK integral**, **sem NOK crítico** — botão em `approved`; modal + checkbox; contrato e cliente na lista/`ClientView`; totais pelo motor local; segunda conversão bloqueada; rótulos amigáveis (**Bloco2-D**); filtros vínculo preservados; **o app não transfere dinheiro** |
 
 ### Checklist smoke Bloco 2 (referência rápida)
@@ -156,18 +156,44 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 5. Reabrir mesmo pedido → «Contrato já registado localmente» (**Bloco2-D**); não permite segundo registo.  
 6. Filtros e anotação **`linkContext`** continuam coerentes.  
 7. Criação manual de contrato (fluxo existente) **sem** regressão.  
+8. Pedido **sem** `clientDisplayNameSnapshot` → conversão continua com fallback **«Cliente da plataforma»** no modal e no cliente novo.
 
-### Limitações / backlog (pós-MVP)
+---
 
-- Nomes entre aparelhos: fallback **«Cliente da plataforma»** até implementação da mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`; **ADR publicado — código/rules ainda não**).  
-- **Visão Fornecedores** (cliente): fase própria, **depois** da execução da mini ADR acima.  
-- IDs técnicos: só dados internos; UI principal oculta (**Bloco2-D**); modo avançado Configurações — backlog.  
-- **A2b/A2c** arquivamento — backlog.  
-- Marcação remota converted — só com ADR + rules + QA.
+## Mini ADR — Identidade pública e snapshots de nomes — **FECHADA** (Subfase 7 — QA/docs)
+
+### Registo de execução
+
+| Campo | Registo |
+|-------|---------|
+| **ADR** | [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) §13–§17 |
+| **Commits (ordem)** | **`6793461`** (Subfase 0 docs) · **`eb48083`** (helpers) · **`cdc55d9`** (rules + tests) · **`9d2c4ad`** (links) · **`9f4351f`** (`loanRequests` create) · **`bb03633`** (UI vínculos/pedidos) · **`28f3f4a`** (conversão local + modal) |
+| **Deploy rules (real)** | Após **`cdc55d9`:** `npx -y firebase-tools@latest deploy --only firestore:rules --project agemp-financas-pro` — sucesso registado pela equipa |
+| **Guardrails (confirmados)** | **Sem** sync financeiro remoto; **sem** contrato remoto autoritativo; **sem** `payment.linkContext`; **sem** alteração **`calculations.js`** nesta linha. Firebase = **identidade / vínculo / pedido pré-financeiro** apenas. **Bloco 2** permanece só gravação **local** após confirmação humana; **sem** escrita remota pela conversão. |
+| **Onde os nomes aparecem** | **Vínculos** (Conta); **pedidos enviados** (cliente); **pedidos recebidos** (fornecedor); modal **«Registrar contrato local»**; **cliente local** criado pela conversão (cliente existente reutilizado **sem** renomeação automática). |
+
+### Smoke manual validado (operador)
+
+1. Cliente **Mello** cria pedido (com snapshots).  
+2. Fornecedor **Guilherme** vê **Mello** onde aplicável.  
+3. Cliente vê **Guilherme** onde aplicável.  
+4. Fornecedor **aprova**.  
+5. Modal **«Registrar contrato local»** mostra **Mello** quando `clientDisplayNameSnapshot` existe.  
+6. Após confirmar transferência e registar → cliente local criado como **Mello**; **ClientView** mostra **Mello**.  
+7. **Segunda** tentativa de conversão do mesmo pedido → **bloqueada** (anti-duplicidade).  
+8. Deploy das **rules** no projeto real corrigiu erro **permission denied** observado quando ambiente não estava alinhado às novas chaves.
+
+### Limitações / backlog (pós-mini ADR snapshots)
+
+- **Vínculos legados** sem **`supplierDisplayNameSnapshot`** podem continuar a mostrar **«Fornecedor da plataforma»** no cartão de vínculo — refinamento futuro: fallback por **perfil remoto** ou **atualização controlada** de snapshot em links legados (**sem** migração obrigatória nesta mini fase).
+- **Visão Fornecedores** (cliente): **próxima fase recomendada**, **não** implementada aqui — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 · [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+- IDs técnicos: só dados internos na linha pré-financeira; UI principal favorece nomes amigáveis quando snapshot existe; modo avançado Configurações — backlog.
+- **A2b/A2c** arquivamento — backlog.
+- Marcação remota `converted_to_contract` — só com ADR + rules + QA.
 
 ### Próxima fase recomendada
 
-Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (**planejamento oficial**; regressões futuras §14 do ADR); depois **«Visão Fornecedores»** — ver [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+**«Visão Fornecedores»** / UX de relacionamento por papel. Referência mini ADR fechada: [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) §17.
 
 ---
 
@@ -187,4 +213,5 @@ Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_
 | 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano arquivado; **Bloco 2** recomendado em seguida. |
 | 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado e **aprovado**. |
 | 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |
-| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — próxima fase pós-Bloco 2 **documentada**; QA de implementação futura conforme §14 do ADR. |
+| 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**; próximo **Visão Fornecedores**. |
+| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — **Subfase 0** só docs; implementação §13 posterior. |

@@ -12,9 +12,9 @@
 
 | Dimensão | Valor |
 |----------|--------|
-| **Estado da decisão** | **Documento vivo aprovado como direção recomendada** para implementação futura em subfases. **Nenhuma implementação de código nem alteração de `firestore.rules` está autorizada apenas por existir este arquivo** — execução só após critérios de entrada da equipa e ordem das subfases (§13). |
-| **Natureza** | ADR **e** plano executável (fonte viva para a mini fase «snapshots de nomes»). |
-| **Implementação no repositório** | **Não iniciada** nesta rodada documental (somente `docs/`). |
+| **Estado da decisão** | **Mini fase funcionalmente fechada** (Subfases **0–7** concluídas no código/docs conforme §13 e §17). Este ADR permanece referência para semântica, guardrails e backlog residual (§17). |
+| **Natureza** | ADR **e** plano executável já **executado** na ordem §13 (exceto itens explicitamente **fora do MVP** ou **backlog** no próprio texto). |
+| **Implementação no repositório** | **Concluída** — commits por subfase em §17; fecho documental **Subfase 7** (`docs/` apenas nesta rodada de QA/fechamento). |
 
 ### Direção recomendada (congelada neste ADR)
 
@@ -32,14 +32,16 @@
 ### 2.1 Já existe no código e nas rules (factual)
 
 - **`users/{uid}`:** `displayName` (string, até 80 caracteres nas rules atuais), editável pelo dono do documento.
-- **`links/{supplierId__clientId}`:** participantes, `status`, `requestedBy`, timestamps — **sem** campos de nome além dos UIDs.
-- **`loanRequests/{id}`:** modelo v1+v1.1 pré-financeiro — **sem** campos de nome de contraparte.
+- **`links/{supplierId__clientId}`:** participantes, `status`, `requestedBy`, timestamps — **com** campos opcionais **`clientDisplayNameSnapshot`** / **`supplierDisplayNameSnapshot`** (metadado relacional; escrita conforme §7.1).
+- **`loanRequests/{id}`:** modelo v1+v1.1 pré-financeiro — **com** **`clientDisplayNameSnapshot`** / **`supplierDisplayNameSnapshot`** opcionais na criação (imutáveis depois; herança do link + fallback perfil conforme §7.2).
 - **Leitura de perfil:** qualquer autenticado pode `get` em `users/{userId}` (validação de papéis na etapa de vínculo).
-- **Bloco 2:** conversão governada usa fallback textual **«Cliente da plataforma»** quando não há nome remoto fiável; rótulos amigáveis ocultam IDs na superfície principal (`platformFriendlyLabels.js`, etc.).
+- **Bloco 2:** conversão governada usa **`clientDisplayNameSnapshot`** do pedido quando disponível para nome do cliente local novo e para o modal **«Registrar contrato local»**; senão mantém **«Cliente da plataforma»**. Firebase **não** é fonte financeira autoritativa; **`convertedFromLoanRequestId`** e contrato continuam só locais.
 
-### 2.2 Lacuna
+### 2.2 Lacuna (estado pós-implementação — residual)
 
-Entre dois aparelhos, o fornecedor não vê de forma estável o nome escolhido pelo cliente no perfil (ex.: «Mello»), nem o cliente o do fornecedor, porque **nenhum snapshot relacional** é persistido em `links`/`loanRequests` e a UI de vínculos ainda pode depender de UID.
+**Mitigado no MVP:** snapshots em **`links`** e **`loanRequests`** + UI/conversão local conforme §17.
+
+**Residual documentado:** vínculos **legados** sem **`supplierDisplayNameSnapshot`** podem continuar a mostrar **«Fornecedor da plataforma»** no cartão de vínculo até refinamento futuro (fallback por perfil remoto ou atualização controlada de snapshot — backlog; sem migração obrigatória nesta mini fase).
 
 ---
 
@@ -77,12 +79,12 @@ Preserva o contexto da conversa («como se chamava cada um quando o pedido foi c
 
 ## 5. MVP proposto
 
-### 5.1 Entra (quando implementado)
+### 5.1 Entregue no MVP
 
 - Novos campos opcionais em **`links`** e **`loanRequests`** (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`).
 - Fluxos de escrita alinhados a §1 e §7 (cliente/fornecedor, criação/aprovação, criação de pedido).
-- UI: substituir gradualmente UID/genéricos por nome derivado (snapshot → perfil → fallback textual), mantendo linguagem «pré-financeiro / plataforma».
-- Integração na **conversão local (Bloco 2):** sugerir nome do cliente local a partir do snapshot do pedido quando existir.
+- UI: substituição de UID/genéricos onde aplicável por nome derivado (snapshot → fallback textual estável), mantendo linguagem «pré-financeiro / plataforma».
+- Integração na **conversão local (Bloco 2):** nome do cliente local novo e modal a partir do snapshot do pedido quando existir (**`28f3f4a`**).
 
 ### 5.2 Fica fora do MVP desta mini ADR
 
@@ -128,9 +130,9 @@ Regras de normalização sugeridas (implementação): string não vazia após tr
 
 ---
 
-## 8. Regras Firestore prováveis
+## 8. Regras Firestore
 
-*(Especificação alvo — implementação na Subfase 2.)*
+*(Implementação na Subfase **2** (`cdc55d9`); deploy real **`agemp-financas-pro`** registado em §17.)*
 
 ### 8.1 Links
 
@@ -153,16 +155,16 @@ Os snapshots são **rótulos relacional-operacionais**, não montantes, não sal
 
 ## 9. Impacto em componentes
 
-*(Alvo para implementação futura — sem compromisso de ficheiros nesta rodada.)*
+*(Entregue conforme commits §17 — lista de referência, não obrigação de re-leitura.)*
 
-| Área | Provável |
-|------|-----------|
+| Área | Implementado |
+|------|----------------|
 | Firebase helpers | `src/firebase/links.js`, `src/firebase/loanRequestsFirestore.js`, `src/firebase/loanRequests.js` |
 | Rules | `firestore.rules` |
 | UI Conta / vínculos | `src/components/AccountScreen.jsx` |
 | Painéis pedidos | `LoanRequestsClientPanel.jsx`, `LoanRequestsSupplierPanel.jsx` |
-| Conversão Bloco 2 | `src/utils/convertLoanRequestToLocalContract.js`, `platformFriendlyLabels.js` |
-| Documentação modelo | [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) após alteração de schema |
+| Conversão Bloco 2 | `src/utils/convertLoanRequestToLocalContract.js`, `convertLoanRequestReviewDerive.js`, `ConvertLoanRequestToContractReview.jsx`, `displayNameSnapshots.js`, `platformFriendlyLabels.js` |
+| Documentação modelo | [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) |
 
 ---
 
@@ -192,26 +194,28 @@ Os snapshots são **rótulos relacional-operacionais**, não montantes, não sal
 
 ---
 
-## 13. Subfases futuras (ordem obrigatória)
+## 13. Subfases (ordem obrigatória) — estado
 
-| Subfase | Conteúdo |
-|---------|-----------|
-| **0** | ADR / documentação viva (**este ficheiro** + ponteiros nos docs vivos). |
-| **1** | Helpers puros de normalização de nome/snapshot + **testes unitários** (sem Firestore/rules). |
-| **2** | **`firestore.rules`** + **rules tests** (emulador); atualizar documentação de modelo onde aplicável. |
-| **3** | Snapshots em **`links`** (criação cliente + aprovação fornecedor). |
-| **4** | Snapshots em **`loanRequests`** na criação (herança do link + fallback perfil). |
-| **5** | UI em vínculos e pedidos (Conta + painéis). |
-| **6** | Integração com **conversão local** Bloco 2 (nome sugerido a partir do pedido). |
-| **7** | QA smoke (dois utilizadores), regressão Bloco 2 / loanRequests / vínculos, fecho documental. |
+| Subfase | Conteúdo | Commit de referência |
+|---------|-----------|----------------------|
+| **0** | ADR / documentação viva (+ ponteiros nos docs vivos) | **`6793461`** |
+| **1** | Helpers puros + testes unitários | **`eb48083`** |
+| **2** | **`firestore.rules`** + rules tests (emulador); modelo documentado | **`cdc55d9`** |
+| **3** | Snapshots em **`links`** | **`9d2c4ad`** |
+| **4** | Snapshots em **`loanRequests`** (criação) | **`9f4351f`** |
+| **5** | UI vínculos e pedidos | **`bb03633`** |
+| **6** | Conversão local Bloco 2 + modal | **`28f3f4a`** |
+| **7** | QA smoke, regressão, **fecho documental** (`docs/` apenas) | *(esta rodada — sem commit pelo pedido do projeto)* |
+
+**Deploy rules (projeto real):** após **`cdc55d9`**, as Security Rules foram publicadas com sucesso no Firebase **`agemp-financas-pro`** (`npx -y firebase-tools@latest deploy --only firestore:rules --project agemp-financas-pro`). Smoke registado: erro **permission denied** corrigido após deploy alinhado às novas chaves de snapshot.
 
 ---
 
 ## 14. Testes necessários
 
-- **Vitest:** helpers da Subfase 1; regressão de fluxos que tocam nomes.
-- **Rules:** criar/atualizar links com snapshots; criar `loanRequest` com snapshots imutáveis; garantir que updates de negócio não alteram snapshots.
-- **Smoke manual:** dois utilizadores/aparelhos — vínculo com nomes visíveis, pedido com herança do link, conversão local com nome sugerido.
+- **Vitest:** helpers da Subfase 1; regressão de fluxos que tocam nomes; conversão local (**`28f3f4a`**) coberta por testes utilitários onde existentes no repo.
+- **Rules:** criar/atualizar links com snapshots; criar `loanRequest` com snapshots imutáveis; garantir que updates de negócio não alteram snapshots — suite **`npm run test:rules:loanRequests`** no emulador.
+- **Smoke manual:** dois utilizadores/aparelhos — vínculo com nomes visíveis, pedido com herança do link, conversão local com nome amigável — registado na Subfase 7 (**§17** deste ADR · [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Mini ADR).
 - **Regressão:** Bloco 2 (anti-duplicidade, checkbox, microcopy); badges Bloco 1; CN/contraposta.
 
 ---
@@ -239,9 +243,9 @@ Os snapshots são **rótulos relacional-operacionais**, não montantes, não sal
 
 ## 16. Próxima ação recomendada
 
-1. Manter este ADR como referência até **aprovação explícita de implementação**.
-2. Iniciar **Subfase 1** (helpers + testes unitários), depois **Subfase 2** (rules), sem saltar etapas.
-3. Após fecho da mini fase de código: atualizar [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md), matrizes QA relevantes e [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md).
+1. Manter este ADR como referência de **semântica** e **guardrails** (snapshots = metadado relacional; financeiro **local-first**).
+2. **Próximo recorte de produto recomendado:** **«Visão Fornecedores»** / UX de relacionamento por papel — ver [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) § Limitações e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+3. **Backlog relacionado:** **A2b/A2c** (arquivamento remoto); refinamento de fallback/exibição para **`links`** legados sem **`supplierDisplayNameSnapshot`** (perfil remoto ou atualização controlada — sem migração massiva obrigatória).
 
 ---
 
@@ -250,6 +254,7 @@ Os snapshots são **rótulos relacional-operacionais**, não montantes, não sal
 | Data | Nota |
 |------|------|
 | 2026-05-05 | Criação do ADR oficial em `docs/` — documentação apenas; sem alteração a `src/`, `firestore.rules` nem testes. |
+| 2026-05-05 | **Mini fase fechada (Subfase 7 — QA/docs):** cadência **`6793461`** · **`eb48083`** · **`cdc55d9`** · **`9d2c4ad`** · **`9f4351f`** · **`bb03633`** · **`28f3f4a`**. **Sem** sync financeiro remoto; **sem** contrato remoto; **sem** `payment.linkContext`; **sem** alteração em `calculations.js`. Firebase permanece **identidade / vínculo / pedido pré-financeiro**, não fonte financeira autoritativa. **Onde os nomes aparecem:** cartões de **vínculos** (Conta); **pedidos enviados** (cliente); **pedidos recebidos** (fornecedor); modal **«Registrar contrato local»**; **cliente local** criado pela conversão (reuso de cliente existente **sem** renomeação automática). **Smoke manual validado:** cliente «Mello» cria pedido; fornecedor «Guilherme» vê Mello; cliente vê Guilherme; fornecedor aprova; modal mostra Mello; conversão cria cliente Mello; **ClientView** mostra Mello; segunda conversão bloqueada; deploy rules corrigiu **permission denied**. **Limitações/backlog:** vínculos legados sem **`supplierDisplayNameSnapshot`** podem mostrar «Fornecedor da plataforma»; **Visão Fornecedores** não implementada nesta mini fase; **A2b/A2c** em backlog. Registos espelhados em [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md), [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md), [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md). |
 
 ---
 
