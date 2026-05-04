@@ -172,6 +172,8 @@ function ClientLoanRequestReadEffect({ requestId, clientUid, readByClientAt, sup
         if (res.ok && typeof onMarked === 'function') {
           onMarked();
         }
+      }).catch((err) => {
+        console.warn('[LoanRequests] markLoanRequestReadByClient failed', { requestId, error: err });
       });
     }, delayMs);
     return () => window.clearTimeout(t);

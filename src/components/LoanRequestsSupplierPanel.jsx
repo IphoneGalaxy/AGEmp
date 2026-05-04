@@ -210,6 +210,8 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
       supplierUid: user.uid,
     }).then((r) => {
       if (r.ok) void loadRequests();
+    }).catch((err) => {
+      console.warn('[LoanRequests] markLoanRequestReadBySupplier failed', { requestId: expandedId, error: err });
     });
   }, [expandedId, user?.uid, requests, loadRequests]);
 
