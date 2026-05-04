@@ -252,6 +252,8 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
               ? 'Pedido aprovado na plataforma (não cria contrato no app).'
               : 'Pedido recusado.';
         showToast?.(msg);
+        setNoteFor(requestId, '');
+        setCounterofferFor(requestId, '');
         setExpandedId(null);
         await loadRequests();
       } else {
@@ -283,8 +285,9 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
       });
       if (result.ok) {
         showToast?.('Contraproposta enviada. Aguarde a decisão do cliente na plataforma.');
-        setExpandedId(null);
+        setNoteFor(requestId, '');
         setCounterofferFor(requestId, '');
+        setExpandedId(null);
         await loadRequests();
       } else {
         showToast?.(result.message);
@@ -364,7 +367,13 @@ export default function LoanRequestsSupplierPanel({ user, showToast }) {
                 >
                   <button
                     type="button"
-                    onClick={() => setExpandedId((prev) => (prev === r.id ? null : r.id))}
+                    onClick={() => {
+                      if (expanded) {
+                        setNoteFor(r.id, '');
+                        setCounterofferFor(r.id, '');
+                      }
+                      setExpandedId((prev) => (prev === r.id ? null : r.id));
+                    }}
                     className="flex w-full flex-col gap-1 text-left"
                     aria-expanded={expanded}
                   >
