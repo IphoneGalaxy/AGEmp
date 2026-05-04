@@ -19,6 +19,7 @@ import {
   LOAN_REQUEST_STATUSES,
   getLoanRequestStatusLabelPt,
   canClientCancelLoanRequestV1,
+  isLoanRequestTerminalStatusV1,
 } from '../firebase/loanRequests';
 import { LINK_STATUSES } from '../firebase/links';
 
@@ -47,29 +48,134 @@ function hasFirestoreTimestampSeconds(ts) {
   return !!(ts && typeof ts === 'object' && typeof ts.seconds === 'number');
 }
 
+/** @param {unknown} ts */
+function firestoreTimestampSecondsOrNull(ts) {
+  if (ts == null) return null;
+  if (typeof ts !== 'object') return null;
+  if (typeof ts.seconds === 'number') return ts.seconds;
+  if (typeof ts._seconds === 'number') return ts._seconds;
+  if (typeof ts.toMillis === 'function') {
+    try {
+      const ms = ts.toMillis();
+      if (Number.isFinite(ms)) return Math.floor(ms / 1000);
+    } catch {
+      /* ignore */
+    }
+  }
+  return null;
+}
+
+/** @param {(number | null)[]} candidates */
+function maxSecondsOrNull(candidates) {
+  const nums = candidates.filter((x) => typeof x === 'number' && Number.isFinite(x));
+  return nums.length ? Math.max(...nums) : null;
+}
+
+/**
+ * Último instante documentado de ação relevante do fornecedor (badge "Novo" do cliente).
+ * @param {Record<string, unknown>} r
+ * @returns {number | null}
+ */
+function getSupplierEventSecondsForClientBadge(r) {
+  const status = typeof r.status === 'string' ? r.status : '';
+  if (status === LOAN_REQUEST_STATUSES.PENDING) return null;
+  if (status === LOAN_REQUEST_STATUSES.CANCELLED_BY_CLIENT) return null;
+  if (status === LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED) return null;
+
+  const updatedAt = firestoreTimestampSecondsOrNull(r.updatedAt);
+  const respondedAt = firestoreTimestampSecondsOrNull(r.respondedAt);
+  const counterofferedAt = firestoreTimestampSecondsOrNull(r.counterofferedAt);
+
+  if (status === LOAN_REQUEST_STATUSES.COUNTEROFFER) {
+    return maxSecondsOrNull([counterofferedAt, updatedAt]);
+  }
+  if (status === LOAN_REQUEST_STATUSES.APPROVED) {
+    const viaCounteroffer =
+      typeof r.approvedAmount === 'number' &&
+      typeof r.requestedAmount === 'number' &&
+      r.approvedAmount !== r.requestedAmount;
+    if (viaCounteroffer) {
+      return counterofferedAt;
+    }
+    return maxSecondsOrNull([respondedAt, updatedAt]);
+  }
+  if (status === LOAN_REQUEST_STATUSES.REJECTED) {
+    return maxSecondsOrNull([respondedAt, updatedAt]);
+  }
+  if (status === LOAN_REQUEST_STATUSES.UNDER_REVIEW) {
+    return maxSecondsOrNull([updatedAt]);
+  }
+  return maxSecondsOrNull([updatedAt, respondedAt, counterofferedAt]);
+}
+
+/**
+ * @param {Record<string, unknown>} r
+ * @returns {boolean}
+ */
+function shouldShowUnreadBadgeClientPanel(r) {
+  const supplierEvt = getSupplierEventSecondsForClientBadge(r);
+  if (supplierEvt == null) return false;
+  const readSec = firestoreTimestampSecondsOrNull(r.readByClientAt);
+  const status = typeof r.status === 'string' ? r.status : '';
+
+  if (readSec != null) {
+    return supplierEvt > readSec;
+  }
+
+  // Legado pré-v1.1 RB: pedidos encerrados sem readByClientAt não devem
+  // repetir eternamente "Novo" (similar ao painel do fornecedor).
+  if (isLoanRequestTerminalStatusV1(status)) {
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * @param {Object} props
  * @param {string} props.requestId
  * @param {string} props.clientUid
  * @param {unknown} props.readByClientAt
+ * @param {number | null} props.supplierEventSeconds
+ * @param {string} [props.requestStatus]
  * @param {() => void} [props.onMarked]
  */
-function ClientLoanRequestReadEffect({ requestId, clientUid, readByClientAt, onMarked }) {
-  const readClientSec =
-    readByClientAt && typeof readByClientAt.seconds === 'number'
-      ? readByClientAt.seconds
-      : null;
+function ClientLoanRequestReadEffect({ requestId, clientUid, readByClientAt, supplierEventSeconds, requestStatus, onMarked }) {
+  const readClientSec = firestoreTimestampSecondsOrNull(readByClientAt);
 
   useEffect(() => {
-    if (!requestId || !clientUid || readClientSec != null) {
+    if (!requestId || !clientUid) {
       return;
     }
-    void markLoanRequestReadByClient({ requestId, clientUid }).then((res) => {
-      if (res.ok && typeof onMarked === 'function') {
-        onMarked();
-      }
-    });
-  }, [requestId, clientUid, readClientSec, onMarked]);
+    let needMark;
+    if (supplierEventSeconds == null) {
+      needMark = readClientSec == null;
+    } else {
+      needMark = readClientSec == null || supplierEventSeconds > readClientSec;
+    }
+    // Legado pré-v1.1 RB: pedidos encerrados sem readByClientAt não precisam
+    // de marcação só por aparecerem na lista.
+    if (
+      needMark &&
+      readClientSec == null &&
+      isLoanRequestTerminalStatusV1(requestStatus ?? '')
+    ) {
+      needMark = false;
+    }
+    if (!needMark) {
+      return;
+    }
+    /** Com novidade do fornecedor o mark imediato apagava o "Novo" antes de pintar. */
+    const delayMs = supplierEventSeconds != null ? 850 : 0;
+    const t = window.setTimeout(() => {
+      void markLoanRequestReadByClient({ requestId, clientUid }).then((res) => {
+        if (res.ok && typeof onMarked === 'function') {
+          onMarked();
+        }
+      });
+    }, delayMs);
+    return () => window.clearTimeout(t);
+  }, [requestId, clientUid, readClientSec, supplierEventSeconds, requestStatus, onMarked]);
 
   return null;
 }
@@ -427,6 +533,8 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
               const isApproved = r.status === LOAN_REQUEST_STATUSES.APPROVED;
               const declinedCounteroffer =
                 r.status === LOAN_REQUEST_STATUSES.COUNTEROFFER_DECLINED;
+              const supplierEventSeconds = getSupplierEventSecondsForClientBadge(r);
+              const showUnreadBadge = shouldShowUnreadBadgeClientPanel(r);
               const approvedViaCounteroffer =
                 isApproved &&
                 typeof r.approvedAmount === 'number' &&
@@ -447,6 +555,8 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                     requestId={r.id}
                     clientUid={user.uid}
                     readByClientAt={r.readByClientAt}
+                    supplierEventSeconds={supplierEventSeconds}
+                    requestStatus={r.status}
                     onMarked={loadRequests}
                   />
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -461,7 +571,14 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                         ) : null}
                       </p>
                     </div>
-                    <p className="text-xs font-medium text-content-soft">{statusLabel}</p>
+                    <div className="flex items-center gap-1.5">
+                      {showUnreadBadge ? (
+                        <span className="inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium leading-snug text-primary">
+                          Novo
+                        </span>
+                      ) : null}
+                      <p className="text-xs font-medium text-content-soft">{statusLabel}</p>
+                    </div>
                   </div>
                   <p className="mt-1 text-xs text-content-muted">
                     Enviado em {formatRequestTimestamp(r.createdAt)}
