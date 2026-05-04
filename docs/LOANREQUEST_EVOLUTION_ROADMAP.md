@@ -31,6 +31,8 @@ Mesma linha de [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), Project Rul
 
 Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de trabalho técnico, pertencem ao **planejamento e implementação futuros da Fase A2** neste roadmap — **não existem neste momento** como modelo obrigatório no Firestore até design + rules + QA próprios; este documento **não** os declara já criados.
 
+**Subfase A2a (Bloco 1 — decisão, sem código):** **concluída documentalmente** — contrato conceitual registrado em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (§6 A2a): arquivamento **por lado**, terminais apenas, desarquivar permitido, **`updatedAt` intocado** no arquivo/desarquivo, exclusão/fora de escopo, rules/UI detalhadas **só** nas futuras **A2b/A2c**.
+
 ---
 
 ## Visão resumida das fases
@@ -95,10 +97,14 @@ Reduzir ruído na lista mantendo **histórico** e **auditabilidade**: cada lado 
 
 ### Escopo típico (planejamento futuro — não implementado neste registro)
 
-- Novos timestamps por lado (**exemplo de desenho**): **`archivedByClient`**, **`archivedBySupplier`** — apenas **planejamento** neste roadmap; modelo final sujeito a revisão antes de código.
-- **Security Rules**: cada papel altera apenas o próprio marcador de arquivo; **`updatedAt`**: política a definir (alinhar RB “readBy não mexe em `updatedAt`” vs arquivamento operacional — decisão obrigatória antes de codar).
-- UI: **Arquivar** / **Mostrar arquivados** ou equivalente nos painéis [`LoanRequestsClientPanel.jsx`](../src/components/LoanRequestsClientPanel.jsx) e [`LoanRequestsSupplierPanel.jsx`](../src/components/LoanRequestsSupplierPanel.jsx).
+- Novos campos por lado (**planejados para implementação futura A2b**): **`archivedByClient`**, **`archivedBySupplier`** — tipo **timestamp** ou campo anulável/removível conforme **design** + rules na **A2b**; **A2a** documentou apenas a **intenção**.
+- **Security Rules** (futura **A2b**): cada papel altera **apenas** o próprio marcador; escrita cruzada **falha**; arquivo/desarquivo **somente** em status **terminal**; **`delete`** continua vedado. **`updatedAt`:** **não** muda no arquivamento/desarquivamento (decisão **A2a** — metadado operacional por lado, alinhado à ideia dos `readBy*`).
+- **UI** (futura **A2c**, **depois** de **A2b**): **Arquivar** / **Desarquivar** / **Mostrar arquivados** nos painéis [`LoanRequestsClientPanel.jsx`](../src/components/LoanRequestsClientPanel.jsx) e [`LoanRequestsSupplierPanel.jsx`](../src/components/LoanRequestsSupplierPanel.jsx); lista padrão oculta arquivados do lado; microcopy distingue **arquivar** vs **excluir**.
 - **Excluir** documento remotamente não é objetivo (“excluir” permanece menos seguro enquanto `delete` estiver vedado pelas rules).
+
+### Decisões A2a fechadas (documentação Bloco 1 — sem código)
+
+Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** terminais: `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **Não** arquivar `pending`, `under_review`, `counteroffer`. **Desarquivar** permitido (efeito só no lado do usuário; **não** reabre negócio). Arquivamento **não** apaga histórico. **`updatedAt` intocado** no arquivo/desarquivo. Detalhe canônico: [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md).
 
 ### Fora do escopo (A2)
 
@@ -113,7 +119,9 @@ Reduzir ruído na lista mantendo **histórico** e **auditabilidade**: cada lado 
 
 - Um lado arquiva; o outro continua a ver com filtro próprio até decidir arquivo também.
 - Lista “ativos” não mostra arquivados sem toggle.
-- Rules: tentativa cruzada de escrita deve falhar.
+- Rules: tentativa cruzada de escrita deve falhar; **`npm run test:rules:loanRequests`** obrigatório na fatia **A2b**.
+
+**Próxima subfase padrão do Bloco 1 após A2a:** **`B1`** (métrica de saldo — análise) — **salvo** decisão explícita de priorizar **A2b** antes. **A2c** **somente após** **A2b**.
 
 ---
 
@@ -216,3 +224,4 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
 | 2026-05-04 | Referência ao plano executável **Bloco 1:** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1, A2a, B). |
 | 2026-05-04 | **Fase A1 concluída** (Bloco 1): **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta). **Próxima subfase do plano:** **A2a** (decisões de arquivamento, sem código). **A2b/A2c, B–F** não concluídas. |
+| 2026-05-04 | **Subfase A2a concluída (só documentação):** contrato de arquivamento por lado, terminais, desarquivar, `updatedAt` intocado, rules/UI futuras — ver plano Bloco 1 §6. **Implementação A2b/A2c** **não** feita. **Próxima recomendada no Bloco 1:** **B1** (salvo priorizar A2b). |
