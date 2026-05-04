@@ -20,6 +20,7 @@ import {
   isLoanRequestTerminalStatusV1,
 } from '../firebase/loanRequests';
 import { parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
+import ConvertLoanRequestToContractReview from './ConvertLoanRequestToContractReview';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -171,8 +172,14 @@ function shouldShowLocalAvailableShortfall(status, requestedAmountCents, availab
  * @param {import('firebase/auth').User | null} props.user
  * @param {(msg: string) => void} [props.showToast]
  * @param {number} [props.availableMoney] Total disponível local em reais (calculateGlobalStats)
+ * @param {number} [props.defaultInterestRate] Taxa padrão (%) para sugestão na revisão Bloco 2 — igual à configuração de novo contrato manual.
  */
-export default function LoanRequestsSupplierPanel({ user, showToast, availableMoney }) {
+export default function LoanRequestsSupplierPanel({
+  user,
+  showToast,
+  availableMoney,
+  defaultInterestRate = 10,
+}) {
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
@@ -180,6 +187,8 @@ export default function LoanRequestsSupplierPanel({ user, showToast, availableMo
   const [notesDraft, setNotesDraft] = useState({});
   const [counterofferInput, setCounterofferInput] = useState({});
   const [actingId, setActingId] = useState(null);
+  /** Bloco 2 — revisão de conversão (sem persistência nesta rodada). */
+  const [convertReviewRequest, setConvertReviewRequest] = useState(null);
 
   const loadRequests = useCallback(async () => {
     if (!user?.uid) {
@@ -491,10 +500,30 @@ export default function LoanRequestsSupplierPanel({ user, showToast, availableMo
                         </p>
                       )}
 
-                      {isTerminal && (
+                      {isTerminal && r.status !== LOAN_REQUEST_STATUSES.APPROVED && (
                         <p className="text-xs leading-relaxed text-content-muted">
                           Pedido encerrado neste fluxo — não há ações disponíveis.
                         </p>
+                      )}
+
+                      {r.status === LOAN_REQUEST_STATUSES.APPROVED && (
+                        <div className="rounded-design-md border border-edge/80 bg-surface-muted/30 px-3 py-2.5">
+                          <p className="text-xs leading-relaxed text-content-muted">
+                            Pedido <span className="font-medium text-content-soft">aprovado na plataforma</span>{' '}
+                            — ainda não existe contrato no app. Para registrar no seu financeiro local após a
+                            transferência real, use o botão abaixo (revisão obrigatória).
+                          </p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConvertReviewRequest(r);
+                            }}
+                            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                          >
+                            Registrar contrato local
+                          </button>
+                        </div>
                       )}
 
                       {supplierNegotiation && (
@@ -602,6 +631,14 @@ export default function LoanRequestsSupplierPanel({ user, showToast, availableMo
           </ul>
         )}
       </div>
+
+      <ConvertLoanRequestToContractReview
+        open={convertReviewRequest != null}
+        request={convertReviewRequest}
+        defaultInterestRate={defaultInterestRate}
+        onClose={() => setConvertReviewRequest(null)}
+        showToast={showToast}
+      />
     </div>
   );
 }

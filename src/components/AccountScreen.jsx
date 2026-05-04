@@ -83,8 +83,9 @@ const ModeToggle = ({ mode, onModeChange }) => (
  * @param {() => void} props.onBack — Volta à lista de configurações.
  * @param {(msg: string) => void} [props.showToast]
  * @param {number} [props.availableMoney] — Total disponível local (reais) para alerta B2 no painel do fornecedor.
+ * @param {number} [props.defaultInterestRate] — Taxa padrão (%) para sugestão na revisão Bloco 2 (novo contrato manual).
  */
-function AccountScreen({ onBack, showToast, availableMoney }) {
+function AccountScreen({ onBack, showToast, availableMoney, defaultInterestRate = 10 }) {
   const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
     useAuth();
   const [mode, setMode] = useState('login');
@@ -577,6 +578,7 @@ function AccountScreen({ onBack, showToast, availableMoney }) {
           user={user}
           showToast={showToast}
           availableMoney={availableMoney}
+          defaultInterestRate={defaultInterestRate}
         />
       </div>
     );

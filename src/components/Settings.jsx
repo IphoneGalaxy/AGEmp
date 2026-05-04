@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { formatDateTime } from '../utils/format';
 import { getAutoBackupCount, getLastAutoBackup } from '../utils/autoBackup';
 import AccountScreen from './AccountScreen';
+import { effectiveDefaultInterestRateFromSettings } from '../utils/convertLoanRequestReviewDerive';
 
 /**
  * Toggle switch reutilizável.
@@ -134,6 +135,7 @@ const Settings = ({
         onBack={() => setSettingsView('main')}
         showToast={showToast}
         availableMoney={availableMoney}
+        defaultInterestRate={effectiveDefaultInterestRateFromSettings(settings)}
       />
     );
   }
