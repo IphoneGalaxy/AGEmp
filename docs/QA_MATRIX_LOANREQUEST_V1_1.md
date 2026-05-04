@@ -99,7 +99,18 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **B1** (métrica de saldo — análise) **salvo** decisão explícita de **A2b** primeiro · **A2a** concluída — ver **Subfase A2a** abaixo |
+| **Próxima subfase do plano** | **B2** (alerta fornecedor) **salvo** **A2b** primeiro · **B1 (análise)** concluída — ver § **Subfase B1** |
+
+### Subfase B1 — Bloco 1 (métrica para alerta B2 — análise concluída)
+
+| Campo | Registro |
+|-------|----------|
+| **Natureza** | **Só análise/decisão** — **sem** alteração de `calculations.js`, rules, UI ou testes. |
+| **Métrica** | **`availableMoney`** retornado por **`calculateGlobalStats(clients, fundsTransactions, timeInfo)`** — mesmo conceito do Painel (**“Total Disponível”**). |
+| **B2 (futura)** | Comparar **`requestedAmount / 100`** (reais) com **`availableMoney`**; alerta **informativo**, **não bloqueante**; **referência local**; **sem** validação bancária; **sem** escrita Firestore por causa do alerta; **sem** sync/conversão automática/`payment.linkContext`. |
+| **Smoke manual futuro (B2)** | Disponível local &lt; valor pedido → aviso visível; **aprovação** ainda permitida; copy não sugere bloqueio nem dinheiro real na conta; unidades centavos/reais corretas. |
+
+---
 
 ### Subfase A2a — Bloco 1 (decisões de arquivamento — documental, sem código)
 
@@ -108,7 +119,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Natureza** | **Só decisão** — **não** há campos Firestore, rules, helpers, UI nem testes alterados por esta subfase. |
 | **Contrato canônico** | [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) §6 (A2a) — arquivamento **por lado**; terminais apenas (`approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`); **não** arquivar abertos (`pending`, `under_review`, `counteroffer`); **desarquivar** permitido (só o lado do usuário; **não** reabre negócio); **`updatedAt` intocado** no arquivo/desarquivo; **`delete`** fora do produto; `archivedByClient` / `archivedBySupplier` **planejados** para futura **A2b**. |
 | **Futuro QA / smoke (A2b+A2c)** | Rules: papel só grava o próprio campo; cruzamento **falha**; testes **`test:rules:loanRequests`** obrigatórios em A2b; UI A2c: lista oculta arquivados + “Mostrar arquivados”; copys **arquivar** ≠ **excluir**; regressão leve em badges A1 após mudar listagens. |
-| **Estado** | **A2b / A2c** **não** concluídas · **Próxima recomendada no Bloco 1:** **B1** (salvo priorizar A2b). |
+| **Estado** | **A2b / A2c** **não** concluídas · **B1** concluída (análise) · **Próxima implementação recomendada:** **B2** (salvo priorizar A2b). |
 
 ---
 
@@ -122,4 +133,5 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-03 | **Fechamento documental** (`45a8f03`): logs DEV de diagnóstico removidos, `.gitignore` para artefatos de emulador, matriz/checkpoint/handoff/Firestore/NEXT atualizados após LKG. |
 | 2026-05-03 | **Melhorias pós-v1.1 (UX/local):** **`584d5b4`** badge “Novo” legítimo; **`62bacf2`** `console.warn` em falha ao marcar leitura; **`cd8db7e`** limpeza de drafts no painel fornecedor — ver § “Melhorias pós-pacote v1.1”. |
 | 2026-05-04 | **Bloco 1 — Fase A1 concluída:** commits **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta); § “Fase A1 — Bloco 1” e tabela de melhorias estendida. |
-| 2026-05-04 | **Subfase A2a (arquivamento) documentada** — § dedicada; **sem** código. **Próxima recomendada:** **B1** (salvo A2b primeiro). |
+| 2026-05-04 | **Subfase A2a (arquivamento) documentada** — § dedicada; **sem** código. |
+| 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |

@@ -121,7 +121,7 @@ Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** 
 - Lista “ativos” não mostra arquivados sem toggle.
 - Rules: tentativa cruzada de escrita deve falhar; **`npm run test:rules:loanRequests`** obrigatório na fatia **A2b**.
 
-**Próxima subfase padrão do Bloco 1 após A2a:** **`B1`** (métrica de saldo — análise) — **salvo** decisão explícita de priorizar **A2b** antes. **A2c** **somente após** **A2b**.
+**Próxima subfase padrão do Bloco 1 após B1:** **`B2`** (alerta no fornecedor) — **salvo** decisão explícita de priorizar **A2b** primeiro. **A2c** **somente após** **A2b**.
 
 ---
 
@@ -129,7 +129,13 @@ Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** 
 
 ### Objetivo
 
-Fornecedor é **informado** se o **saldo/disponível local** (métrica a definir) é inferior ao montante pedido antes de **aprovar**, **sem impedir** a ação na plataforma.
+Fornecedor é **informado** se o **Total disponível local** (`availableMoney` do motor, mesma grandeza do Painel) é inferior ao montante pedido (comparar **`requestedAmount / 100`** em reais com **`availableMoney`**), antes de **aprovar**, **sem impedir** a ação na plataforma.
+
+### Subfase B1 (Bloco 1 — análise, sem código) — concluída
+
+- **Export usado:** `calculateGlobalStats` em `calculations.js` → **`availableMoney`**.
+- **Produto:** mesmo número do card **“Total Disponível”** no Painel.
+- **B2** pode seguir **sem** alterar `calculations.js`; alerta **informativo**; **não** saldo bancário; **não** gravar no Firestore por causa do alerta.
 
 ### Escopo típico
 
@@ -141,10 +147,9 @@ Fornecedor é **informado** se o **saldo/disponível local** (métrica a definir
 - Bloqueio de botão de aprovar (isso migra política para **Fase C**).
 - Interpretar dados da outra parte ou do servidor como saldo financeiro autoritativo.
 
-### Decisões pendentes
+### Decisões pendentes (evolução B2)
 
-- Que número mostrar (“caixa”? “disponível após obrigações”? agregadores existentes)?  
-- O alerta aparece apenas em estado `pending` / `under_review` ou também noutras respostas?
+- O alerta aparece apenas em estado `pending` / `under_review` ou também noutras respostas? — **decidir na implementação B2** (plano sugere estados de negociação abertos).
 
 ---
 
@@ -224,4 +229,4 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
 | 2026-05-04 | Referência ao plano executável **Bloco 1:** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1, A2a, B). |
 | 2026-05-04 | **Fase A1 concluída** (Bloco 1): **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta). **Próxima subfase do plano:** **A2a** (decisões de arquivamento, sem código). **A2b/A2c, B–F** não concluídas. |
-| 2026-05-04 | **Subfase A2a concluída (só documentação):** contrato de arquivamento por lado, terminais, desarquivar, `updatedAt` intocado, rules/UI futuras — ver plano Bloco 1 §6. **Implementação A2b/A2c** **não** feita. **Próxima recomendada no Bloco 1:** **B1** (salvo priorizar A2b). |
+| 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** / **`calculateGlobalStats`**; B2 com **`requestedAmount / 100`**; ver Fase B. **Próxima:** **B2** (salvo A2b). **B2 não implementada.** |

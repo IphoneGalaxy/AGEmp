@@ -6,7 +6,7 @@
 |-------|--------|
 | **Natureza** | Plano **vivo e executável** para continuidade entre chats (limite de contexto do Cursor). |
 | **Projeto** | AGEmp / Finanças Pro. |
-| **Relação com** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) | Este arquivo **detalha** a execução do Bloco 1: **A1** (implementada), **A2a** (decisões **documentadas**, sem código), **B** (pendente conforme sequência); **A2b/A2c** ficam para ciclo futuro — **não** substitui o roadmap nem muda os guardrails descritos lá. |
+| **Relação com** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) | Este arquivo **detalha** o Bloco 1: **A1** (implementada), **A2a** (documental), **B1** (análise de métrica **concluída**), **B2** (implementação do alerta — **pendente**); **A2b/A2c** em ciclo futuro — **não** substitui o roadmap nem muda os guardrails descritos lá. |
 | **Implementação** | **Não** há implementação automática por existir este texto. Cada subfase exige execução explícita no repositório, smoke e commits conforme governança. |
 | **Localização** | Plano **ativo** permanece em **`docs/`** (este arquivo). Quando o bloco for **finalizado** (smoke + docs atualizados), mover para **`docs/plans/completed/`**. |
 | **`docs/plans/completed/`** | Continua **somente histórico** — não é plano ativo (ver [`plans/README.md`](./plans/README.md)). |
@@ -18,7 +18,9 @@
 | **A1** (A1a + A1b) | **Concluída.** **`dcc9f80`** — utilitário `countUnreadLoanRequests` + testes (`loanRequestUnreadCount.js`). **`4951bdf`** — badges numéricos discretos em **AccountScreen** nos botões **“Abrir solicitações”** (papel cliente) e **“Abrir pedidos recebidos”** (papel fornecedor). **Sem** alteração de `firestore.rules`, **`calculations.js`**, schema Firestore, `App.jsx`, `Settings.jsx`, sync financeiro remoto, contrato automático nem `payment.linkContext`. Carga sob demanda na vista principal da conta; **sem** listener global. |
 | **A2a** | **Decisões documentadas (sem código).** Contrato conceitual de arquivamento **por lado** fechado antes de **A2b/A2c** — ver tabela desta subfase e § **Decisões A2a fechadas** abaixo. **Não** implementa campos, rules, helpers, UI nem testes. |
 | **A2b / A2c** | **Futuras** — implementação técnica (**A2b**) e UI (**A2c**) **não** iniciadas neste registro. |
-| **Próxima subfase recomendada** | **`B1`** — análise da métrica de saldo (**sem** editar `calculations.js`), conforme sequência §5 — **salvo decisão explícita** de equipe/governança de executar **A2b** antes de **B1**. **B2, C–F** permanecem **não** concluídas. |
+| **B1** | **Concluída (análise/decisão, sem código).** Único export relevante em **`calculations.js`:** `calculateGlobalStats(clients, fundsTransactions, timeInfo)`. Retorno: **`availableMoney`** — já usado no produto como **“Total Disponível”** (Painel). **Métrica acordada para B2:** `availableMoney`. **Unidades:** `loanRequest.requestedAmount` em **centavos**; financeiro local em **reais** — na **B2**, comparar **`requestedAmount / 100`** com **`availableMoney`**. **B2:** alerta **informativo**, **não bloqueante**; referência **local** do app (**não** saldo bancário real); **sem** alterar `calculations.js`; **sem** gravar no Firestore por causa do alerta; **sem** sync financeiro, contrato automático ou `payment.linkContext`. |
+| **B2** | **Pendente** — UI no painel do fornecedor (**salvo** decisão explícita de priorizar **A2b** antes). |
+| **Próxima subfase recomendada** | **`B2`** — alerta não bloqueante no **`LoanRequestsSupplierPanel`** usando **`availableMoney`** — **salvo** decisão explícita de equipe/governança de executar **A2b** antes. **A2b/A2c, C–F** permanecem **não** concluídas neste registro. |
 
 ---
 
@@ -90,8 +92,8 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 4. ~~**Ponto de parada** — Validar **A1** com smoke manual (`vitest`, `build`, cenários com dois usuários quando aplicável).~~ **A1 concluída** (evidência: commits acima; CI local `vitest` + `build` na entrega).
 5. ~~**Subfase A2a** — Decisões de arquivamento (**planejamento, sem código**).~~ **Documentação fechada** — ver §6 (A2a) e §7.
 6. **A2b / A2c** — **Futuras**; **não** executar sem **aprovação explícita** após A2a; **A2c** **só depois** de **A2b** concluída.
-7. **Subfase B1** — **Próxima no fluxo padrão do Bloco 1** após A2a — confirmar métrica de saldo (**"disponível"** preferida) com funções/agregadores **já existentes** em `calculations.js`, **sem** editar o arquivo (**salvo** decisão explícita de priorizar **A2b** antes).
-8. **Subfase B2** — Alerta não bloqueante no painel do fornecedor.
+7. ~~**Subfase B1** — **Próxima no fluxo padrão do Bloco 1** após A2a — confirmar métrica de saldo (**"disponível"** preferida) com funções/agregadores **já existentes** em `calculations.js`, **sem** editar o arquivo (**salvo** decisão explícita de priorizar **A2b** antes).~~ **Concluída** (análise) — métrica: **`availableMoney`** via **`calculateGlobalStats`**; ver §6 B1.
+8. **Subfase B2** — **Próxima** no fluxo padrão — alerta não bloqueante no painel do fornecedor (**salvo** priorizar **A2b**).
 9. **Fechamento do Bloco 1** — Smoke completo + atualização dos **documentos vivos** (§9).
 
 ---
@@ -213,15 +215,17 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 | Campo | Conteúdo |
 |-------|----------|
+| **Estado** | **Concluída** — somente **análise/decisão**; **sem** commit obrigatório nem alteração de código. |
 | **Objetivo** | Confirmar qual número usar para o alerta (**preferência: "disponível"**), com base em **export(s) existente(s)** de `calculations.js`. |
-| **Escopo** | Inspeção somente leitura de `calculations.js` e consumo planejado em B2. **Se não houver agregador seguro**, **não** implementar B2 — retornar a decisão de produto (ex.: métrica alternativa ou adiar B). |
-| **Arquivos prováveis** | Nenhuma alteração obrigatória nesta subfase. |
+| **Escopo** | Inspeção somente leitura de `calculations.js` e consumo planejado em B2. |
+| **Decisão registrada** | Export útil: **`calculateGlobalStats`** → campo **`availableMoney`** (mesmo valor que o Painel exibe como **“Total Disponível”**). **B2** usará essa métrica. **`requestedAmount`** (pedido) em **centavos**; **`availableMoney`** em **reais** — na implementação B2: **`requestedAmount / 100`** antes de comparar. Alerta: **referência local**, **não** saldo bancário; **não bloqueante**; **sem** novo export em `calculations.js`; **sem** escrita Firestore por causa do alerta. |
+| **Arquivos prováveis** | Nenhuma alteração nesta subfase. |
 | **Firestore/rules** | Não |
 | **Financeiro local** | Leitura conceitual |
-| **Riscos** | Forçar métrica ambígua e gerar alertas incorretos. |
-| **Critérios de aceite** | Métrica nomeada e função(s) de leitura identificada(s) **sem** patch em `calculations.js`, ou pedido de decisão registrado. |
+| **Riscos** | Métrica mal explicada ao usuário — mitigar na **B2** com microcopy (ver roadmap/handoff). |
+| **Critérios de aceite** | Métrica e leitura identificadas **sem** patch em `calculations.js`. **Atendido.** |
 | **QA/smoke** | N/A |
-| **Sugestão de commit** | N/A |
+| **Sugestão de commit** | Opcional documental: `docs(loan-requests): registrar B1 métrica availableMoney` |
 
 ---
 
@@ -229,7 +233,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 | Campo | Conteúdo |
 |-------|----------|
-| **Objetivo** | Aviso visual se disponível (ou métrica acordada em B1) **<** valor solicitado; **não** bloquear aprovação; não prometer transferência nem validação bancária. |
+| **Objetivo** | Aviso visual se **`availableMoney`** (métrica **B1**) **<** valor solicitado (após **`requestedAmount / 100`**); **não** bloquear aprovação; não prometer transferência nem validação bancária. |
 | **Escopo** | `LoanRequestsSupplierPanel.jsx`; leitura do estado financeiro local já carregado no app ou via helper existente **sem** alterar o motor. |
 | **Arquivos prováveis** | `LoanRequestsSupplierPanel.jsx`; possivelmente passar prop desde `App.jsx` / `AccountScreen` se necessário para acessar agregados. |
 | **Firestore/rules** | Não |
@@ -260,7 +264,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 | **A2 — `updatedAt`** | **Decidido (A2a):** arquivamento/desarquivamento **não** alteram `updatedAt` — metadado por lado, alinhado à filosofia dos `readBy*`. |
 | **A2a** | **Somente decisão/documentação** — **concluída** neste registro; **sem** campos implementados. |
 | **A2b / A2c** | **Não** concluídas; **A2c** depois de **A2b**. |
-| **B** | Métrica preferida **"disponível"**; **confirmar** em **B1** com agregadores **existentes**; **proibido** alterar `calculations.js` no Bloco 1. Se não houver agregador seguro: **parar** e decidir. |
+| **B** | **B1 concluída (análise):** métrica = **`availableMoney`** retornado por **`calculateGlobalStats`** (rótulo no app: **“Total Disponível”**). **B2** compara **`requestedAmount / 100`** (reais) com **`availableMoney`**. **Proibido** alterar `calculations.js` no Bloco 1; **sem** gravar `loanRequest` por causa do alerta. |
 | **C/D/E/F** | **Roadmap apenas**; não fazem parte da implementação do Bloco 1. |
 
 ---
@@ -283,7 +287,8 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 |---------|----------------|
 | Após **A1** completo | [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (A1); [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) — **feito (2026-05-04)** — ver § Bloco 1 / A1. |
 | Após **A2** completo (A2b+A2c) | [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md); roadmap (A2); matriz QA; `HANDOFF_MASTER` / `CHECKPOINT` se LKG/handoff evoluírem. |
-| Após **B** completo | Roadmap (B); matriz QA (smoke alerta). |
+| Após **B1** (métrica) | Documentação viva do Bloco 1 — **feito** — ver §6 B1 e decisão **B** em §7. |
+| Após **B** completo (B2 implementada) | Roadmap (B); matriz QA (smoke alerta). |
 | **Fechamento Bloco 1** | [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) se aplicável; **mover** este plano para `docs/plans/completed/`. |
 
 ---
@@ -297,7 +302,7 @@ Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
 
 1. Ler o plano executável: docs/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md
 2. Ler docs/HANDOFF_MASTER.md, docs/CHECKPOINT_CHECKLIST.md, docs/NEXT_PHASE_OFFICIAL.md e docs/LOANREQUEST_EVOLUTION_ROADMAP.md
-3. Identificar a próxima subfase pendente (**B1** no fluxo padrão após A2a documentada; **ou** **A2b** se a governança priorizar implementação de arquivo antes de B — **A2c** só após **A2b**) e executar somente essa subfase
+3. Identificar a próxima subfase pendente (**B2** no fluxo padrão após **B1**; **ou** **A2b** se a governança priorizar arquivamento antes do alerta — **A2c** só após **A2b**) e executar somente essa subfase
 4. Não tratar docs/plans/completed/ como plano ativo
 5. Não implementar mais de uma subfase por sessão/prompt
 6. Preservar guardrails: financeiro local-first; sem sync financeiro remoto; sem payment.linkContext; sem contrato automático; sem promessa de transferência real; calculations.js intocado; firestore.rules só na futura A2b
@@ -313,3 +318,4 @@ Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
 | 2026-05-04 | Plano ativo em **`docs/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`** (padrão projeto); ao concluir o Bloco 1, arquivar em **`docs/plans/completed/`**. |
 | 2026-05-04 | **Fase A1 concluída:** **`dcc9f80`** (A1a, utilitário + testes) · **`4951bdf`** (A1b, badges na Conta). Próxima: **A2a** (decisões de arquivamento, sem código). |
 | 2026-05-04 | **Subfase A2a concluída (documental):** contrato de arquivamento por lado, terminais, desarquivar, `updatedAt` intocado, rules/UI futuras — **sem** código. **Próxima recomendada:** **B1** (salvo priorizar **A2b**). |
+| 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** via **`calculateGlobalStats`**; comparação B2 com **`requestedAmount / 100`**; **B2** autorizada a seguir **salvo** priorizar **A2b**. **Sem** alteração de código. |
