@@ -20,10 +20,11 @@ O estado atual confirmado do projeto e:
 - o gate manual geral registrou OK integral sem NOK critico;
 - `calculations.js` permanece fora da linha de alteracao de vinculos;
 - o dominio financeiro nao esta sincronizado com Firebase;
-- a camada **`loanRequests`** existe no codigo (**v1** e **v1.1** com RB+CN conforme [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)) como solicitacao **somente pre-financeira** — **sem** converter automaticamente pedido em contrato e **sem** sync financeiro remoto declarado aqui.
+- a camada **`loanRequests`** existe no codigo (**v1** e **v1.1** com RB+CN conforme [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)) como solicitacao **somente pre-financeira** na nuvem — **sem** conversão **automática** remota para contrato; a conversão para contrato **local** existe apenas como fluxo **manual** **Bloco 2** (fornecedor + confirmação humana — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md)); **sem** sync financeiro remoto declarado aqui.
 - evolucoes futuras **documentadas** sobre a mesma coleção (ordenacao A1–F) encontram-se no roadmap vivo [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — **planejamento** complementar; **`docs/plans/completed/`** continua **somente** referencia historica (nao plano ativo).
 - **Bloco 1 (`loanRequests`) — funcionalmente fechado (Opção A, 2026-05-04):** entregues **A1a, A1b, A2a, B1, B2** (commits incl. **`dcc9f80`**, **`4951bdf`**, **`07ef7e5`**); plano executável **arquivado** em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **referência histórica**, **não** plano ativo. **A2b/A2c** (arquivamento técnico + UI) **não** implementadas — **backlog**; **não** bloqueiam o encerramento funcional do Bloco 1.
-- **Próxima fase recomendada (produto):** **Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** — ADR/plano vivo [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**aprovado** pela governança); contexto em [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md). **Sem** contrato automático; **sem** sync financeiro remoto; **Firebase não** como fonte financeira autoritativa. **Bloco2-0** documental **fechado com aprovação**; **Bloco2-A** **autorizada**, **código não iniciado**; **Bloco2-B–E** — **não** concluídos.
+- **Bloco 2 (`loanRequests` → contrato local — conversão governada):** **implementado e funcionalmente fechado** (2026-05-04): commits **`624c725`**, **`3badcbc`**, **`5dd4c36`**; ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md); smoke/QA [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Bloco 2. **Sem** alteração a modelo remoto/`firestore.rules`/`calculations.js`; **sem** `payment.linkContext`; **sem** sync financeiro remoto; Firebase permanece **identidade / vínculo / pedido pré-financeiro**, não fonte financeira autoritativa.
+- **Próximo recorte recomendado (pós-Bloco 2):** mini ADR **«Identidade pública e snapshots de nomes em vínculos/pedidos»**; depois **«Visão Fornecedores»**. Roadmap [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md). **Bloco 2** não alterou o facto de **`loanRequests`** ser só pré-financeiro na nuvem; a conversão é **100% local** após confirmação humana (**o app não transfere dinheiro**).
 
 ## 2. Decisao da proxima fase
 
@@ -33,9 +34,13 @@ Essa ponte deve tratar futuras solicitacoes remotas de emprestimo como uma camad
 
 Nao e uma nova trilha funcional local-first por inercia, e tambem nao e inicio de sync financeiro remoto.
 
-## 2.1 Proxima fase recomendada do produto (governanca 2026-05-04)
+## 2.1 Proxima fase recomendada do produto (atualizado — pós-Bloco 2, 2026-05-04)
 
-**Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** é a **próxima fase recomendada** após o **Bloco 1 funcionalmente fechado** (Opção A). Especificação e subfases: [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**aprovado**); roadmap complementar: [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md). **Próximo incremento de código autorizado:** **Bloco2-A** — **não** iniciado até PR dedicado (entrada UX apenas; ver ADR §8). **Sem** contrato automático; confirmação humana de transferência real; revisão antes de criar contrato local; **local-first** e **Firebase não** como fonte financeira autoritativa.
+**Bloco 2** (**[`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md)**) está **fechado** nos commits **`624c725`**, **`3badcbc`**, **`5dd4c36`** — conversão **manual** `approved` → contrato **local**; confirmação de transferência real; anti-duplicidade **`convertedFromLoanRequestId`**; **`loan.linkContext`** opcional; **sem** marcação remota; **sem** alteração a **`firestore.rules`** / modelo **`loanRequests`**; **sem** **`calculations.js`** / **`payment.linkContext`** / sync financeiro remoto.
+
+**Próxima fase recomendada:** mini ADR/plano **«Identidade pública e snapshots de nomes em vínculos/pedidos»**; **depois** **«Visão Fornecedores / UX de relacionamento por papel»** — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) e ADR Bloco 2 § Limitações.
+
+*(O parágrafo abaixo refere-se à decisão documental original da ponte pré-financeira; permanece válido como contexto — o produto já inclui `loanRequests` v1+v1.1 e conversão governada local.)*
 
 | Campo | Decisao |
 |-------|---------|
@@ -93,14 +98,14 @@ Esta secao descreve o shape-alvo para discussao futura. Ela nao cria implementac
 
 ## 6. Fluxo de produto planejado
 
-Fluxo recomendado para a fase futura, ainda sem implementar:
+Fluxo recomendado para a fonte documental original da ponte; **estado 2026-05-04:** passos **1–5** vivos em **`loanRequests` v1.1**; passo **6** existe apenas como **conversão manual local (Bloco 2)** — não automática nem remota ([`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md)).
 
 1. Cliente autenticado com papel Cliente e vinculo aprovado escolhe um fornecedor vinculado.
 2. Cliente registra intencao de pedido com valor e nota.
 3. Fornecedor autenticado com papel Fornecedor visualiza fila relacional de pedidos.
 4. Fornecedor pode aprovar, recusar ou propor contraproposta.
 5. Cliente acompanha resposta.
-6. Conversao em contrato fica bloqueada para fase posterior e exige decisao explicita.
+6. **Bloco 2:** eventual registo no financeiro **local** do fornecedor — só por acção **manual** no app após **`approved`**, revisão e confirmação humana; **sem** criar contrato automaticamente por evento remoto e **sem** financeiro autoritativo na nuvem.
 
 ## 7. UX minima planejada
 
@@ -169,7 +174,7 @@ Continuam fora desta fase:
 - colecoes remotas autoritativas de clientes, contratos, pagamentos, caixa ou dashboard;
 - `payment.linkContext`;
 - alteracao do motor financeiro;
-- conversao automatica de pedido aprovado em contrato;
+- conversao **automatica** remota de pedido aprovado em contrato (o **Bloco 2** é conversão **manual** **local** apenas);
 - notificacoes FCM;
 - Cloud Functions;
 - redesign amplo;
@@ -187,4 +192,5 @@ Continuam fora desta fase:
 | 2026-05-03 | **Roadmap complementar (documento vivo):** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) descreve evolucoes **planejadas** A1–F em `loanRequests`; nao altera guardrails nem substitui este arquivo; **`plans/completed/`** permanece so historico. |
 | 2026-05-04 | **Plano executavel Bloco 1** arquivado: [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **Opção A**, **Bloco 1 funcionalmente fechado**; **Bloco 2** próxima fase recomendada. |
 | 2026-05-04 | **Bloco2-0:** ADR criado [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (posteriormente **aprovado** — ver linha seguinte). |
-| 2026-05-04 | **Governança Bloco 2:** ADR **aprovado**; **Bloco2-A** **autorizada**; **D6** fechada no ADR; MVP sem marcação remota; **código Bloco2-A** — **não iniciado**. |
+| 2026-05-04 | **Bloco 2 fechado + Bloco2-E:** implementação **`624c725`**, **`3badcbc`**, **`5dd4c36`**; docs vivos + QA matriz § Bloco 2; **próximo:** mini ADR snapshots de nomes · Visão Fornecedores. |
+| 2026-05-04 | **Governança Bloco 2 (aprovação inicial):** ADR **aprovado**; implementação subsequente nos commits acima. |

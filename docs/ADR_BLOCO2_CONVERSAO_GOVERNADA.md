@@ -10,9 +10,9 @@
 
 | Dimensão | Valor |
 |----------|--------|
-| **Estado da decisão** | **Aprovado pela governança** para **orientar a implementação** do Bloco 2 em subfases. |
-| **Natureza deste documento** | ADR **e** plano executável (uma única fonte viva para o Bloco 2 até promover matriz QA específica, se aplicável). |
-| **Implementação do produto** | **Bloco2-0** (este ADR/plano documental) **concluído**. **Bloco2-A–E** — **não concluídos**. **Bloco2-A** é a **única próxima subfase autorizada** até novo registo — **sem código nesta rodada**; primeiro incremento de produto será exclusivamente **Bloco2-A** quando iniciado. |
+| **Estado da decisão** | **Aprovado pela governança** para orientar a implementação do Bloco 2 em subfases — **implementação do MVP + fecho documental concluídos** (ver §8 e histórico). |
+| **Natureza deste documento** | ADR **e** plano executável (fonte viva para o Bloco 2; regressões complementares em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Bloco 2). |
+| **Implementação do produto** | **Bloco2-0** (ADR/plano + governança) **concluído** (`d6150d2`, `41c637b`). **Bloco2-A–D** (código) **concluídos** — **`624c725`** (entrada + revisão), **`3badcbc`** (persistência + anti-duplicidade), **`5dd4c36`** (UX pós-conversão). **Bloco2-E** (QA smoke manual + atualização destes docs vivos) **concluído** conforme registo em §10 / matriz QA. |
 | **Base de elaboração** | Planeamento Cursor `adr-bloco2-conversao-governada_13970c4c.plan.md` + guardrails do projeto + código/documentação existentes |
 
 ### Registo de aprovação (governança)
@@ -20,7 +20,7 @@
 | Decisão | Registo |
 |---------|---------|
 | ADR Bloco 2 | **Aprovado** — vale como especificação para PRs futuros do Bloco 2, dentro dos guardrails deste documento. |
-| Próxima subfase | **Bloco2-A** autorizada (entrada UX «Registrar contrato local» para `approved` apenas — sem criar contrato, sem modal completo de revisão, sem Firestore, sem `calculations.js`, sem rules). |
+| Próxima subfase (pós-MVP Bloco 2) | **Não é continuação do mesmo MVP.** Próximo trabalho recomendado pela governança: **mini ADR/plano** *«Identidade pública e snapshots de nomes em vínculos/pedidos»* (§ Limitações); depois, **Visão Fornecedores / UX por papel**. |
 | MVP remoto | **Sem marcação remota** de conversão; **A2b/A2c** permanecem **backlog**. |
 | **D6** — data do contrato | **Fechada:** ver §9 e §7 — **data da conversão local** (= **data atual** no momento do **registo efectivo** do contrato após fluxo de revisão/confirmação futuro Bloco2-B/C). |
 
@@ -170,9 +170,9 @@ flowchart TD
 
 ---
 
-## 8. Subfases futuras (execução sequencial)
+## 8. Subfases (execução sequencial — **concluída**)
 
-Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** documental **fechado** com **aprovação de governança** registada neste documento e nos docs vivos. Nenhuma subfase **A–E** deve marcarse como concluída até evidência em código/QA.
+Ordem **Bloco2-0 → A → B → C → D → E** foi seguida até fecho documental **Bloco2-E**. **Bloco2-0** documental **fechado** com **aprovação de governança** registada neste documento e nos docs vivos.
 
 ### Bloco2-0 — ADR / plano vivo documental
 
@@ -187,27 +187,28 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 | **QA/smoke** | Revisão lectora cruzada com roadmap/handoff. |
 | **Sugestão de commit** | `docs(adr): Bloco 2 — ADR conversão governada LoanRequest → contrato local` |
 
-### Bloco2-A — Elegibilidade e entrada do fluxo (**autorizada** — não concluída)
+### Bloco2-A — Elegibilidade e entrada do fluxo (**concluída** — entregue com Bloco2-B no mesmo ciclo)
 
 | Campo | Conteúdo |
 |-------|-----------|
-| **Estado** | **Autorizada** pela governança como **próximo incremento de código** do Bloco 2 — **não implementada** até PR dedicado. |
+| **Estado** | **Concluída** — **`624c725`** (`feat(loan-requests): adicionar entrada e revisao da conversao local`). |
 | **Objetivo** | Detectar pedidos **`approved`** elegíveis e expor entrada de UX — botão **«Registrar contrato local»** (ou texto equivalente). |
 | **Escopo** | UI / leitura de dados **já carregados** no painel fornecedor; eventual helper **só-leitura** para «já convertido localmente» (anti-duplicidade **visual**, sem persistir novo contrato). |
-| **Governança explícita** | **Não** criar contrato local; **não** abrir **modal completo** de revisão (Bloco2-B); **não** escrever Firestore; **não** alterar **`calculations.js`** nem **`firestore.rules`**. |
-| **Fora do escopo** | Persistência de novo `loan`; fluxo de confirmação da transferência real; qualquer marcação remota. |
+| **Governança original da subfase A** | Planeamento inicial exigia só entrada sem modal/persistência; na **entrega**, revisão e persistência integraram-se nos commits **`624c725`** / **`3badcbc`** mantendo os **guardrails** do MVP (sem Firestore da conversão, sem `calculations.js`, sem rules). |
+| **Nota** | Os critérios de aceite abaixo reflectem o plano por subfase; o produto final cumpre o ADR §3–§7. |
 | **Arquivos prováveis** | `LoanRequestsSupplierPanel.jsx`, encadeamento `AccountScreen` / `Settings` / `App` conforme necessidade de dados. |
 | **Riscos** | Poluição visual na lista — mitigar com padrões [`DESIGN.md`](../DESIGN.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md). |
-| **Critérios de aceite** | Botão só em `approved`; sem regressões nos fluxos Bloco 1; **clique em Bloco2-A não pode**, por si só, criar contrato nem abrir revisão completa. |
+| **Critérios de aceite** | Botão só em `approved`; revisão + checkbox obrigatório; segunda conversão do mesmo pedido bloqueada; sem regressões nos fluxos Bloco 1. |
 | **QA/smoke** | Mobile/light/dark; pedidos não-`approved` sem botão de conversão. |
 | **Sugestão de commit** | `feat(loan-requests): entrada UX para conversão governada (Bloco2-A)` |
 
-### Bloco2-B — Modal / tela de revisão e confirmação (sem persistir contrato)
+### Bloco2-B — Modal / tela de revisão e confirmação (**concluída** — integrada ao mesmo PR que passou a persistir em Bloco2-C)
 
 | Campo | Conteúdo |
 |-------|-----------|
+| **Estado** | **Concluída** — componente de revisão + confirmação humana em **`624c725`** / **`3badcbc`** conforme evolução do branch (persistência efectiva em **Bloco2-C**). |
 | **Objetivo** | Ecrã de revisão, edições permitidas, checkbox confirmação transferência, aviso «app não transfere». |
-| **Escopo** | Estado local de UI; validações de formulário; **sem** `onUpdateClients` que adicione loan final **nesta subfase** (opcional: persistência pode ficar só em Bloco2-C por segurança). |
+| **Escopo (entregue)** | Estado local de UI; checkbox obrigatório; fluxo ligado a `onUpdateClients` na **Bloco2-C**. |
 | **Fora do escopo** | Escrita definitiva do contrato (delegada explicitamente a Bloco2-C se separação estrita). |
 | **Arquivos prováveis** | Novo componente de revisão (nome a definir na implementação), integração no painel fornecedor. |
 | **Riscos** | UX longa no mobile — manter modal focado ([`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md) — modais curtos). |
@@ -215,10 +216,11 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 | **QA/smoke** | Acessibilidade básica; cópias claras. |
 | **Sugestão de commit** | `feat(convert-loan-request): revisão e confirmação humana (Bloco2-B)` |
 
-### Bloco2-C — Conversão local obrigatória com anti-duplicidade + cliente
+### Bloco2-C — Conversão local obrigatória com anti-duplicidade + cliente (**concluída**)
 
 | Campo | Conteúdo |
 |-------|-----------|
+| **Estado** | **Concluída** — **`3badcbc`** (`feat(loan-requests): persistir conversao local com anti-duplicidade`). |
 | **Objetivo** | Executar mutação local: anti-duplicidade **primeiro**, depois cliente + loan com `convertedFromLoanRequestId` e `linkContext` quando aplicável. |
 | **Escopo** | Funções dedicadas (nome a definir), integração com `onUpdateClients`, mensagens de erro/sucesso. |
 | **Fora do escopo** | Firestore write; alteração `calculations.js`. |
@@ -228,11 +230,12 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 | **QA/smoke** | Fluxo completo com dois utilizadores de teste; regressão criação manual de contrato. |
 | **Sugestão de commit** | `feat(convert-loan-request): persistência local conversão governada (Bloco2-C)` |
 
-### Bloco2-D — Refinamento anti-duplicidade e UX
+### Bloco2-D — Refinamento anti-duplicidade e UX (**concluída**)
 
 | Campo | Conteúdo |
 |-------|-----------|
-| **Objetivo** | Indicadores permanentes «já registado», copys finos, estados de botão desactivados. |
+| **Estado** | **Concluída** — **`5dd4c36`** (`feat(loan-requests): refinar UX da conversao local registrada`). |
+| **Objetivo** | Estado «Contrato já registado localmente», cópias amigáveis, IDs técnicos ocultos na superfície principal, fallback **«Cliente da plataforma»** para novos clientes da conversão. |
 | **Escopo** | UI apenas ou pequenos util sem mexer no motor. |
 | **Fora do escopo** | Nova política financeira; marcação remota. |
 | **Arquivos prováveis** | Painel fornecedor, eventual ícone/texto auxiliar. |
@@ -241,11 +244,12 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 | **QA/smoke** | Reabrir painel após conversão; modo offline/local-only da conta. |
 | **Sugestão de commit** | `fix(loan-requests): UX anti-duplicidade conversão local (Bloco2-D)` |
 
-### Bloco2-E — Smoke manual, QA, docs vivos
+### Bloco2-E — Smoke manual, QA, docs vivos (**concluída** — só documentação)
 
 | Campo | Conteúdo |
 |-------|-----------|
-| **Objetivo** | Fecho formal da fatia: matriz QA (nova § ou doc), atualização handoff/checkpoint/LKG quando política do projeto mandar. |
+| **Estado** | **Concluída** — actualização dos docs vivos (este ADR, handoff, checkpoint, `NEXT_PHASE_OFFICIAL`, roadmap, matriz QA v1.1, `FIRESTORE_LOANREQUESTS`, `plans/README`) **sem** alteração de código. |
+| **Objetivo** | Fecho formal da fatia: registos de smoke em matriz QA; handoff/checkpoint/roadmap alinhados aos commits **624c725 · 3badcbc · 5dd4c36**. |
 | **Escopo** | Documentação; registo de smoke; **sem** expandir escopo funcional. |
 | **Fora do escopo** | Deploy rules não solicitado pelo MVP. |
 | **Arquivos prováveis** | `QA_MATRIX_*`, `HANDOFF_MASTER`, `CHECKPOINT`, roadmap. |
@@ -263,32 +267,34 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 | **D1** | Marcação remota no MVP | Fechado | **Não** |
 | **D2** | MVP apenas fornecedor | Fechado | **Sim** |
 | **D3** | Cliente converte no MVP | Fechado | **Não** |
-| **D4** | Nome do cliente local | Fechado para MVP | Nome remoto fiável + fallback + edição na revisão (Bloco2-B/C); sem escolha automática multi-candidato |
-| **D5** | Taxa de juros | Fechado para MVP | Pré-preenchimento + **edição** na revisão; validação **igual ao manual** — **confirmar no código** antes do PR Bloco2-B/C |
-| **D6** | Data do contrato | **Fechado** | **Data da conversão local:** **data actual** no momento do **registo** do contrato após confirmação no fluxo Bloco2-B/C. Não usar automaticamente `respondedAt`/aprovação remota como data do contrato. Revisão futura pode **sugerir** esta data e permitir **ajuste** se alinhado ao fluxo manual (`ClientView`). Ver §7. |
+| **D4** | Nome do cliente local | Fechado para MVP | Fallback amigável **«Cliente da plataforma»** quando não há nome remoto fiável na conversão; snapshots remotos — backlog (§ Limitações). Sem escolha automática multi-candidato. |
+| **D5** | Taxa de juros | Fechado para MVP | Pré-preenchimento + coerência com fluxo manual — **validado na entrega** (`624c725` / `3badcbc`). |
+| **D6** | Data do contrato | **Fechado** | **Data da conversão local:** **data actual** no momento do **registo** do contrato após confirmação no fluxo entregue. Ver §7. |
 | **D7** | `availableMoney` inferior ao montante | Fechado | **Alertar e permitir** conversão (MVP) |
-| **D8** | Onde vive o modal de revisão | Fechado | **AccountScreen** / ramo Conta (coerente com painéis existentes) — **Bloco2-B**; Bloco2-A **não** abre modal completo |
-| **D9** | Ordem de execução | Fechado | **Sequencial** Bloco2-0→A→B→C→D→E |
-| **D10** | Documento único | Fechado | Este **ADR** como fonte única até derivar matriz QA |
+| **D8** | Onde vive o modal de revisão | Fechado | **AccountScreen** / ramo Conta — modal `ConvertLoanRequestToContractReview` integrado ao painel fornecedor. |
+| **D9** | Ordem de execução | Fechado | **Sequencial** Bloco2-0→A→B→C→D→E — **cumprida** |
+| **D10** | Documento único | Fechado | Este **ADR** como fonte única; regressões complementares em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) |
 
-**Pendências operacionais** (não reabrem D6): antes dos PRs Bloco2-B/C, validar no código os limites exactos de taxa/data iguais ao manual (**D5**).
+**Pendências operacionais:** nenhuma obrigatória do MVP Bloco 2 em aberto após **Bloco2-E**.
 
 ---
 
 ## 10. QA e riscos
 
-### 10.1 Testes unitários (futuros)
+### 10.1 Testes unitários (automatizados — entregues)
 
-- Conversão **centavos → reais**; montagem de **`loan.linkContext`**; função de **anti-duplicidade**; selecção de cliente (casos 0 / 1 / N candidatos).
+- Cobertura em utilitários de conversão, anti-duplicidade, derivação de revisão e rótulos (`vitest`); regressão Bloco 2 integrada à suite existente.
 
-### 10.2 Smoke manual obrigatório (pós-implementação)
+### 10.2 Smoke manual obrigatório (**executado — OK integral, sem NOK crítico** — Bloco2-E)
 
-- Conversão feliz `approved` → contrato visível.
-- Bloqueio de duplicidade do mesmo `loanRequestId`.
-- Regressão: **criação manual** de contrato inalterada.
-- **Painel**, **Clientes**, **Contratos**, **Caixa**, **backup/export/import**.
-- **Mobile** e **dark**.
-- Garantir cópias que **não** prometem sync financeiro remoto nem validação bancária.
+Registo espelhado em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Bloco 2. Resumo:
+
+- Conversão feliz `approved` → contrato visível; cliente/contrato na aba Clientes / `ClientView`.
+- Bloqueio de duplicidade do mesmo id de pedido (`convertedFromLoanRequestId`).
+- Microcopy **«o app não transfere dinheiro»** e confirmação humana obrigatória.
+- Totais / caixa / Painel coerentes com motor **local** existente (`calculations.js` não alterado pelo Bloco 2).
+- **Bloco2-D:** estado «Contrato já registado localmente», rótulos amigáveis, IDs técnicos ocultos na superfície principal; filtros por vínculo/anotação preservados.
+- Regressão: criação **manual** de contrato; mobile/dark aceitáveis.
 
 ### 10.3 Riscos principais
 
@@ -301,37 +307,61 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 
 ---
 
-## 11. Guardrails (inegociáveis)
+## 11. Limitações conhecidas e backlog (pós-MVP Bloco 2)
+
+1. **Nome legível entre aparelhos:** sem snapshot remoto fiável no pedido/vínculo, usa-se fallback **«Cliente da plataforma»** e rótulos amigáveis na UI. **Próximo passo recomendado:** mini ADR/plano **«Identidade pública e snapshots de nomes em vínculos/pedidos»** (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`, onde gravar em `links` e/ou `loanRequests`, rules, actualização quando o utilizador altera nome, privacidade, manutenção **local-first**).
+
+2. **Aba / visão «Fornecedores» (cliente):** **não** implementada no Bloco 2 — **fase própria** após snapshots de nomes; objectivo: relacionamento e pedidos agrupados por fornecedor na perspectiva do cliente.
+
+3. **Detalhes técnicos (UID, `linkId`, ids internos):** permanecem nos dados; a superfície principal oculta-os. **Backlog:** modo avançado em Configurações (debug/suporte).
+
+4. **A2b / A2c** (arquivamento): **backlog** — independente do Bloco 2.
+
+5. **Marcação remota «converted»:** **fora do MVP** — exige ADR, rules, QA e actualização de [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) se um dia for necessária.
+
+---
+
+## 12. Próxima fase recomendada (governança)
+
+1. **Criar mini ADR/plano:** *«Identidade pública e snapshots de nomes em vínculos/pedidos»* — campos, persistência (`links` / `loanRequests`), `firestore.rules`, actualização em mudança de nome, privacidade, **financeiro local-first**, nomes legíveis em aparelhos diferentes (ex.: fornecedor vê «Mello», cliente vê nome do fornecedor).
+
+2. **Depois:** planejar *«Visão Fornecedores / UX de relacionamento por papel»*.
+
+---
+
+## 13. Guardrails (inegociáveis)
 
 - **Não** criar contrato **automaticamente** por evento remoto.
-- **Não** alterar **`calculations.js`** no MVP do Bloco 2 sem nova ADR/decisão explícita.
-- **Não** alterar **`firestore.rules`** nem schema remoto no MVP.
+- **Não** alterar **`calculations.js`** no MVP do Bloco 2 sem nova ADR/decisão explícita *(cumprido na entrega)*.
+- **Não** alterar **`firestore.rules`** nem schema remoto no MVP *(cumprido na entrega)*.
 - **Não** iniciar **sync financeiro remoto** autoritativo.
 - **Não** criar **`payment.linkContext`**.
-- **Firebase não é fonte financeira autoritativa** — o app **regista** operação que o utilizador declara já realizada **fora** do app.
+- **Firebase não é fonte financeira autoritativa** — o app **regista** operação que o utilizador declara já realizada **fora** do app (**o app não transfere dinheiro**).
 - **`docs/plans/completed/`** permanece **histórico**; **A2b/A2c** não são reabertos como parte deste Bloco 2.
 
 ---
 
-## 12. Relação com outros documentos
+## 14. Relação com outros documentos
 
 | Documento | Papel |
 |-----------|--------|
 | [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) | Estado consolidado do projeto |
 | [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md) | Acompanhamento operacional |
 | [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) | Fase oficial ponte pré-financeira |
-| [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) | Roadmap A–F; Bloco 2 alinha à **Fase F** |
-| [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) | Modelo remoto atual |
+| [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) | Roadmap A–F; Bloco 2 **fechado** |
+| [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) | Registo QA/smoke Bloco 2 |
+| [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) | Modelo remoto atual (**sem** mudança pelo Bloco 2) |
 | [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md) | Pagamento só espelho derivado |
 | [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md) | UX/UI |
 
 ---
 
-## 13. Próxima acção
+## 15. Próxima acção (pós-Bloco 2)
 
-1. **Registado:** ADR **aprovado**; **Bloco2-A** **autorizada** (docs vivos alinhados nesta rodada).  
-2. **Implementação:** iniciar **somente Bloco2-A** no próximo ciclo de código (um PR/prompt focado), conforme §8 — **sem** modal completo, **sem** criar contrato, **sem** Firestore/rules/`calculations.js`.  
-3. Não promover LKG nem declarar Bloco 2 fechado até **Bloco2-E**.
+1. **Concluído:** MVP Bloco 2 — código **`624c725`**, **`3badcbc`**, **`5dd4c36`**; **Bloco2-E** (documentação viva + smoke registado).  
+2. **Seguinte:** abrir planeamento da mini ADR **«Identidade pública e snapshots de nomes»** antes de alterar modelo remoto ou dependências de UX entre aparelhos.
+
+_(Opcional — governança de tags): promover LKG dedicado ao Bloco 2 só se o projecto adoptar política explícita de tag por marco de produto._
 
 ---
 
@@ -341,3 +371,4 @@ Ordem obrigatória: **Bloco2-0 → A → B → C → D → E**. **Bloco2-0** doc
 |------|------|
 | 2026-05-04 | **Bloco2-0:** criação do ADR + plano executável em `docs/ADR_BLOCO2_CONVERSAO_GOVERNADA.md`; implementação **não** iniciada. |
 | 2026-05-04 | **Governança:** ADR **aprovado** para orientar implementação; **Bloco2-A** **autorizada** como próxima subfase (sem código nesta rodada documental); **D6** fechada — data do contrato = **momento da conversão local** (data actual no registo); MVP **sem** marcação remota; **A2b/A2c** **backlog**. |
+| 2026-05-04 | **Bloco2-E — fecho:** subfases **A–D** entregues em código (**`624c725`**, **`3badcbc`**, **`5dd4c36`**); smoke manual utilizador **OK integral**, sem NOK crítico; ADR actualizado (§ Limitações, § Próxima fase, QA §10); **`firestore.rules`** / documentos **`loanRequests`** **sem** alteração pelo fluxo de conversão (**metadado `convertedFromLoanRequestId` só local** no `loan`). |

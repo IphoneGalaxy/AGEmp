@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2** — ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) **aprovado**; **Bloco2-A** autorizada, **código não iniciado**; **Bloco2-B–E** não concluídas — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2 nesta matriz) · **Próximo:** mini ADR snapshots de nomes |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -137,11 +137,37 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 
 ---
 
-## Referência futura — Bloco 2 (Conversão governada)
+## Bloco 2 — Conversão governada (`approved` → contrato local) — **FECHADO**
 
-Após implementação das subfases **Bloco2-A–E**, registar smoke e regressões conforme [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §10 (QA/riscos).
+### Registo de execução (Bloco2-E)
 
-**Estado atual (governança):** ADR **aprovado**; **Bloco2-A** é a **próxima subfase autorizada** — **não implementada** até PR dedicado; **Bloco2-B–E** — **não concluídas**. **Sem** contrato automático; **sem** sync financeiro remoto; **sem** `payment.linkContext`; MVP do Bloco 2 **sem** alteração a **`calculations.js`** / **`firestore.rules`** salvo decisão explícita fora do ADR. **Nenhuma** linha de código do Bloco 2 nesta matriz até novo ciclo QA dedicado.
+| Campo | Registo |
+|-------|---------|
+| **ADR / guardrails** | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — MVP **sem** marcação remota converted; **sem** escrita Firestore pela conversão; **sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** alteração **`firestore.rules`** / schema **`loanRequests`** / **`calculations.js`** |
+| **Commits** | **`624c725`** — entrada + revisão/modal · **`3badcbc`** — persistência local + `convertedFromLoanRequestId` + anti-duplicidade · **`5dd4c36`** — UX pós-conversão |
+| **Smoke manual (operador)** | **OK integral**, **sem NOK crítico** — botão em `approved`; modal + checkbox; contrato e cliente na lista/`ClientView`; totais pelo motor local; segunda conversão bloqueada; rótulos amigáveis (**Bloco2-D**); filtros vínculo preservados; **o app não transfere dinheiro** |
+
+### Checklist smoke Bloco 2 (referência rápida)
+
+1. Pedido `approved` sem conversão → «Registrar contrato local».  
+2. Abrir revisão → campos legíveis; **sem** ID do pedido na superfície principal (**Bloco2-D**).  
+3. Sem checkbox → não registra; com checkbox → contrato criado.  
+4. Painel / Clientes / contrato reflectem valores esperados (**motor local**).  
+5. Reabrir mesmo pedido → «Contrato já registado localmente» (**Bloco2-D**); não permite segundo registo.  
+6. Filtros e anotação **`linkContext`** continuam coerentes.  
+7. Criação manual de contrato (fluxo existente) **sem** regressão.  
+
+### Limitações / backlog (pós-MVP)
+
+- Nomes entre aparelhos: fallback **«Cliente da plataforma»** até **mini ADR** de snapshots (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`, …).  
+- **Visão Fornecedores** (cliente): fase própria, depois dos snapshots.  
+- IDs técnicos: só dados internos; UI principal oculta (**Bloco2-D**); modo avançado Configurações — backlog.  
+- **A2b/A2c** arquivamento — backlog.  
+- Marcação remota converted — só com ADR + rules + QA.
+
+### Próxima fase recomendada
+
+Mini ADR **«Identidade pública e snapshots de nomes em vínculos/pedidos»**; depois **«Visão Fornecedores»** — ver [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
 
 ---
 
@@ -157,7 +183,7 @@ Após implementação das subfases **Bloco2-A–E**, registar smoke e regressõe
 | 2026-05-04 | **Bloco 1 — Fase A1 concluída:** commits **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta); § “Fase A1 — Bloco 1” e tabela de melhorias estendida. |
 | 2026-05-04 | **Subfase A2a (arquivamento) documentada** — § dedicada; **sem** código. |
 | 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |
-| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke; **Bloco 2** futuro só no roadmap. |
-| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); **Bloco 2** próxima fase recomendada. |
-| 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado (referência futura de QA). |
-| 2026-05-04 | **Governança Bloco 2:** ADR **aprovado**; **Bloco2-A** **autorizada**, **código não iniciado**; **Bloco2-B–E** **não concluídas**; guardrails MVP no ADR (sem contrato automático, sync financeiro remoto, `payment.linkContext`, mudanças `calculations.js`/`firestore.rules`). |
+| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke. |
+| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano arquivado; **Bloco 2** recomendado em seguida. |
+| 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado e **aprovado**. |
+| 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |

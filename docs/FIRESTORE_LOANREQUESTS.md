@@ -41,6 +41,10 @@
 
 **Status pré-financeiros** (`loanRequests`): incluem `pending`, `under_review`, `counteroffer` (efeito de “aberto” no app também para duplicidade por `linkId`), terminais `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **`converted_to_contract`** não é usado (continua fora deste modelo).
 
+### Conversão governada Bloco 2 (só armazenamento local — **sem** mudança neste documento)
+
+O **Bloco 2** permite ao fornecedor registar um contrato **local** a partir de um pedido **`approved`**, com confirmação humana e metadado **`convertedFromLoanRequestId`** apenas no objeto **`loan`** persistido em **`localStorage`** (escopo da conta). **Não** foram adicionados campos novos aos documentos **`loanRequests`** no Firestore; **não** houve alteração a **`firestore.rules`** nem a este quadro de modelo para suportar a conversão. O pedido remoto **não** é marcado como «converted» no MVP.
+
 **Fatia RB (`readBy*`)**: apenas o papel correspondente pode escrever o próprio campo; diff **somente** o marcador; **`updatedAt` não muda** (política B); estados permitidos incluem **`counteroffer`** e **`counteroffer_declined`** (ver `loanRequestStatusAllowsReadMarkers` em `firestore.rules`).
 
 ## Valores em centavos
