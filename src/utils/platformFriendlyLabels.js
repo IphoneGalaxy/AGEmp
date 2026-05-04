@@ -6,6 +6,16 @@
 /** Nome no cadastro local ao criar cliente novo pela conversão governada (Bloco 2-D). */
 export const NEW_LOCAL_CLIENT_NAME_FROM_PLATFORM_LOAN_REQUEST = 'Cliente da plataforma';
 
+/** Cliente genérico em UI/pré-financeiro quando não há snapshot de nome (ADR snapshots). */
+export const PLATFORM_CLIENT_DISPLAY_FALLBACK =
+  NEW_LOCAL_CLIENT_NAME_FROM_PLATFORM_LOAN_REQUEST;
+
+/** Fornecedor genérico quando não há snapshot de nome em pedidos/vínculos. */
+export const PLATFORM_SUPPLIER_DISPLAY_FALLBACK = 'Fornecedor da plataforma';
+
+/** Rótulo curto para conta com vínculo aprovado — uso pontual em UI (IDs ocultos). */
+export const PLATFORM_LINKED_ACCOUNT_CAPTION = 'Conta vinculada';
+
 /**
  * Nome sugerido para novo cliente local quando não há nome remoto confiável nesta versão.
  * @returns {string}
