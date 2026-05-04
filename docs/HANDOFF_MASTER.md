@@ -398,6 +398,8 @@ O pacote **`loanRequest` v1.1** (marcadores **`readBy*`** + **contraproposta** +
 
 Guardrails continuam os da ponte pré-financeira ([`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md)): sem sync financeiro remoto sem desenho explícito; sem converter pedido em contrato automático; sem persistir `payment.linkContext`; sem impacto direto declarado sobre `calculations.js` nesta linha.
 
+**Melhorias pós-pacote v1.1 (pequenas, não nova fase):** após **`lkg-2026-05-03-loanrequest-v1-1`**, três commits afinam UX/local nos painéis cliente/fornecedor — **`584d5b4`** badge “Novo” só para novidade legítima entre as partes; **`62bacf2`** **`console.warn`** quando falhar marcação de leitura; **`cd8db7e`** limpar drafts de observação/contraproposta no fornecedor ao recolher ou após sucesso. **Sem** mudança em **`firestore.rules`**, **schema**, **transições**, **`calculations.js`**, **sync financeiro** ou **contrato automático**. Detalhe: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) (seção **Melhorias pós-pacote v1.1**); [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) (quadro só para contexto — alterações foram de app, não de modelo remoto).
+
 **Próximo recorte após esta entrega:** **não** definido aqui — seguir apenas [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md) e o **código** como fontes vivas; qualquer nova fase exige decisão explícita de governança.
 
 ---
@@ -540,3 +542,4 @@ Ele funciona como:
 | 2026-05-01 | Planejamento-mestre `loanRequest` pré-financeiro arquivado em [`plans/completed/`](./plans/completed/) como histórico; ver [`plans/README.md`](./plans/README.md). |
 | 2026-05-03 | Planejamento documental **`loanRequest` v1.1** (`readBy*` + contraposta, ordem de execução explícita) em [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./plans/completed/LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) · QA em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md). |
 | 2026-05-03 | **Fechamento do pacote `loanRequest` v1.1 (RB + CN):** smoke manual real OK integral; QA [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); base estável principal atualizada para **`lkg-2026-05-03-loanrequest-v1-1`**; próximo recorte de produto **não** escolhido neste arquivo — apenas fontes vivas ([`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), checkpoint, código). |
+| 2026-05-03 | **Melhorias pós-v1.1 documentadas** em LoanRequest (`584d5b4`, `62bacf2`, `cd8db7e`): UX badge “Novo”, robustez `console.warn` em falha ao marcar leitura, limpeza drafts fornecedor; sem mudanças em rules/schema/cálculos/sync — ver matriz QA v1.1 (**Melhorias pós-pacote v1.1**). |

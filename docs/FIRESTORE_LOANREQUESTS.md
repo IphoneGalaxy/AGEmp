@@ -92,3 +92,15 @@ firebase deploy --only firestore:indexes
 **Fatias v1.1 em código neste repo:** **RB** (`readBy*`); **CN**: estados `counteroffer` e `counteroffer_declined` com contraposta de rodada única. **Suite de rules (emulador):** `npm run test:rules:loanRequests` — executa **`loanRequestsCreate.rules.test.js`** + **`loanRequestsCounteroffer.rules.test.js`** dentro do Firestore Emulator (requer JDK 21+; ver `scripts/run-firestore-rules-tests.ps1`).
 
 Modelo atual: tabela acima inclui **`counterofferAmount`**, **`counterofferedAt`** e estados CN; escritas CN atualizam `updatedAt` como demais transições negociais **fora RB**.
+
+## Melhorias pós-pacote v1.1 (UI / robustez — **sem** mudança de modelo ou rules)
+
+Após o fechamento **`lkg-2026-05-03-loanrequest-v1-1`**, foram incorporados **três ajustes pequenos** nos painéis `LoanRequestsClientPanel.jsx` e `LoanRequestsSupplierPanel.jsx`. Tratam-se de **UX, observabilidade e estado local**; **não** alteram **`firestore.rules`**, **schema**, **status/transições**, **`calculations.js`**, **sync financeiro remoto**, **conversão automática para contrato** ou **`payment.linkContext`**.
+
+| Commit | Descrição |
+|--------|-----------|
+| **`584d5b4`** | Badge discreto **“Novo”** só quando há novidade legítima da contraparte em relação à última leitura (último evento relevante vs `readBy*`), não apenas por ausência de marcador. |
+| **`62bacf2`** | Falhas em `markLoanRequestReadByClient` / `markLoanRequestReadBySupplier` registram **`console.warn`** (rede/permissão/vínculo); sem toast nem retry infinito. |
+| **`cd8db7e`** | No painel do fornecedor, **drafts locais** (observação e valor de contraproposta) são **limpos** ao recolher o pedido e após conclusão bem-sucedida de ação — evita texto/valor obsoleto ao reabrir. |
+
+Smoke opcional alinhado: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) (seção **Melhorias pós-pacote v1.1**).
