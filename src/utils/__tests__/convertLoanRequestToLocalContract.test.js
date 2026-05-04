@@ -4,6 +4,7 @@ import {
   applyApprovedLoanRequestConversion,
   attachLoanLinkContextFromConversion,
   clientMatchesLoanRequestForConversion,
+  deriveLocalClientNameForApprovedLoanRequestConversion,
   findLoanRequestConversionCandidates,
   hasConvertedLoanRequestDuplicate,
   hasFullLoanRequestLinkTrio,
@@ -35,6 +36,22 @@ const approvedRequest = (over = {}) => ({
 });
 
 describe('convertLoanRequestToLocalContract', () => {
+  describe('deriveLocalClientNameForApprovedLoanRequestConversion', () => {
+    it('usa clientDisplayNameSnapshot normalizado', () => {
+      expect(
+        deriveLocalClientNameForApprovedLoanRequestConversion({
+          clientDisplayNameSnapshot: '  Mello  ',
+        }),
+      ).toBe('Mello');
+    });
+    it('fallback legado sem snapshot útil', () => {
+      expect(deriveLocalClientNameForApprovedLoanRequestConversion({})).toBe('Cliente da plataforma');
+      expect(
+        deriveLocalClientNameForApprovedLoanRequestConversion({ clientDisplayNameSnapshot: '' }),
+      ).toBe('Cliente da plataforma');
+    });
+  });
+
   describe('principalAmountReaisFromApprovedRequest', () => {
     it('centavos aprovados viram reais', () => {
       expect(principalAmountReaisFromApprovedRequest(approvedRequest({ approvedAmount: 12_345 }))).toBe(
@@ -169,6 +186,21 @@ describe('convertLoanRequestToLocalContract', () => {
         newClientId: 'n1',
       });
       expect(res.ok).toBe(false);
+    });
+
+    it('cria cliente novo com nome do snapshot quando disponível', () => {
+      const clients = [];
+      const res = applyApprovedLoanRequestConversion({
+        clients,
+        request: approvedRequest({ clientDisplayNameSnapshot: 'Mello' }),
+        interestRate: 10,
+        loanId: 'loan-new',
+        newClientId: 'c-new',
+        conversionDateIso: '2026-05-04',
+      });
+      expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.nextClients[0].name).toBe('Mello');
     });
 
     it('cria cliente novo quando não há candidato', () => {

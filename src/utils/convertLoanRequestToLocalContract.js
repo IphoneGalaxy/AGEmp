@@ -1,5 +1,6 @@
 import { LOAN_REQUEST_STATUSES } from '../firebase/loanRequests';
 import { approvedAmountCentsToReaisOrNull } from './convertLoanRequestReviewDerive';
+import { normalizeDisplayNameForSnapshot } from './displayNameSnapshots';
 import { buildLocalLinkContext } from './linkContext';
 import { deriveNewLocalClientNameFromLoanRequest } from './platformFriendlyLabels';
 import { buildLoanWithOptionalLinkContext, canInheritLinkContextToLoan } from './loanLinkContextInherit';
@@ -38,6 +39,19 @@ export function parseInterestRateLikeManualAddLoan(interestRate) {
   const rate = Number(interestRate);
   if (!Number.isFinite(rate) || rate < 0) return { ok: false };
   return { ok: true, rate };
+}
+
+/**
+ * Nome do cliente financeiro local ao criar cadastro pela conversão Bloco 2.
+ * Preferência: snapshot gravado no pedido; senão mesmo rótulo genérico legado.
+ *
+ * @param {Record<string, unknown> | null | undefined} request
+ * @returns {string}
+ */
+export function deriveLocalClientNameForApprovedLoanRequestConversion(request) {
+  const fromSnap = normalizeDisplayNameForSnapshot(request?.clientDisplayNameSnapshot);
+  if (fromSnap !== null) return fromSnap;
+  return deriveNewLocalClientNameFromLoanRequest();
 }
 
 /**
@@ -233,7 +247,7 @@ export function applyApprovedLoanRequestConversion({
 
   const newClient = buildNewClientWithOptionalLinkContext({
     id: newClientId,
-    name: deriveNewLocalClientNameFromLoanRequest(),
+    name: deriveLocalClientNameForApprovedLoanRequestConversion(request),
     loans: [],
     includeLinkContext: !!template,
     templateLinkContext: template,

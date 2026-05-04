@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
 import { formatMoney, formatRate } from '../utils/format';
-import { approvedAmountCentsToReaisOrNull } from '../utils/convertLoanRequestReviewDerive';
-import { LOAN_REQUEST_MODAL_CLIENT_CAPTION } from '../utils/platformFriendlyLabels';
+import {
+  approvedAmountCentsToReaisOrNull,
+  deriveLoanRequestConversionReviewClientLabel,
+} from '../utils/convertLoanRequestReviewDerive';
 import { applyApprovedLoanRequestConversion, hasConvertedLoanRequestDuplicate, todayIsoDateLocal } from '../utils/convertLoanRequestToLocalContract';
 import { generateId } from '../utils/ids';
 
@@ -42,7 +44,7 @@ export default function ConvertLoanRequestToContractReview({
   const approvedReais = approvedAmountCentsToReaisOrNull(request.approvedAmount);
   const amountLabel =
     approvedReais != null ? formatMoney(approvedReais) : '— (valor aprovado indisponível)';
-  const clientLabel = LOAN_REQUEST_MODAL_CLIENT_CAPTION;
+  const clientLabel = deriveLoanRequestConversionReviewClientLabel(request);
   const suggestedDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',

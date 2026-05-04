@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   approvedAmountCentsToReaisOrNull,
   deriveLoanRequestClientDisplayLabel,
+  deriveLoanRequestConversionReviewClientLabel,
   effectiveDefaultInterestRateFromSettings,
 } from '../convertLoanRequestReviewDerive';
 
@@ -18,6 +19,17 @@ describe('convertLoanRequestReviewDerive', () => {
     });
     it('fallback 10 quando não finito', () => {
       expect(effectiveDefaultInterestRateFromSettings({ defaultInterestRate: NaN })).toBe(10);
+    });
+  });
+
+  describe('deriveLoanRequestConversionReviewClientLabel', () => {
+    it('usa snapshot quando existe', () => {
+      expect(
+        deriveLoanRequestConversionReviewClientLabel({ clientDisplayNameSnapshot: '  Ana  ' }),
+      ).toBe('Ana');
+    });
+    it('fallback amigável sem snapshot', () => {
+      expect(deriveLoanRequestConversionReviewClientLabel({})).toBe('Cliente da plataforma');
     });
   });
 

@@ -3,6 +3,18 @@
  * Sem I/O nem efeitos colaterais.
  */
 
+import { deriveLoanRequestClientFriendlyName } from './displayNameSnapshots';
+
+/**
+ * Rótulo do cliente no modal de revisão (snapshot → «Cliente da plataforma»).
+ *
+ * @param {Record<string, unknown> | null | undefined} request
+ * @returns {string}
+ */
+export function deriveLoanRequestConversionReviewClientLabel(request) {
+  return deriveLoanRequestClientFriendlyName(request);
+}
+
 /**
  * Mesma ideia que novos contratos em ClientView / App: string vazia ou ausência → 10%.
  *
