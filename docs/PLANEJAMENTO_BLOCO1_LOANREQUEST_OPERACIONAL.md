@@ -11,6 +11,13 @@
 | **Localização** | Plano **ativo** permanece em **`docs/`** (este arquivo). Quando o bloco for **finalizado** (smoke + docs atualizados), mover para **`docs/plans/completed/`**. |
 | **`docs/plans/completed/`** | Continua **somente histórico** — não é plano ativo (ver [`plans/README.md`](./plans/README.md)). |
 
+### Status do Bloco 1 (execução parcial)
+
+| Fase / subfase | Estado |
+|----------------|--------|
+| **A1** (A1a + A1b) | **Concluída.** **`dcc9f80`** — utilitário `countUnreadLoanRequests` + testes (`loanRequestUnreadCount.js`). **`4951bdf`** — badges numéricos discretos em **AccountScreen** nos botões **“Abrir solicitações”** (papel cliente) e **“Abrir pedidos recebidos”** (papel fornecedor). **Sem** alteração de `firestore.rules`, **`calculations.js`**, schema Firestore, `App.jsx`, `Settings.jsx`, sync financeiro remoto, contrato automático nem `payment.linkContext`. Carga sob demanda na vista principal da conta; **sem** listener global. |
+| **Próxima subfase** | **A2a** — decisões de arquivamento (**planejamento, sem código**). **A2b/A2c, B, C–F** permanecem **não** concluídas neste registro. |
+
 ---
 
 ## 2. Estado atual confirmado (baseline)
@@ -76,10 +83,10 @@ Microcopy e UI: seguir [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [
 Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 1. **Subfase 0** — Leitura de contexto (docs + código relevante).
-2. **Subfase A1a** — Utilitário `loanRequestUnreadCount.js` + testes unitários.
-3. **Subfase A1b** — Badges numéricos nos botões **"Abrir solicitações"** e **"Abrir pedidos recebidos"** em `AccountScreen.jsx`.
-4. **Ponto de parada** — Validar **A1** com smoke manual (`vitest`, `build`, cenários com dois usuários quando aplicável).
-5. **Subfase A2a** — Decisões de arquivamento (**planejamento, sem código**).
+2. ~~**Subfase A1a** — Utilitário `loanRequestUnreadCount.js` + testes unitários.~~ **Feita** — commit **`dcc9f80`**.
+3. ~~**Subfase A1b** — Badges numéricos nos botões **"Abrir solicitações"** e **"Abrir pedidos recebidos"** em `AccountScreen.jsx`.~~ **Feita** — commit **`4951bdf`**.
+4. ~~**Ponto de parada** — Validar **A1** com smoke manual (`vitest`, `build`, cenários com dois usuários quando aplicável).~~ **A1 concluída** (evidência: commits acima; CI local `vitest` + `build` na entrega).
+5. **Subfase A2a** — Decisões de arquivamento (**planejamento, sem código**) — **próxima subfase obrigatória**.
 6. **A2b / A2c** — **Futuras**; **não** executar até A2a fechada e aprovação explícita.
 7. **Subfase B1** — Confirmar métrica de saldo (**"disponível"** preferida) com funções/agregadores **já existentes** em `calculations.js`, **sem** editar o arquivo.
 8. **Subfase B2** — Alerta não bloqueante no painel do fornecedor.
@@ -255,7 +262,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 | Momento | Documento(s) |
 |---------|----------------|
-| Após **A1** completo | [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (A1); [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) ou seção dedicada de smoke A1. |
+| Após **A1** completo | [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (A1); [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) — **feito (2026-05-04)** — ver § Bloco 1 / A1. |
 | Após **A2** completo (A2b+A2c) | [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md); roadmap (A2); matriz QA; `HANDOFF_MASTER` / `CHECKPOINT` se LKG/handoff evoluírem. |
 | Após **B** completo | Roadmap (B); matriz QA (smoke alerta). |
 | **Fechamento Bloco 1** | [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) se aplicável; **mover** este plano para `docs/plans/completed/`. |
@@ -271,7 +278,7 @@ Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
 
 1. Ler o plano executável: docs/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md
 2. Ler docs/HANDOFF_MASTER.md, docs/CHECKPOINT_CHECKLIST.md, docs/NEXT_PHASE_OFFICIAL.md e docs/LOANREQUEST_EVOLUTION_ROADMAP.md
-3. Identificar a próxima subfase pendente (0, A1a, A1b, A2a, B1, B2 — A2b/A2c só após A2a) e executar somente essa subfase
+3. Identificar a próxima subfase pendente (**A2a** após A1; depois B1, B2 — A2b/A2c só após A2a) e executar somente essa subfase
 4. Não tratar docs/plans/completed/ como plano ativo
 5. Não implementar mais de uma subfase por sessão/prompt
 6. Preservar guardrails: financeiro local-first; sem sync financeiro remoto; sem payment.linkContext; sem contrato automático; sem promessa de transferência real; calculations.js intocado; firestore.rules só na futura A2b
@@ -285,3 +292,4 @@ Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
 |------|------|
 | 2026-05-04 | Criação do plano executável Bloco 1 (A1 + A2a planejamento + B; A2b/A2c futuras; C–F fora). |
 | 2026-05-04 | Plano ativo em **`docs/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`** (padrão projeto); ao concluir o Bloco 1, arquivar em **`docs/plans/completed/`**. |
+| 2026-05-04 | **Fase A1 concluída:** **`dcc9f80`** (A1a, utilitário + testes) · **`4951bdf`** (A1b, badges na Conta). Próxima: **A2a** (decisões de arquivamento, sem código). |

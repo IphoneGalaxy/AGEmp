@@ -37,7 +37,7 @@ Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de
 
 | Fase | Tema | Toca Firestore/rules? | Toca financeiro local? | ADR / governança |
 |------|------|----------------------|-------------------------|-------------------|
-| **A1** | Sinalização global de novidades (derivada de dados existentes e `readBy*`) | **Não** (escopo típico) | **Não** | Não obrigatório |
+| **A1** | Sinalização global de novidades (derivada de dados existentes e `readBy*`) | **Não** (entrega: leitura só via queries/listagens existentes) | **Não** | Não obrigatório |
 | **A2** | Arquivamento **por lado** (cliente / fornecedor) | **Sim** (novos campos + rules) | **Não** | QA + atualização **`FIRESTORE_LOANREQUESTS.md`** antes/depois de codar |
 | **B** | Alerta de saldo insuficiente **não bloqueante** (fornecedor) | **Não** | **Somente leitura** para comparação; sem gravar pelo pedido remoto | Decisão: métrica de “disponível” |
 | **C** | Bloqueio ou restrição por saldo | Depende da política | Leitura e possivelmente **UX de bloqueio** | Decisão **explícita** após avaliar **B** |
@@ -59,7 +59,7 @@ O usuário percebe **antes de abrir** o painel de pedidos que há novidade relev
 
 - Indicador **discreto** (nímero pequeno, pingo ou texto curto), **mobile-first**, alinhado a [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md) — sem poluição de badges múltiplos.
 - Lógica **derivada**: mesma ideia já usada nos painéis (eventos da contraparte vs `readByClientAt` / `readBySupplierAt`), **sem** novos campos Firestore nem alteração de `firestore.rules` no desenho mínimo.
-- Superfície provável (a decidir produto): navegação para **Configurações / Conta**, ou entrada que leva aos painéis já existentes.
+- Superfície na entrega Bloco 1: **Configurações → Conta** (`AccountScreen`), botões que abrem os painéis já existentes.
 
 ### Fora do escopo (A1)
 
@@ -67,16 +67,23 @@ O usuário percebe **antes de abrir** o painel de pedidos que há novidade relev
 - Persistir novo marcador só para o indicador global (evitar drift do modelo pré-financeiro).
 - Mudar estado de negócio dos pedidos.
 
-### Decisões pendentes
+### Implementação registrada (Bloco 1 — 2026-05-04)
 
-- Onde aparece exatamente o indicador na árvore de navegação atual (`App.jsx`)?  
-- O indicador conta **uma** conta agregada vs lista de contagens por tipo de evento?  
-- Comportamento com sessão não autenticada (tipicamente N/A ou oculto).
+- **A1 concluída** em duas subfases: **`dcc9f80`** — `src/utils/loanRequestUnreadCount.js` (`countUnreadLoanRequests`) + testes unitários · **`4951bdf`** — badges numéricos discretos apenas em **`AccountScreen.jsx`** (Configurações → Conta), nos botões **“Abrir solicitações”** (papel cliente) e **“Abrir pedidos recebidos”** (papel fornecedor); alinhado à mesma filosofia do badge **“Novo”** por item nos painéis.
+- **Guardrails preservados:** **sem** novos campos Firestore nem mudança de **`firestore.rules`** nesta fase; **sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** contrato automático; **`calculations.js`** intocado; **sem** listener global/tempo real dedicado (carga ao exibir a vista principal da conta).
+- **Não alterados:** `App.jsx`, `Settings.jsx` (nesta entrega documentada).
 
-### Critérios de aceite (quando implementar)
+### Decisões pendentes (evolução após A1)
+
+- O indicador na **primeira fatia** conta **um** número agregado por botão (cliente vs fornecedor), derivado da mesma regra de novidade dos painéis · possíveis evoluções (tab principal, “Gerenciar conta”) **não** fazem parte de A1.
+- Sessão não autenticada: **sem** badge (sem `uid` / fluxo de conta).
+
+### Critérios de aceite (implementação)
 
 - O usuário vê novo destaque apenas quando houver pelo menos um pedido com “novidade legítima” conforme mesma filosofia já documentada em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) (Melhorias pós-v1.1).
 - **Nenhuma** mensagem sugere financeiro sincronizado na nuvem ou transferência real.
+
+**Atendidos na Fase A1 (Bloco 1, 2026-05-04):** commits **`dcc9f80`** · **`4951bdf`**.
 
 ---
 
@@ -208,3 +215,4 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 |------|------|
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
 | 2026-05-04 | Referência ao plano executável **Bloco 1:** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1, A2a, B). |
+| 2026-05-04 | **Fase A1 concluída** (Bloco 1): **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta). **Próxima subfase do plano:** **A2a** (decisões de arquivamento, sem código). **A2b/A2c, B–F** não concluídas. |

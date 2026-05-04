@@ -82,12 +82,24 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **`584d5b4`** | Badge **“Novo”** só para novidade legítima entre cliente e fornecedor (último evento relevante da contraparte vs última leitura; UI discreta light/dark). |
 | **`62bacf2`** | `markLoanRequestReadByClient` / `markLoanRequestReadBySupplier`: **`console.warn`** em falha (rede/permissão/vínculo); sem toast nem retry infinito. |
 | **`cd8db7e`** | Painel fornecedor: limpeza de **drafts** locais (observação / valor de contraproposta) ao **recolher** o pedido e após **ação concluída com sucesso** — evita vazamento de texto/valor antigo ao reabrir. |
+| **`dcc9f80`** | **Bloco 1 / A1a:** utilitário **`countUnreadLoanRequests`** (`loanRequestUnreadCount.js`) + testes — mesma filosofia de novidade dos painéis; **sem** rules/schema/`calculations.js`. |
+| **`4951bdf`** | **Bloco 1 / A1b:** badges numéricos discretos em **`AccountScreen`** nos botões **“Abrir solicitações”** / **“Abrir pedidos recebidos”** (somente quando `count > 0` e papel aplicável); carga sob demanda na vista principal; **sem** `App.jsx`/`Settings.jsx`/listener global. |
 
 ### Smoke manual opcional (regressão leve)
 
 1. **Badge “Novo”:** contraparte age depois da sua última leitura → indicador adequado; legado/terminais tratados conforme código (sem prometer comportamento jurídico além da UI).
 2. **Marcação de leitura com falha simulada:** console com **`warn`** perceptível ao dev; sem novo sistema de notificação ao usuário final.
 3. **Drafts:** recolher pedido ou completar fluxo no fornecedor sem drafts antigos reaparecerem para o mesmo pedido.
+4. **Badges na Conta (A1 — Bloco 1):** com novidade legítima para o papel, número aparece só no botão correspondente (cliente vs fornecedor); após marcar lido no painel e voltar à **Conta**, contagem some ou atualiza **sem** tempo real obrigatório; usuário sem papel não vê badge daquele papel; **sem** badge na tab principal nem em “Gerenciar conta” nesta fatia.
+
+### Fase A1 — Bloco 1 (sinalização na Conta) — concluída (2026-05-04)
+
+| Campo | Registro |
+|-------|----------|
+| **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
+| **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
+| **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
+| **Próxima subfase do plano** | **A2a** — decisões de arquivamento (**sem código**) — ver [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) |
 
 ---
 
@@ -100,3 +112,4 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-03 | **Fatia CN** implementada/corrigida até validação **real no app**; commits listados na seção CN; último patch de regras **`4e8dcae`**; smoke manual integral OK; pacote nominal **v1.1 RB+CN** declarado **fechado** com LKG **`lkg-2026-05-03-loanrequest-v1-1`**. |
 | 2026-05-03 | **Fechamento documental** (`45a8f03`): logs DEV de diagnóstico removidos, `.gitignore` para artefatos de emulador, matriz/checkpoint/handoff/Firestore/NEXT atualizados após LKG. |
 | 2026-05-03 | **Melhorias pós-v1.1 (UX/local):** **`584d5b4`** badge “Novo” legítimo; **`62bacf2`** `console.warn` em falha ao marcar leitura; **`cd8db7e`** limpeza de drafts no painel fornecedor — ver § “Melhorias pós-pacote v1.1”. |
+| 2026-05-04 | **Bloco 1 — Fase A1 concluída:** commits **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta); § “Fase A1 — Bloco 1” e tabela de melhorias estendida; **próxima subfase** **A2a** (sem código). |

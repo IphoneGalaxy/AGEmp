@@ -91,7 +91,7 @@ A diretriz central do projeto continua sendo:
 - `accountRoles` funcionando com fallback para role;
 - vínculos fornecedor/cliente funcionando no Firestore;
 - coleção **`loanRequests`** (camada **pré-financeira**): pacote **v1** alinhado ao contrato congelado — **fechado formalmente** após smoke manual real OK (ver §4 LKG e [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)); **extensão v1.1** (**`readBy*`** + fatia **CN** / `counteroffer`, `counteroffer_declined`) — **fechada** após smoke manual real OK e alinhamento rules — [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md), LKG **`lkg-2026-05-03-loanrequest-v1-1`** (marco só RB: **`lkg-2026-05-03-loanrequest-v1-1-rb`**);
-- **Bloco 1 (execução planejada, `loanRequests`):** plano executável vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — continuidade operacional A1 / A2a / B (subfases); **não** assume código já implementado além do descrito no plano;
+- **Bloco 1 (execução parcial — `loanRequests`):** plano executável vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **Fase A1 concluída** (**`dcc9f80`** utilitário + testes; badges na Conta **`4951bdf`**); **próxima subfase:** **A2a** (decisões de arquivamento, **sem código**). **A2b/A2c, B, C–F** **não** concluídas aqui.
 - o domínio financeiro **não** é salvo remotamente nesta fase.
 
 ### Estado atual do vínculo local
@@ -218,7 +218,7 @@ A trilha consolidada atual vai:
 - até a visibilidade do vínculo na lista de pagamentos (derivada do contrato);
 - até **visão operacional derivada por vínculo** no refinamento da lista de clientes (contagens locais por `linkId` em [`linkOperationalDerive.js`](../src/utils/linkOperationalDerive.js)); ver [`LINK_OPERATIONAL_VIEW.md`](./LINK_OPERATIONAL_VIEW.md);
 - até o **overlay `ClientView`**: resumo operacional, lista remota com estados vazio/erro, divergência cliente/contrato e espelho em pagamentos conforme [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md);
-- até **`loanRequests`** **v1+v1.1** (solicitações pré-financeiras na Conta, marcadores `readBy*`, fatia CN com `counteroffer` / `counteroffer_declined`; ver [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) e [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md));
+- até **`loanRequests`** **v1+v1.1** (solicitações pré-financeiras na Conta, marcadores `readBy*`, fatia CN com `counteroffer` / `counteroffer_declined`; **Bloco 1 / A1:** badges agregados de novidade nos botões da Conta que abrem os painéis — commits **`dcc9f80`**, **`4951bdf`**; ver [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) e [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md));
 - sempre sem sync financeiro remoto;
 - e sem `payment.linkContext` persistido.
 
@@ -401,7 +401,9 @@ Guardrails continuam os da ponte pré-financeira ([`NEXT_PHASE_OFFICIAL.md`](./N
 
 **Melhorias pós-pacote v1.1 (pequenas, não nova fase):** após **`lkg-2026-05-03-loanrequest-v1-1`**, três commits afinam UX/local nos painéis cliente/fornecedor — **`584d5b4`** badge “Novo” só para novidade legítima entre as partes; **`62bacf2`** **`console.warn`** quando falhar marcação de leitura; **`cd8db7e`** limpar drafts de observação/contraproposta no fornecedor ao recolher ou após sucesso. **Sem** mudança em **`firestore.rules`**, **schema**, **transições**, **`calculations.js`**, **sync financeiro** ou **contrato automático**. Detalhe: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) (seção **Melhorias pós-pacote v1.1**); [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) (quadro só para contexto — alterações foram de app, não de modelo remoto).
 
-**Próximo recorte após esta entrega:** **Bloco 1** — plano executável vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1 / A2a / B por subfases). Complementar com [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), o roadmap [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (**fases A1–F**) e o **código**; [`plans/completed/`](./plans/completed/) **só** histórico (ver [`plans/README.md`](./plans/README.md)).
+**Bloco 1 — Fase A1 (2026-05-04, concluída):** sinalização agregada na **Conta** — **`dcc9f80`** `countUnreadLoanRequests` + testes · **`4951bdf`** badges nos botões **“Abrir solicitações”** / **“Abrir pedidos recebidos”** em `AccountScreen.jsx` (somente `count > 0`, por papel; leitura sob demanda; **sem** listener global). **Não** alterou `firestore.rules`, schema, `calculations.js`, `App.jsx`, `Settings.jsx`, `payment.linkContext`, sync financeiro nem contrato automático. **Próxima subfase do plano:** **A2a** (arquivamento — **só decisões**, sem código).
+
+**Próximo recorte após esta entrega:** continuar **Bloco 1** conforme [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **A2a**, depois B1/B2; **A2b/A2c** só após A2a. Complementar com [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) e o **código**; [`plans/completed/`](./plans/completed/) **só** histórico (ver [`plans/README.md`](./plans/README.md)).
 
 ---
 
@@ -546,3 +548,4 @@ Ele funciona como:
 | 2026-05-03 | **Melhorias pós-v1.1 documentadas** em LoanRequest (`584d5b4`, `62bacf2`, `cd8db7e`): UX badge “Novo”, robustez `console.warn` em falha ao marcar leitura, limpeza drafts fornecedor; sem mudanças em rules/schema/cálculos/sync — ver matriz QA v1.1 (**Melhorias pós-pacote v1.1**). |
 | 2026-05-03 | **Roadmap vivo** de evoluções `loanRequests` **A1–F**: [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — só planejamento; `plans/completed/` permanece histórico; §9 aponta roadmap entre fontes vivas. |
 | 2026-05-04 | **Plano executável Bloco 1** (`loanRequests` — A1, A2a, B): [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); §2 e §9 alinhados. |
+| 2026-05-04 | **Fase A1 do Bloco 1 concluída:** commits **`dcc9f80`** · **`4951bdf`**; §2 (estado Bloco 1) e §9 (`loanRequest` v1.1 + Bloco 1) atualizados; **próxima subfase** **A2a** (decisões de arquivamento, sem código). |
