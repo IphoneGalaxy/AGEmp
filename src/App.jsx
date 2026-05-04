@@ -434,6 +434,8 @@ function App() {
             localStorageScope={storageScope}
             localDataContextLine={scopeLine}
             availableMoney={globalStats.availableMoney}
+            clients={clients}
+            onUpdateClients={handleUpdateClients}
           />
         )}
       </div>

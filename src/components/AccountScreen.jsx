@@ -84,8 +84,17 @@ const ModeToggle = ({ mode, onModeChange }) => (
  * @param {(msg: string) => void} [props.showToast]
  * @param {number} [props.availableMoney] — Total disponível local (reais) para alerta B2 no painel do fornecedor.
  * @param {number} [props.defaultInterestRate] — Taxa padrão (%) para sugestão na revisão Bloco 2 (novo contrato manual).
+ * @param {unknown[]} [props.clients] — Clientes financeiros locais para conversão LoanRequest → contrato (Bloco2-C).
+ * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
  */
-function AccountScreen({ onBack, showToast, availableMoney, defaultInterestRate = 10 }) {
+function AccountScreen({
+  onBack,
+  showToast,
+  availableMoney,
+  defaultInterestRate = 10,
+  clients = [],
+  onUpdateClients,
+}) {
   const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
     useAuth();
   const [mode, setMode] = useState('login');
@@ -579,6 +588,8 @@ function AccountScreen({ onBack, showToast, availableMoney, defaultInterestRate 
           showToast={showToast}
           availableMoney={availableMoney}
           defaultInterestRate={defaultInterestRate}
+          clients={clients}
+          onUpdateClients={onUpdateClients}
         />
       </div>
     );

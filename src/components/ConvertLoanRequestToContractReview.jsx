@@ -5,15 +5,18 @@ import {
   approvedAmountCentsToReaisOrNull,
   deriveLoanRequestClientDisplayLabel,
 } from '../utils/convertLoanRequestReviewDerive';
+import { applyApprovedLoanRequestConversion, todayIsoDateLocal } from '../utils/convertLoanRequestToLocalContract';
+import { generateId } from '../utils/ids';
 
 /**
- * Modal de revisão da conversão governada (Bloco2-B).
- * Não persiste contrato nem altera dados financeiros — apenas UI e confirmação explícita.
+ * Modal de revisão da conversão governada (Bloco2-B + persistência Bloco2-C).
  *
  * @param {Object} props
  * @param {boolean} props.open
  * @param {Record<string, unknown> | null} props.request — linha do painel fornecedor (`approved`).
  * @param {number} props.defaultInterestRate — taxa sugerida (%), mesma base que novos contratos manuais.
+ * @param {unknown[]} props.clients — snapshot financeiro local (escopo atual).
+ * @param {(updater: (prev: unknown[]) => unknown[]) => void} props.onUpdateClients — mesmo contrato que ClientView.
  * @param {() => void} props.onClose
  * @param {(msg: string) => void} [props.showToast]
  */
@@ -21,13 +24,19 @@ export default function ConvertLoanRequestToContractReview({
   open,
   request,
   defaultInterestRate,
+  clients,
+  onUpdateClients,
   onClose,
   showToast,
 }) {
   const [transferConfirmed, setTransferConfirmed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (open) setTransferConfirmed(false);
+    if (open) {
+      setTransferConfirmed(false);
+      setSubmitting(false);
+    }
   }, [open, request?.id]);
 
   if (!open || !request) return null;
@@ -46,9 +55,40 @@ export default function ConvertLoanRequestToContractReview({
       ? defaultInterestRate
       : 10;
 
-  const handleConfirmPlaceholder = () => {
-    showToast?.('A criação do contrato local será implementada na próxima etapa.');
-    onClose();
+  const handleConfirm = () => {
+    if (!transferConfirmed || submitting) return;
+    const list = Array.isArray(clients) ? clients : [];
+    if (typeof onUpdateClients !== 'function') {
+      showToast?.('Não foi possível atualizar os dados locais.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const loanId = generateId();
+      const newClientId = generateId();
+      const conversionDateIso = todayIsoDateLocal();
+
+      const result = applyApprovedLoanRequestConversion({
+        clients: list,
+        request,
+        interestRate: rateNum,
+        loanId,
+        newClientId,
+        conversionDateIso,
+      });
+
+      if (!result.ok) {
+        showToast?.(result.message);
+        return;
+      }
+
+      onUpdateClients(() => result.nextClients);
+      showToast?.('Contrato registrado localmente a partir do pedido na plataforma.');
+      onClose();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -57,7 +97,7 @@ export default function ConvertLoanRequestToContractReview({
       role="dialog"
       aria-modal="true"
       aria-labelledby="convert-loan-request-review-title"
-      onClick={onClose}
+      onClick={() => !submitting && onClose()}
     >
       <div
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-design-lg border border-edge bg-surface p-5 shadow-design-md sm:p-6"
@@ -70,8 +110,8 @@ export default function ConvertLoanRequestToContractReview({
           Registrar contrato local
         </h2>
         <p className="mt-2 text-xs leading-relaxed text-content-muted">
-          Revise os dados antes de qualquer registro no livro caixa deste aparelho. O pedido na
-          plataforma continua sendo apenas pré-financeiro.
+          Revise os dados antes de gravar no livro caixa deste aparelho. O pedido na plataforma continua
+          sendo apenas pré-financeiro.
         </p>
 
         <dl className="mt-4 space-y-3 rounded-design-md border border-edge/70 bg-surface-muted/50 px-3 py-3">
@@ -84,19 +124,18 @@ export default function ConvertLoanRequestToContractReview({
             <dd className="text-sm text-content-soft">{clientLabel}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-content-muted">Data sugerida para o contrato</dt>
+            <dt className="text-xs font-medium text-content-muted">Data do contrato (registro)</dt>
             <dd className="text-sm text-content-soft">{suggestedDate}</dd>
             <p className="mt-1 text-[11px] leading-relaxed text-content-muted">
-              Corresponde à data de hoje neste aparelho; o registro efetivo só ocorrerá quando a
-              próxima etapa persistir o contrato.
+              Usa a data de hoje neste aparelho no momento em que você confirma o registro (conforme
+              decisão de produto D6).
             </p>
           </div>
           <div>
-            <dt className="text-xs font-medium text-content-muted">Taxa de juros sugerida (%)</dt>
+            <dt className="text-xs font-medium text-content-muted">Taxa de juros (%)</dt>
             <dd className="text-sm font-medium tabular-nums text-content-soft">{formatRate(rateNum)}</dd>
             <p className="mt-1 text-[11px] leading-relaxed text-content-muted">
-              Pré-preenchimento com a taxa padrão das suas configurações (como em novo contrato
-              manual). Ajustes finos ficam para a próxima etapa.
+              Igual à taxa padrão das suas configurações (como em novo contrato manual nesta versão).
             </p>
           </div>
           {typeof request.id === 'string' && request.id.length > 0 ? (
@@ -125,8 +164,9 @@ export default function ConvertLoanRequestToContractReview({
           <input
             type="checkbox"
             checked={transferConfirmed}
+            disabled={submitting}
             onChange={(e) => setTransferConfirmed(e.target.checked)}
-            className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-50"
           />
           <span className="text-sm leading-snug text-content-soft">
             A transferência real já foi feita?
@@ -136,18 +176,19 @@ export default function ConvertLoanRequestToContractReview({
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
             type="button"
+            disabled={submitting}
             onClick={onClose}
-            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface-muted px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface-muted px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-50 sm:w-auto"
           >
             Cancelar
           </button>
           <button
             type="button"
-            disabled={!transferConfirmed}
-            onClick={handleConfirmPlaceholder}
+            disabled={!transferConfirmed || submitting}
+            onClick={handleConfirm}
             className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md bg-primary px-4 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >
-            Registrar contrato
+            {submitting ? 'Registrando…' : 'Registrar contrato'}
           </button>
         </div>
       </div>

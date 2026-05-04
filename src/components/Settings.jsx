@@ -77,6 +77,8 @@ const OptionGroup = ({ options, value, onChange }) => (
  * @param {string} [props.localStorageScope] - Escopo ativo (anonymous / account:uid) para backups.
  * @param {string} [props.localDataContextLine] - Linha discreta de contexto local.
  * @param {number} [props.availableMoney] - Total disponível local (reais), de calculateGlobalStats — painel fornecedor LoanRequest (B2).
+ * @param {unknown[]} [props.clients] - Clientes locais para conversão governada LoanRequest (Bloco2-C).
+ * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
  */
 const Settings = ({
   settings,
@@ -88,6 +90,8 @@ const Settings = ({
   localStorageScope = 'anonymous',
   localDataContextLine,
   availableMoney,
+  clients,
+  onUpdateClients,
 }) => {
   const fileInputRef = useRef(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
@@ -136,6 +140,8 @@ const Settings = ({
         showToast={showToast}
         availableMoney={availableMoney}
         defaultInterestRate={effectiveDefaultInterestRateFromSettings(settings)}
+        clients={clients}
+        onUpdateClients={onUpdateClients}
       />
     );
   }

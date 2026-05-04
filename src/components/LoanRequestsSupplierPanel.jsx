@@ -173,12 +173,16 @@ function shouldShowLocalAvailableShortfall(status, requestedAmountCents, availab
  * @param {(msg: string) => void} [props.showToast]
  * @param {number} [props.availableMoney] Total disponível local em reais (calculateGlobalStats)
  * @param {number} [props.defaultInterestRate] Taxa padrão (%) para sugestão na revisão Bloco 2 — igual à configuração de novo contrato manual.
+ * @param {unknown[]} [props.clients] Clientes financeiros locais (escopo atual) para conversão Bloco2-C.
+ * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients] Atualização imutável de clientes (mesmo contrato que ClientView).
  */
 export default function LoanRequestsSupplierPanel({
   user,
   showToast,
   availableMoney,
   defaultInterestRate = 10,
+  clients = [],
+  onUpdateClients,
 }) {
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
@@ -636,6 +640,8 @@ export default function LoanRequestsSupplierPanel({
         open={convertReviewRequest != null}
         request={convertReviewRequest}
         defaultInterestRate={defaultInterestRate}
+        clients={clients}
+        onUpdateClients={onUpdateClients}
         onClose={() => setConvertReviewRequest(null)}
         showToast={showToast}
       />
