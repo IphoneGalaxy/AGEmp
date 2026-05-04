@@ -91,6 +91,7 @@ A diretriz central do projeto continua sendo:
 - `accountRoles` funcionando com fallback para role;
 - vínculos fornecedor/cliente funcionando no Firestore;
 - coleção **`loanRequests`** (camada **pré-financeira**): pacote **v1** alinhado ao contrato congelado — **fechado formalmente** após smoke manual real OK (ver §4 LKG e [`QA_MATRIX_LOANREQUEST_V1.md`](./plans/completed/QA_MATRIX_LOANREQUEST_V1.md)); **extensão v1.1** (**`readBy*`** + fatia **CN** / `counteroffer`, `counteroffer_declined`) — **fechada** após smoke manual real OK e alinhamento rules — [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md), LKG **`lkg-2026-05-03-loanrequest-v1-1`** (marco só RB: **`lkg-2026-05-03-loanrequest-v1-1-rb`**);
+- **Bloco 1 (execução planejada, `loanRequests`):** plano executável vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — continuidade operacional A1 / A2a / B (subfases); **não** assume código já implementado além do descrito no plano;
 - o domínio financeiro **não** é salvo remotamente nesta fase.
 
 ### Estado atual do vínculo local
@@ -400,7 +401,7 @@ Guardrails continuam os da ponte pré-financeira ([`NEXT_PHASE_OFFICIAL.md`](./N
 
 **Melhorias pós-pacote v1.1 (pequenas, não nova fase):** após **`lkg-2026-05-03-loanrequest-v1-1`**, três commits afinam UX/local nos painéis cliente/fornecedor — **`584d5b4`** badge “Novo” só para novidade legítima entre as partes; **`62bacf2`** **`console.warn`** quando falhar marcação de leitura; **`cd8db7e`** limpar drafts de observação/contraproposta no fornecedor ao recolher ou após sucesso. **Sem** mudança em **`firestore.rules`**, **schema**, **transições**, **`calculations.js`**, **sync financeiro** ou **contrato automático**. Detalhe: [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) (seção **Melhorias pós-pacote v1.1**); [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) (quadro só para contexto — alterações foram de app, não de modelo remoto).
 
-**Próximo recorte após esta entrega:** **não** definido aqui — seguir [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), o roadmap vivo [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (**fases A1–F** planejadas, sem obrigar código) e o **código** como fontes vivas; [`plans/completed/`](./plans/completed/) **só** histórico (ver [`plans/README.md`](./plans/README.md)); qualquer nova fase exige decisão explícita de governança.
+**Próximo recorte após esta entrega:** **Bloco 1** — plano executável vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1 / A2a / B por subfases). Complementar com [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), o roadmap [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (**fases A1–F**) e o **código**; [`plans/completed/`](./plans/completed/) **só** histórico (ver [`plans/README.md`](./plans/README.md)).
 
 ---
 
@@ -544,3 +545,4 @@ Ele funciona como:
 | 2026-05-03 | **Fechamento do pacote `loanRequest` v1.1 (RB + CN):** smoke manual real OK integral; QA [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); base estável principal atualizada para **`lkg-2026-05-03-loanrequest-v1-1`**; próximo recorte de produto **não** escolhido neste arquivo — apenas fontes vivas ([`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), checkpoint, código). |
 | 2026-05-03 | **Melhorias pós-v1.1 documentadas** em LoanRequest (`584d5b4`, `62bacf2`, `cd8db7e`): UX badge “Novo”, robustez `console.warn` em falha ao marcar leitura, limpeza drafts fornecedor; sem mudanças em rules/schema/cálculos/sync — ver matriz QA v1.1 (**Melhorias pós-pacote v1.1**). |
 | 2026-05-03 | **Roadmap vivo** de evoluções `loanRequests` **A1–F**: [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — só planejamento; `plans/completed/` permanece histórico; §9 aponta roadmap entre fontes vivas. |
+| 2026-05-04 | **Plano executável Bloco 1** (`loanRequests` — A1, A2a, B): [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); §2 e §9 alinhados. |

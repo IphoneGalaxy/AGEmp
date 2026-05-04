@@ -8,6 +8,8 @@
 
 Este arquivo **descreve** o que poderá ser construído; **nenhuma linha aqui obriga código** já existente até decisão explícita de governança e critérios de entrada para implementação.
 
+- **Plano executável ativo (Bloco 1 — trechos A1, A2a, B):** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — subfases, critérios de aceite e sequência para Composer 2 Fast; **não** substitui este roadmap nem implementa nada por si só.
+
 ---
 
 ## Guardrails obrigatórios (todas as fases)
@@ -205,3 +207,4 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 | Data | Nota |
 |------|------|
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
+| 2026-05-04 | Referência ao plano executável **Bloco 1:** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1, A2a, B). |

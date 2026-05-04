@@ -22,6 +22,7 @@ O estado atual confirmado do projeto e:
 - o dominio financeiro nao esta sincronizado com Firebase;
 - a camada **`loanRequests`** existe no codigo (**v1** e **v1.1** com RB+CN conforme [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)) como solicitacao **somente pre-financeira** — **sem** converter automaticamente pedido em contrato e **sem** sync financeiro remoto declarado aqui.
 - evolucoes futuras **documentadas** sobre a mesma coleção (ordenacao A1–F) encontram-se no roadmap vivo [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — **planejamento** complementar; **`docs/plans/completed/`** continua **somente** referencia historica (nao plano ativo).
+- **Continuidade operacional (Bloco 1 — `loanRequests`, A1 / A2a / B):** plano executavel vivo em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md), alinhado ao roadmap A1–F; **nao** implementa por si so nem altera guardrails deste documento.
 
 ## 2. Decisao da proxima fase
 
@@ -181,3 +182,4 @@ Continuam fora desta fase:
 | 2026-05-03 | Ordem oficial de execucao documentada para **`loanRequest` v1.1** (primeiro timestamps `readBy*`, depois contraposta; pacote nominal v1.1 com confronto ao historico de numeracao previa): [`LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md`](./plans/completed/LOANREQUEST_V1_1_CONTRATO_FUNCIONAL.md) (arquivado). |
 | 2026-05-03 | **Factual pos-implementacao:** pacote **`loanRequest` v1.1 RB+CN** registrado como **fechado** em QA [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); LKG **`lkg-2026-05-03-loanrequest-v1-1`**. Este documento **nao escolhe** a proxima fase operacional — vetos (`converted_to_contract`, sync financeiro, FCM…) permanecem; ver [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md). |
 | 2026-05-03 | **Roadmap complementar (documento vivo):** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) descreve evolucoes **planejadas** A1–F em `loanRequests`; nao altera guardrails nem substitui este arquivo; **`plans/completed/`** permanece so historico. |
+| 2026-05-04 | **Plano executavel Bloco 1** (`loanRequests` — A1, A2a, B por subfases): [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md). Ao concluir o bloco, mover o arquivo para `docs/plans/completed/`. |
