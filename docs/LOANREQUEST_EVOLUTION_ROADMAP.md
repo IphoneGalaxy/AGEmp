@@ -8,7 +8,7 @@
 
 Este arquivo **descreve** o que poderá ser construído; **nenhuma linha aqui obriga código** já existente até decisão explícita de governança e critérios de entrada para implementação.
 
-- **Plano executável ativo (Bloco 1 — trechos A1, A2a, B1+B2):** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — subfases, critérios de aceite e sequência; **B2** entregue em **`07ef7e5`**; **A2b/A2c** e fechamento integral do bloco **pendentes** de governança — **não** substitui este roadmap nem implementa nada por si só.
+- **Bloco 1 — funcionalmente fechado (Opção A, 2026-05-04):** entregues **A1a, A1b, A2a, B1, B2**; plano **arquivado** (histórico): [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **não** é plano ativo. **A2b/A2c** **não** implementadas — **backlog**; **não** impediram o fechamento funcional. **Próxima fase recomendada:** **Bloco 2** (§ abaixo) — **ADR** ou planejamento próprio antes de código.
 
 ---
 
@@ -31,7 +31,7 @@ Mesma linha de [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), Project Rul
 
 Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de trabalho técnico, pertencem ao **planejamento e implementação futuros da Fase A2** neste roadmap — **não existem neste momento** como modelo obrigatório no Firestore até design + rules + QA próprios; este documento **não** os declara já criados.
 
-**Subfase A2a (Bloco 1 — decisão, sem código):** **concluída documentalmente** — contrato conceitual registrado em [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (§6 A2a): arquivamento **por lado**, terminais apenas, desarquivar permitido, **`updatedAt` intocado** no arquivo/desarquivo, exclusão/fora de escopo, rules/UI detalhadas **só** nas futuras **A2b/A2c**.
+**Subfase A2a (Bloco 1 — decisão, sem código):** **concluída documentalmente** — contrato conceitual em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) §6 A2a: arquivamento **por lado**, terminais apenas, desarquivar permitido, **`updatedAt` intocado** no arquivo/desarquivo, exclusão/fora de escopo, rules/UI detalhadas **só** nas futuras **A2b/A2c** (**backlog**).
 
 ---
 
@@ -48,7 +48,7 @@ Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de
 | **F** | Conversão governada pedido → **contrato local** | Opcional/discutível | **Sim** na fase própria | **ADR completa** + fluxo de revisão + critérios de entrada |
 | **Bloco 2** | **Mesmo tema que F**, nome de execução futura: *Conversão Governada de LoanRequest aprovado em Contrato Local* — ver § **Bloco 2** abaixo | **A definir** na fase | **Sim** (contrato/caixa locais após confirmação humana) | **ADR ou planejamento próprio obrigatório antes de código** — **não implementado** |
 
-Ordem recomendada: **A1** → **A2** → **B** avaliada em produção/smoke antes de **C**; **D** em paralelo somente após definir bem leitura de recebíveis sem regressão ao motor; **E** apenas com ADR aceite; **F** / **Bloco 2** apenas com ADR(s) e plano explícitos — **Bloco 2** é a **fase nomeada** para empacotar essa conversão **após** fechamento funcional do Bloco 1 (ver plano executável).
+**Bloco 1** encerrado funcionalmente — ver plano arquivado. Ordem sugerida para o que segue: **Bloco 2** (conversão governada) quando existir ADR/plano explícitos; **A2b/A2c** quando a equipa priorizar arquivamento na UI/rules; **C** após avaliação da Fase **B** em uso; **D** / **E** conforme decisão e ADR.
 
 ---
 
@@ -105,7 +105,7 @@ Reduzir ruído na lista mantendo **histórico** e **auditabilidade**: cada lado 
 
 ### Decisões A2a fechadas (documentação Bloco 1 — sem código)
 
-Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** terminais: `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **Não** arquivar `pending`, `under_review`, `counteroffer`. **Desarquivar** permitido (efeito só no lado do usuário; **não** reabre negócio). Arquivamento **não** apaga histórico. **`updatedAt` intocado** no arquivo/desarquivo. Detalhe canônico: [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md).
+Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** terminais: `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **Não** arquivar `pending`, `under_review`, `counteroffer`. **Desarquivar** permitido (efeito só no lado do usuário; **não** reabre negócio). Arquivamento **não** apaga histórico. **`updatedAt` intocado** no arquivo/desarquivo. Detalhe canônico: [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md).
 
 ### Fora do escopo (A2)
 
@@ -122,7 +122,7 @@ Arquivamento **não global**; um lado **não** esconde pedido do outro. **Só** 
 - Lista “ativos” não mostra arquivados sem toggle.
 - Rules: tentativa cruzada de escrita deve falhar; **`npm run test:rules:loanRequests`** obrigatório na fatia **A2b**.
 
-**Próxima subfase padrão do Bloco 1 após B2:** **`A2b`** (arquivamento — rules + campos) **ou** fechamento documental amplo do bloco, conforme [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md). **A2c** **somente após** **A2b**. **B2** **concluída** — **`07ef7e5`**.
+**Pós-Bloco 1:** **funcionalmente fechado** — **`A2b`**/**`A2c`** permanecem **backlog** (ver plano arquivado §6 A2). **B2** **concluída** — **`07ef7e5`**. **Próxima fase recomendada do produto:** **Bloco 2** (§ abaixo).
 
 ---
 
@@ -224,34 +224,46 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 - Fluxo próprio **revisor** antes de criar contrato ou alterar disponível/caixa/dashboard.
 - Não promete que dados na nuvem substituíram arquivo local ou vice-versa.
 
-**Empacotamento futuro:** a mesma ideia é referida no plano executável como **Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** (§ seguinte). **F** e **Bloco 2** **não** estão implementados.
+**Empacotamento futuro:** **Bloco 2** (§ seguinte) espelha a **Fase F**; registro histórico do **Bloco 1** em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md). **F** e **Bloco 2** **não** estão implementados.
 
 ---
 
-## Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local *(fase futura — sem implementação)*
+## Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local *(próxima fase recomendada — sem implementação)*
 
-**Status:** **planejamento recomendado apenas** — **nenhum** código, **nenhuma** alteração a **`firestore.rules`**, **schema** ou **`calculations.js`** neste registro. Deve **começar** por **ADR** ou **documento de planejamento próprio** antes de qualquer implementação.
+**Status:** **próxima fase recomendada** após **Bloco 1 funcionalmente fechado** (Opção A, 2026-05-04) — **somente** planejamento neste documento; **nenhum** código; **nenhuma** alteração a **`firestore.rules`**, **schema** ou **`calculations.js`** até **ADR** ou **planejamento próprio** aceite.
 
-### Objetivo
+### Objetivo (resumo)
 
-Permitir que um **LoanRequest** em estado **aprovado** (conforme regras pré-financeiras já existentes) possa **no futuro** originar um **contrato financeiro local**, **somente** após **confirmação humana explícita** de que a **transferência real** acordada foi efetuada.
+Permitir que um pedido **aprovado** (`LoanRequest`) possa ser **transformado** num **contrato financeiro local** **somente** após **confirmação humana explícita** de que a **transferência real** foi feita.
 
 ### Conceito central
 
 - Pedido **aprovado na plataforma** **não** cria contrato **automaticamente**.
 - A conversão é **governada**, **manual**, **revisável** e **local-first** (efeito no ciclo financeiro local só após passos explícitos no app).
+- Qualquer passo futuro exige **confirmação humana** sobre a transferência real, **tela de revisão**, e **criação do contrato local só depois** dessa confirmação; **preservar** **local-first** e **Firebase não** como fonte financeira autoritativa.
 
-### Diretrizes de produto (a detalhar antes de código)
+### Fluxo conceitual futuro *(não implementado)*
 
-- **CTA futuro** (exemplo): **“Registrar contrato local”** — não implementado.
-- **Tela de revisão** antes de materializar o contrato local — não implementada.
-- **Confirmação obrigatória** (exemplo de pergunta): *“A transferência real já foi feita?”* — só após o utilizador afirmar conscientemente é admissível **criar** o registro local do contrato.
-- O contrato local criado passaria a refletir onde o produto já reflete contratos hoje (**Clientes**, painéis agregados, **Total na Rua**, caixa, dashboard), **sempre** segundo as **regras existentes** do motor e do `storage` — **sem** prometer novo comportamento até ADR/plano.
-- **Evitar duplicidade** de contrato para o mesmo pedido — decisão técnica futura.
-- **Mapear / vincular cliente local** ao pedido — decisão futura (criar vs associar existente).
-- **Referência local** ao `loanRequestId` no objeto de contrato — decisão futura.
-- **Marcador remoto** no documento `loanRequest` indicando “convertido” vs registro **apenas local** — decisão futura; em qualquer caso **Firebase não** torna o financeiro autoritativo.
-- **Preservar:** o app **não** executa transferência bancária real; dados remotos **não** substituem o arquivo financeiro local como fonte única.
+1. **LoanRequest** **aprovado** (estado pré-financeiro já existente).  
+2. Ação futura (ex.): **“Registrar contrato local”**.  
+3. **Tela de revisão** antes de persistir o contrato.  
+4. Confirmação explícita: *“A transferência real já foi feita?”*  
+5. **Criação do contrato local** (após confirmação).  
+6. Reflexo no ciclo já existente: **Clientes**, **Painel**, **Total na Rua**, **caixa**, motor local — conforme regras atuais de produto (a detalhar no ADR/plano).
+
+### Decisões futuras *(antes de código)*
+
+- Mapear **cliente local** existente ou **criar** novo.  
+- **Evitar contrato duplicado** para o mesmo pedido.  
+- **Referência** ao `loanRequestId` no contrato local ou não.  
+- **Marcador** no documento remoto `loanRequest` vs registo **só local**.  
+- **Impacto no caixa/disponível** na criação do contrato (alinhamento ao motor existente).  
+- **Validações**, **smoke manual** e matriz QA específica.  
+- **ADR** ou **documento de planejamento próprio** obrigatório **antes** da primeira linha de código.
+
+### Alinhamento de UX *(a fixar no ADR/plano)*
+
+Microcopy, revisão e confirmação humana seguem o desenho a aprovar; hierarquia visual do produto: [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md).
 
 ---
 
@@ -260,7 +272,8 @@ Permitir que um **LoanRequest** em estado **aprovado** (conforme regras pré-fin
 | Data | Nota |
 |------|------|
 | 2026-05-03 | Criação do roadmap **A1–F** como documentação viva complementar ao handoff, checkpoint e [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — só planejamento; sem implementação de produto associada neste arquivo. |
-| 2026-05-04 | Referência ao plano executável **Bloco 1:** [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) (A1, A2a, B1+B2 com **B2** em **`07ef7e5`**; **A2b/A2c** e fechamento integral **pendentes**). |
+| 2026-05-04 | Plano **Bloco 1** arquivado: [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — A1, A2a, B1+B2 (**`07ef7e5`**). |
+| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; **A2b/A2c** em **backlog**; **Bloco 2** **próxima fase recomendada** — **não** implementada. |
 | 2026-05-04 | **Fase A1 concluída** (Bloco 1): **`dcc9f80`** (utilitário + testes) · **`4951bdf`** (badges na Conta). **Próxima subfase do plano:** **A2a** (decisões de arquivamento, sem código). **A2b/A2c, B–F** não concluídas. |
 | 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** / **`calculateGlobalStats`**; B2 com **`requestedAmount / 100`**; ver Fase B. |
-| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — alerta não bloqueante no fornecedor; smoke registrado. **Próxima no Bloco 1:** **A2b** / fechamento documental (ver plano executável). **Bloco 2** (conversão governada) adicionado como fase futura nomeada — **sem** código. |
+| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — alerta não bloqueante no fornecedor; smoke registrado. |

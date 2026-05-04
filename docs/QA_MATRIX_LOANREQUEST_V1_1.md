@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **A2b** / fechamento Bloco 1 (governança) · **B2 concluída** — **`07ef7e5`** · **B1 (análise)** concluída — ver § **Subfase B1** e **Subfase B2** |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2** próxima fase recomendada — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -131,9 +131,9 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | Campo | Registro |
 |-------|----------|
 | **Natureza** | **Só decisão** — **não** há campos Firestore, rules, helpers, UI nem testes alterados por esta subfase. |
-| **Contrato canônico** | [`PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) §6 (A2a) — arquivamento **por lado**; terminais apenas (`approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`); **não** arquivar abertos (`pending`, `under_review`, `counteroffer`); **desarquivar** permitido (só o lado do usuário; **não** reabre negócio); **`updatedAt` intocado** no arquivo/desarquivo; **`delete`** fora do produto; `archivedByClient` / `archivedBySupplier` **planejados** para futura **A2b**. |
+| **Contrato canônico** | [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) §6 (A2a) — arquivamento **por lado**; terminais apenas (`approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`); **não** arquivar abertos (`pending`, `under_review`, `counteroffer`); **desarquivar** permitido (só o lado do usuário; **não** reabre negócio); **`updatedAt` intocado** no arquivo/desarquivo; **`delete`** fora do produto; `archivedByClient` / `archivedBySupplier` **planejados** para futura **A2b** (**backlog** após fechamento funcional Bloco 1). |
 | **Futuro QA / smoke (A2b+A2c)** | Rules: papel só grava o próprio campo; cruzamento **falha**; testes **`test:rules:loanRequests`** obrigatórios em A2b; UI A2c: lista oculta arquivados + “Mostrar arquivados”; copys **arquivar** ≠ **excluir**; regressão leve em badges A1 após mudar listagens. |
-| **Estado** | **A2b / A2c** **não** concluídas · **B1** concluída (análise) · **B2** concluída (**`07ef7e5`**) · **Próxima implementação típica:** **A2b** (salvo priorizar fechamento documental do Bloco 1). |
+| **Estado** | **A2b / A2c** **não** concluídas (**backlog**) · **B1** concluída (análise) · **B2** concluída (**`07ef7e5`**) · **Bloco 1 funcionalmente fechado** sem A2b/A2c. |
 
 ---
 
@@ -150,3 +150,4 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-04 | **Subfase A2a (arquivamento) documentada** — § dedicada; **sem** código. |
 | 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |
 | 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke; **Bloco 2** futuro só no roadmap. |
+| 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); **Bloco 2** próxima fase recomendada. |

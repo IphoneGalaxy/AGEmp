@@ -4,24 +4,28 @@
 
 | Campo | Valor |
 |-------|--------|
-| **Natureza** | Plano **vivo e executável** para continuidade entre chats (limite de contexto do Cursor). |
+| **Natureza** | **Histórico / referência** — plano executável do **Bloco 1** **arquivado** após decisão de governança **Opção A** (2026-05-04): **Bloco 1 funcionalmente fechado**. **Não** é plano ativo. |
 | **Projeto** | AGEmp / Finanças Pro. |
-| **Relação com** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) | Este arquivo **detalha** o Bloco 1: **A1** (implementada), **A2a** (documental), **B1** (análise de métrica **concluída**), **B2** (alerta fornecedor — **concluída** em **`07ef7e5`**); **A2b/A2c** em ciclo futuro — **não** substitui o roadmap nem muda os guardrails descritos lá. **Bloco 2** (conversão governada pedido → contrato local) está **só** no roadmap — **sem** código. |
-| **Implementação** | **Não** há implementação automática por existir este texto. Cada subfase exige execução explícita no repositório, smoke e commits conforme governança. |
-| **Localização** | Plano **ativo** permanece em **`docs/`** (este arquivo). Quando o bloco for **finalizado** (smoke + docs atualizados), mover para **`docs/plans/completed/`**. |
-| **`docs/plans/completed/`** | Continua **somente histórico** — não é plano ativo (ver [`plans/README.md`](./plans/README.md)). |
+| **Relação com** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md) | Este arquivo **registra** o escopo e as subfases **entregues** do Bloco 1; **A2b/A2c** ficam em **backlog** (ver §1.1). A **próxima fase recomendada** do produto é **Bloco 2** no roadmap — **sem** código até **ADR** ou planejamento próprio. |
+| **Implementação** | **Não** há implementação automática por existir este texto. Subfases exigiram execução explícita no repositório na vigência do plano. |
+| **Localização** | **`docs/plans/completed/`** (este arquivo). Para estado atual e próximos passos, priorizar [`HANDOFF_MASTER.md`](../HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](../CHECKPOINT_CHECKLIST.md) e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md). |
+| **`docs/plans/completed/`** | **Referência histórica** — não tratar como plano ativo (ver [`README.md`](../README.md) nesta pasta `plans`). |
 
-### Status do Bloco 1 (execução parcial)
+### 1.1 Bloco 1 funcionalmente fechado (Opção A — governança)
+
+**Decisão:** **Opção A** — fechar o **Bloco 1** **funcionalmente** **agora**, com **A2b/A2c** como **backlog / futuro** (melhorias de organização e arquivamento **por lado**), **sem** impedir o fechamento. O **valor central seguinte** passa a ser **Bloco 2** — conectar **LoanRequest aprovado** a **contrato financeiro local** **somente** após **confirmação humana** explícita de que a **transferência real** foi feita — **sem** contrato automático a partir do pedido remoto; **local-first** preservado; **Firebase não** como fonte financeira autoritativa.
+
+### Entregas do Bloco 1 (escopo funcional concluído)
 
 | Fase / subfase | Estado |
 |----------------|--------|
-| **A1** (A1a + A1b) | **Concluída.** **`dcc9f80`** — utilitário `countUnreadLoanRequests` + testes (`loanRequestUnreadCount.js`). **`4951bdf`** — badges numéricos discretos em **AccountScreen** nos botões **“Abrir solicitações”** (papel cliente) e **“Abrir pedidos recebidos”** (papel fornecedor). **Sem** alteração de `firestore.rules`, **`calculations.js`**, schema Firestore na entrega A1, sync financeiro remoto, contrato automático nem `payment.linkContext`. Carga sob demanda na vista principal da conta; **sem** listener global. |
-| **A2a** | **Decisões documentadas (sem código).** Contrato conceitual de arquivamento **por lado** fechado antes de **A2b/A2c** — ver tabela desta subfase e § **Decisões A2a fechadas** abaixo. **Não** implementa campos, rules, helpers, UI nem testes. |
-| **A2b / A2c** | **Futuras** — implementação técnica (**A2b**) e UI (**A2c**) **não** iniciadas neste registro. |
-| **B1** | **Concluída (análise/decisão, sem código).** Único export relevante em **`calculations.js`:** `calculateGlobalStats(clients, fundsTransactions, timeInfo)`. Retorno: **`availableMoney`** — já usado no produto como **“Total Disponível”** (Painel). **Métrica acordada para B2:** `availableMoney`. **Unidades:** `loanRequest.requestedAmount` em **centavos**; financeiro local em **reais** — na **B2**, comparar **`requestedAmount / 100`** com **`availableMoney`**. **B2:** alerta **informativo**, **não bloqueante**; referência **local** do app (**não** saldo bancário real); **sem** alterar `calculations.js`; **sem** gravar no Firestore por causa do alerta; **sem** sync financeiro, contrato automático ou `payment.linkContext`. |
-| **B2** | **Concluída.** **`07ef7e5`** — alerta **informativo** e **não bloqueante** no **`LoanRequestsSupplierPanel`**: repasse de **`availableMoney`** (`globalStats` / **`calculateGlobalStats`**) **App.jsx → Settings.jsx → AccountScreen.jsx → LoanRequestsSupplierPanel.jsx**; exibição quando **`requestedAmount / 100 > availableMoney`** e status **`pending`** ou **`under_review`** (valores finitos); **sem** alerta em terminais nem em **`counteroffer`** (aguardando cliente). **Não** alterou **`calculations.js`**, **`firestore.rules`**, schema Firestore, transições, **`payment.linkContext`**, sync remoto nem criou contrato automático; **não** grava Firestore por causa do alerta. Smoke manual da equipe: aprovação permanece permitida com alerta visível; mobile/dark OK. |
-| **Próxima subfase recomendada** | **`A2b`** (rules + persistência de arquivamento) **ou** **fechamento documental amplo** do Bloco 1 neste plano — conforme governança. **C–F** e **Bloco 2** (ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)) continuam **fora** da implementação do Bloco 1 até decisão explícita. **A2c** somente após **A2b**. |
-| **Fechamento integral do Bloco 1 neste arquivo** | **Não** concluído neste registro: permanecem **A2b/A2c** e o ritual de **§ Fechamento** (smoke amplo + eventual mover para **`docs/plans/completed/`**). A **entrega A1 + A2a + B1 + B2 (código)** está registrada; o **arquivo de plano** segue **ativo** em **`docs/`**. |
+| **A1a** | **Concluída.** **`dcc9f80`** — utilitário `countUnreadLoanRequests` (`loanRequestUnreadCount.js`) + testes. |
+| **A1b** | **Concluída.** **`4951bdf`** — badges numéricos discretos em **AccountScreen** nos botões **“Abrir solicitações”** / **“Abrir pedidos recebidos”**. |
+| **A2a** | **Concluída (só documentação).** Decisões de arquivamento **por lado** — **sem** código; ver §6 A2a. |
+| **B1** | **Concluída (análise).** Métrica **`availableMoney`** via **`calculateGlobalStats`**; comparação B2: **`requestedAmount / 100`** vs reais. |
+| **B2** | **Concluída.** **`07ef7e5`** — alerta **informativo** e **não bloqueante** no **`LoanRequestsSupplierPanel`**; encadeamento **`App.jsx` → `Settings.jsx` → `AccountScreen.jsx` → painel**; **sem** alterar **`calculations.js`**, **`firestore.rules`**, schema, transições nem Firestore por causa do alerta. |
+| **A2b / A2c** | **Backlog / futuro** — **não** implementadas; **não** bloqueiam o fechamento funcional do Bloco 1. Quando priorizadas: **A2c** somente após **A2b**. |
+| **Próxima fase recomendada (produto)** | **Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md). **Deve** começar por **ADR** ou **planejamento próprio** antes de código — **não implementado**. |
 
 ---
 
@@ -43,7 +47,7 @@
 - **Delete:** vedado pelas regras Firestore (`allow delete: false` para `loanRequests`).
 - **Camada pré-financeira:** sem conversão automática para contrato local/remoto; sem sync financeiro remoto do domínio financeiro.
 
-Referências técnicas vivas: [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md), [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md).
+Referências técnicas vivas: [`FIRESTORE_LOANREQUESTS.md`](../FIRESTORE_LOANREQUESTS.md), [`QA_MATRIX_LOANREQUEST_V1_1.md`](../QA_MATRIX_LOANREQUEST_V1_1.md).
 
 ---
 
@@ -64,7 +68,7 @@ Referências técnicas vivas: [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQU
 | **C** | Bloqueio/restrição por saldo — só após **B** validada e **decisão explícita**. |
 | **D** | Sugestão de contraproposta por recebíveis futuros — fora do escopo de implementação do Bloco 1. |
 | **E** | Pendência futura / lembretes — exige **ADR** antes de qualquer código. |
-| **F** | Conversão governada para contrato local — exige **ADR completa** e confirmação humana explícita. **Nome de execução futura:** **Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** (detalhe em [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)) — **não implementado**. |
+| **F** | Conversão governada para contrato local — exige **ADR completa** e confirmação humana explícita. **Nome de execução futura:** **Bloco 2 — Conversão Governada de LoanRequest aprovado em Contrato Local** (detalhe em [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md)) — **não implementado**. |
 
 ---
 
@@ -72,14 +76,14 @@ Referências técnicas vivas: [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQU
 
 1. **Financeiro local-first** preservado.
 2. **Sem** sync financeiro remoto autoritativo (clientes/contratos/pagamentos/caixa/dashboard como fonte na nuvem).
-3. **Sem** `payment.linkContext` (ADR atual: [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md)).
+3. **Sem** `payment.linkContext` (ADR atual: [`ADR_PAYMENT_LINK_CONTEXT.md`](../ADR_PAYMENT_LINK_CONTEXT.md)).
 4. **Sem** contrato automático a partir de pedido remoto.
 5. **Sem** promessa de transferência real nem validação bancária na copy.
 6. **`calculations.js` intocado** no Bloco 1 — B apenas **lê** agregadores/funções já existentes; se não houver agregador seguro, **parar** em B1 e decidir.
 7. **`firestore.rules`** — **não** alterar neste bloco até a **futura A2b** (arquivamento). A1 e B **não** dependem de mudança de rules.
 8. **C / D / E / F** não entram como implementação no Bloco 1.
 
-Microcopy e UI: seguir [`DESIGN.md`](../DESIGN.md), [`BRAND.md`](../BRAND.md), [`PROJECT_OVERRIDES.md`](../PROJECT_OVERRIDES.md) — poucos destaques, mobile-first, badges discretos.
+Microcopy e UI: seguir [`DESIGN.md`](../../DESIGN.md), [`BRAND.md`](../../BRAND.md), [`PROJECT_OVERRIDES.md`](../../PROJECT_OVERRIDES.md) — poucos destaques, mobile-first, badges discretos.
 
 ---
 
@@ -95,7 +99,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 6. **A2b / A2c** — **Futuras**; **não** executar sem **aprovação explícita** após A2a; **A2c** **só depois** de **A2b** concluída.
 7. ~~**Subfase B1** — **Próxima no fluxo padrão do Bloco 1** após A2a — confirmar métrica de saldo (**"disponível"** preferida) com funções/agregadores **já existentes** em `calculations.js`, **sem** editar o arquivo (**salvo** decisão explícita de priorizar **A2b** antes).~~ **Concluída** (análise) — métrica: **`availableMoney`** via **`calculateGlobalStats`**; ver §6 B1.
 8. ~~**Subfase B2** — alerta não bloqueante no painel do fornecedor (**salvo** priorizar **A2b**).~~ **Concluída** — commit **`07ef7e5`**; ver §6 B2 e status no §1.
-9. **Fechamento do Bloco 1** — Smoke amplo + atualização dos **documentos vivos**; **mover** este plano para `docs/plans/completed/` **somente** quando governança considerar o bloco **integralmente** encerrado (ex.: após **A2b+A2c** se fizerem parte do mesmo bloco, ou após decisão explícita de fechar sub-bloco sem arquivamento).
+9. ~~**Fechamento do Bloco 1** — mover plano para `docs/plans/completed/`.~~ **Feito** — **Opção A** (governança 2026-05-04): **Bloco 1 funcionalmente fechado** **sem** A2b/A2c; arquivo arquivado aqui; próxima fase recomendada: **Bloco 2** (ver docs vivos).
 
 ---
 
@@ -106,7 +110,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 | Campo | Conteúdo |
 |-------|----------|
 | **Objetivo** | Alinhar o executor ao estado factual do repo e aos guardrails antes de codar. |
-| **Escopo** | Leitura deste plano, [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md), [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md), [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md), [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md); trechos de `AccountScreen.jsx`, painéis LoanRequest, `loanRequestsFirestore.js`. |
+| **Escopo** | Leitura deste plano, [`HANDOFF_MASTER.md`](../HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](../CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](../NEXT_PHASE_OFFICIAL.md), [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md), [`FIRESTORE_LOANREQUESTS.md`](../FIRESTORE_LOANREQUESTS.md), [`QA_MATRIX_LOANREQUEST_V1_1.md`](../QA_MATRIX_LOANREQUEST_V1_1.md); trechos de `AccountScreen.jsx`, painéis LoanRequest, `loanRequestsFirestore.js`. |
 | **Arquivos prováveis** | Nenhum (somente leitura). |
 | **Firestore/rules** | Não |
 | **Financeiro local** | Não |
@@ -154,7 +158,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 | Campo | Conteúdo |
 |-------|----------|
 | **Estado** | **Documentação fechada** — decisões registradas nos docs vivos; **nenhuma** implementação. |
-| **Objetivo** | Fechar o **contrato conceitual** antes de A2b (rules + helpers + testes + possível [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md)). |
+| **Objetivo** | Fechar o **contrato conceitual** antes de A2b (rules + helpers + testes + possível [`FIRESTORE_LOANREQUESTS.md`](../FIRESTORE_LOANREQUESTS.md)). |
 | **Escopo** | Somente texto em `docs/` — ver **Decisões A2a fechadas** abaixo. |
 | **Arquivos prováveis** | Documentos vivos (`docs/*.md` conforme governança); **zero** alteração em `src/`, `firestore.rules`, testes. |
 | **Firestore/rules** | **Não** nesta subfase |
@@ -184,7 +188,7 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 |-------|----------|
 | **Objetivo** | Implementar persistência e segurança do arquivamento após A2a. |
 | **Pré-requisito** | Decisões **A2a** documentadas (§6); governança autoriza código. |
-| **Escopo mínimo esperado** | `firestore.rules`; helpers em `src/firebase/loanRequestsFirestore.js` (e correlatos conforme padrão do repo); **`npm run test:rules:loanRequests`** verde; atualização de [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) quando o modelo estiver real; smoke manual cruzado (cliente/fornecedor). **Sem** `delete`. **`updatedAt`** **não** muda no arquivamento/desarquivamento (política A2a). |
+| **Escopo mínimo esperado** | `firestore.rules`; helpers em `src/firebase/loanRequestsFirestore.js` (e correlatos conforme padrão do repo); **`npm run test:rules:loanRequests`** verde; atualização de [`FIRESTORE_LOANREQUESTS.md`](../FIRESTORE_LOANREQUESTS.md) quando o modelo estiver real; smoke manual cruzado (cliente/fornecedor). **Sem** `delete`. **`updatedAt`** **não** muda no arquivamento/desarquivamento (política A2a). |
 | **Arquivos prováveis** | `firestore.rules`, `src/firebase/loanRequestsFirestore.js`, `__tests__/firestore/...` |
 | **Firestore/rules** | **Sim** |
 | **Financeiro local** | Não |
@@ -248,13 +252,13 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 ---
 
-### Fechamento do Bloco 1
+### Fechamento do Bloco 1 *(registro histórico)*
 
 | Campo | Conteúdo |
 |-------|----------|
-| **Objetivo** | Encerrar o bloco com evidência de regressão e documentação alinhada. |
-| **Escopo** | Smoke amplo A1+B; atualizar docs conforme §9; mover **este arquivo** para `docs/plans/completed/` quando o Bloco 1 estiver **integralmente** concluído (incluindo A2b/A2c **se** forem feitos no mesmo bloco — caso contrário, fechar sub-bloco A1+B e manter plano ativo até A2). |
-| **Nota operacional** | Se apenas **A1 + A2a + B** forem entregues neste ciclo, ao fechar: atualizar roadmap/handoff; **A2b/A2c** podem abrir um “Bloco 1b” ou continuar neste plano até mover ao `completed/`. |
+| **Decisão** | **Opção A** — **Bloco 1 funcionalmente fechado** com **A1a, A1b, A2a, B1, B2**; **A2b/A2c** em **backlog**, sem bloquear o fechamento. |
+| **Estado do arquivo** | Plano **arquivado** em **`docs/plans/completed/`** (2026-05-04). **Não** é plano ativo. |
+| **Próxima fase recomendada** | **Bloco 2** — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md); **ADR** ou planejamento próprio **antes** de código. |
 
 ---
 
@@ -266,9 +270,9 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 | **A2** | Arquivamento **por lado** (cliente / fornecedor), **não** global. **Excluir** documento remoto continua **fora** do escopo; `delete` permanece vedado. Status arquiváveis **apenas** terminais: `approved`, `rejected`, `cancelled_by_client`, `counteroffer_declined`. **Não** arquivar `pending` / `under_review` / `counteroffer`. Desarquivar **permitido** (só afeta o lado que desarquiva; **não** reabre negócio). |
 | **A2 — `updatedAt`** | **Decidido (A2a):** arquivamento/desarquivamento **não** alteram `updatedAt` — metadado por lado, alinhado à filosofia dos `readBy*`. |
 | **A2a** | **Somente decisão/documentação** — **concluída** neste registro; **sem** campos implementados. |
-| **A2b / A2c** | **Não** concluídas; **A2c** depois de **A2b**. |
+| **A2b / A2c** | **Backlog / futuro** — **não** concluídas (Opção A); **A2c** depois de **A2b** quando priorizado. |
 | **B** | **B1 concluída (análise):** métrica = **`availableMoney`** retornado por **`calculateGlobalStats`**. **B2 concluída (`07ef7e5`):** mesma comparação **`requestedAmount / 100`** vs **`availableMoney`**; alerta **informativo** e **não bloqueante**; **sem** alterar `calculations.js`; **sem** gravar `loanRequest` por causa do alerta. |
-| **C/D/E/F** | **Roadmap apenas**; não fazem parte da implementação do Bloco 1. **Bloco 2** (evolução de **F**) — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — **planejamento futuro**, **sem** código. |
+| **C/D/E/F** | **Roadmap apenas**; não fazem parte da implementação do Bloco 1. **Bloco 2** (evolução de **F**) — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md) — **planejamento futuro**, **sem** código. |
 
 ---
 
@@ -288,27 +292,26 @@ Ordem **obrigatória** (sem paralelizar subfases no mesmo prompt):
 
 | Momento | Documento(s) |
 |---------|----------------|
-| Após **A1** completo | [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) (A1); [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) — **feito (2026-05-04)** — ver § Bloco 1 / A1. |
-| Após **A2** completo (A2b+A2c) | [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md); roadmap (A2); matriz QA; `HANDOFF_MASTER` / `CHECKPOINT` se LKG/handoff evoluírem. |
+| Após **A1** completo | [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md) (A1); [`QA_MATRIX_LOANREQUEST_V1_1.md`](../QA_MATRIX_LOANREQUEST_V1_1.md) — **feito (2026-05-04)** — ver § Bloco 1 / A1. |
+| Após **A2** completo (A2b+A2c) | [`FIRESTORE_LOANREQUESTS.md`](../FIRESTORE_LOANREQUESTS.md); roadmap (A2); matriz QA; `HANDOFF_MASTER` / `CHECKPOINT` se LKG/handoff evoluírem. |
 | Após **B1** (métrica) | Documentação viva do Bloco 1 — **feito** — ver §6 B1 e decisão **B** em §7. |
-| Após **B** completo (B2 implementada) | Roadmap (B); matriz QA (smoke alerta) — **feito (2026-05-04)** — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) e [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md). |
-| **Fechamento Bloco 1** | [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) se aplicável; **mover** este plano para `docs/plans/completed/`. |
+| Após **B** completo (B2 implementada) | Roadmap (B); matriz QA (smoke alerta) — **feito (2026-05-04)** — ver [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md) e [`QA_MATRIX_LOANREQUEST_V1_1.md`](../QA_MATRIX_LOANREQUEST_V1_1.md). |
+| **Fechamento Bloco 1** | **Feito (Opção A, 2026-05-04)** — [`HANDOFF_MASTER.md`](../HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](../CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](../NEXT_PHASE_OFFICIAL.md), [`LOANREQUEST_EVOLUTION_ROADMAP.md`](../LOANREQUEST_EVOLUTION_ROADMAP.md); plano arquivado neste path. |
 
 ---
 
-## 10. Prompt de retomada para novo chat no Cursor
+## 10. Prompt de retomada *(histórico — Bloco 1 arquivado)*
 
-Cole ou adapte o bloco abaixo ao abrir um novo chat para continuar o Bloco 1:
+O **Bloco 1** está **funcionalmente fechado**. Para trabalho novo, priorizar **Bloco 2** no roadmap e handoff. Referência deste plano: **`docs/plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`**.
 
 ```text
-Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
+Continuidade AGEmp / Finanças Pro — após Bloco 1 (arquivado).
 
-1. Ler o plano executável: docs/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md
-2. Ler docs/HANDOFF_MASTER.md, docs/CHECKPOINT_CHECKLIST.md, docs/NEXT_PHASE_OFFICIAL.md e docs/LOANREQUEST_EVOLUTION_ROADMAP.md
-3. Identificar a próxima subfase pendente (**A2b** / **A2c** **ou** fechamento formal §9 — **B2** já entregue em **`07ef7e5`**; **A2c** só após **A2b**) e executar somente essa subfase
-4. Não tratar docs/plans/completed/ como plano ativo
-5. Não implementar mais de uma subfase por sessão/prompt
-6. Preservar guardrails: financeiro local-first; sem sync financeiro remoto; sem payment.linkContext; sem contrato automático; sem promessa de transferência real; calculations.js intocado; firestore.rules só na futura A2b
+1. Ler docs/HANDOFF_MASTER.md, docs/CHECKPOINT_CHECKLIST.md, docs/LOANREQUEST_EVOLUTION_ROADMAP.md e docs/NEXT_PHASE_OFFICIAL.md
+2. Bloco 1: histórico em docs/plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md — não é plano ativo
+3. Próxima fase recomendada: Bloco 2 (conversão governada) — ADR ou planejamento antes de código
+4. A2b/A2c: backlog opcional (arquivamento por lado) — não bloqueiam o encerramento funcional do Bloco 1
+5. Preservar guardrails: local-first; Firebase não financeiro autoritativo; sem contrato automático; sem payment.linkContext; sem sync financeiro remoto não planeado
 ```
 
 ---
@@ -322,4 +325,5 @@ Continuidade AGEmp / Finanças Pro — Bloco 1 (LoanRequest operacional).
 | 2026-05-04 | **Fase A1 concluída:** **`dcc9f80`** (A1a, utilitário + testes) · **`4951bdf`** (A1b, badges na Conta). Próxima: **A2a** (decisões de arquivamento, sem código). |
 | 2026-05-04 | **Subfase A2a concluída (documental):** contrato de arquivamento por lado, terminais, desarquivar, `updatedAt` intocado, rules/UI futuras — **sem** código. **Próxima recomendada:** **B1** (salvo priorizar **A2b**). |
 | 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** via **`calculateGlobalStats`**; comparação B2 com **`requestedAmount / 100`**; **B2** autorizada a seguir **salvo** priorizar **A2b**. **Sem** alteração de código. |
-| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — alerta não bloqueante no painel fornecedor; repasse **`availableMoney`** até **`LoanRequestsSupplierPanel`**; **`calculations.js`** / rules / schema / Firestore-write por alerta **intocados**; smoke manual OK. **Bloco 2** (conversão governada) registrado como fase futura no roadmap — **sem** implementação. **Fechamento integral** do Bloco 1 (mover `completed/`) **adiado** à próxima rodada de governança. |
+| 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — alerta não bloqueante no painel fornecedor; repasse **`availableMoney`** até **`LoanRequestsSupplierPanel`**; **`calculations.js`** / rules / schema / Firestore-write por alerta **intocados**; smoke manual OK. **Bloco 2** (conversão governada) registrado como fase futura no roadmap — **sem** implementação. |
+| 2026-05-04 | **Governança Opção A — Bloco 1 funcionalmente fechado:** **A2b/A2c** passam a **backlog**; **não** bloqueiam o fechamento; plano **movido** para **`docs/plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`**; **próxima fase recomendada:** **Bloco 2** (ver roadmap e handoff). |
