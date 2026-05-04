@@ -137,6 +137,12 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 
 ---
 
+## Referência futura — Bloco 2 (Conversão governada)
+
+Após implementação das subfases **Bloco2-A–E**, registar smoke e regressões conforme [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §10 (QA/riscos). **Estado atual:** ADR **proposta**; **nenhuma** linha de código do Bloco 2 nesta matriz até novo ciclo QA dedicado.
+
+---
+
 ## Histórico
 
 | Data | Nota |
@@ -151,3 +157,4 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-04 | **Subfase B1 (métrica disponível) documentada** — **B2** pode seguir; **B2** **não** implementada. |
 | 2026-05-04 | **Subfase B2 concluída:** **`07ef7e5`** — § dedicada e smoke; **Bloco 2** futuro só no roadmap. |
 | 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano em [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md); **Bloco 2** próxima fase recomendada. |
+| 2026-05-04 | **Bloco2-0:** referência futura de QA — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (**proposto**); implementação **não** iniciada. |
