@@ -1,3 +1,5 @@
+import { normalizeDisplayNameForSnapshot } from '../utils/displayNameSnapshots';
+
 import { USER_ROLES } from './roles';
 
 /** Coleção top-level (v1 pré-financeira). Ver `docs/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`. */
@@ -72,6 +74,38 @@ export const LOAN_REQUEST_MIN_AMOUNT_CENTS = 1;
 export const LOAN_REQUEST_MAX_AMOUNT_CENTS = 9999999999;
 
 export const LOAN_REQUEST_MAX_NOTE_CHARS = 1000;
+
+/**
+ * Campos opcionais para create em loanRequests (ADR identidade pública / snapshots).
+ * Preferência: valores no vínculo aprovado; fallback `users/{uid}.displayName` normalizado.
+ * Omite chaves quando não há texto útil (evita string vazia e null explícito).
+ *
+ * @param {Record<string, unknown>} linkData documento `links/{linkId}`
+ * @param {Record<string, unknown> | null | undefined} clientProfile `users/{clientId}`
+ * @param {Record<string, unknown> | null | undefined} supplierProfile `users/{supplierId}`
+ * @returns {{ clientDisplayNameSnapshot?: string; supplierDisplayNameSnapshot?: string }}
+ */
+export function buildLoanRequestCreateSnapshotFields(
+  linkData,
+  clientProfile,
+  supplierProfile,
+) {
+  let clientSnap = normalizeDisplayNameForSnapshot(linkData?.clientDisplayNameSnapshot);
+  if (clientSnap === null) {
+    clientSnap = normalizeDisplayNameForSnapshot(clientProfile?.displayName);
+  }
+
+  let supplierSnap = normalizeDisplayNameForSnapshot(linkData?.supplierDisplayNameSnapshot);
+  if (supplierSnap === null) {
+    supplierSnap = normalizeDisplayNameForSnapshot(supplierProfile?.displayName);
+  }
+
+  /** @type {{ clientDisplayNameSnapshot?: string; supplierDisplayNameSnapshot?: string }} */
+  const out = {};
+  if (clientSnap !== null) out.clientDisplayNameSnapshot = clientSnap;
+  if (supplierSnap !== null) out.supplierDisplayNameSnapshot = supplierSnap;
+  return out;
+}
 
 /** v1.1 RB — só metadado operacional; rules são autoritativas sobre escrita */
 export const LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD = 'readByClientAt';

@@ -22,6 +22,7 @@ import {
   LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD,
   LOAN_REQUEST_STATUSES,
   LOAN_REQUESTS_COLLECTION,
+  buildLoanRequestCreateSnapshotFields,
 } from './loanRequests';
 import { mapFirestoreError, normalizeFirestoreErrorCode } from './firestoreErrors';
 import { normalizeNoteForLoanRequest } from '../utils/brlMoneyInput';
@@ -497,6 +498,7 @@ export async function createLoanRequest({
       status: LOAN_REQUEST_STATUSES.PENDING,
       createdAt: committedAt,
       updatedAt: committedAt,
+      ...buildLoanRequestCreateSnapshotFields(ld, profileGate.clientProfile, profileGate.supplierProfile),
     };
 
     const ref = await addDoc(collection(db, LOAN_REQUESTS_COLLECTION), addPayload);

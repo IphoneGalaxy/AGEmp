@@ -4,6 +4,7 @@ import {
   LOAN_REQUEST_OPEN_STATUSES,
   LOAN_REQUEST_STATUSES,
   LOAN_REQUEST_TERMINAL_STATUSES,
+  buildLoanRequestCreateSnapshotFields,
   canActorTransitionLoanRequestV1,
   canClientCancelLoanRequestV1,
   isLoanRequestOpenStatusV1,
@@ -97,5 +98,55 @@ describe('loanRequests v1 / v1.1 helpers', () => {
         LOAN_REQUEST_STATUSES.CANCELLED_BY_CLIENT,
       ),
     ).toBe(true);
+  });
+
+  describe('buildLoanRequestCreateSnapshotFields', () => {
+    it('prioriza snapshots do link quando presentes', () => {
+      expect(
+        buildLoanRequestCreateSnapshotFields(
+          {
+            clientDisplayNameSnapshot: 'Do link C',
+            supplierDisplayNameSnapshot: 'Do link S',
+          },
+          { displayName: 'Perfil C' },
+          { displayName: 'Perfil S' },
+        ),
+      ).toEqual({
+        clientDisplayNameSnapshot: 'Do link C',
+        supplierDisplayNameSnapshot: 'Do link S',
+      });
+    });
+
+    it('usa perfil quando o link não tem snapshot útil', () => {
+      expect(
+        buildLoanRequestCreateSnapshotFields({}, { displayName: '  Ana  ' }, { displayName: 'Loja B' }),
+      ).toEqual({
+        clientDisplayNameSnapshot: 'Ana',
+        supplierDisplayNameSnapshot: 'Loja B',
+      });
+    });
+
+    it('mistura link e perfil quando só um lado existe no link', () => {
+      expect(
+        buildLoanRequestCreateSnapshotFields(
+          { clientDisplayNameSnapshot: 'Só cliente no link' },
+          { displayName: 'ignored' },
+          { displayName: 'Fornecedor perfil' },
+        ),
+      ).toEqual({
+        clientDisplayNameSnapshot: 'Só cliente no link',
+        supplierDisplayNameSnapshot: 'Fornecedor perfil',
+      });
+    });
+
+    it('devolve objeto vazio quando não há nomes úteis', () => {
+      expect(
+        buildLoanRequestCreateSnapshotFields(
+          { clientDisplayNameSnapshot: '', supplierDisplayNameSnapshot: null },
+          { displayName: '' },
+          {},
+        ),
+      ).toEqual({});
+    });
   });
 });
