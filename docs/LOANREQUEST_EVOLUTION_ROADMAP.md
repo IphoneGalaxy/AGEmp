@@ -9,7 +9,7 @@
 Este arquivo **descreve** o que poderá ser construído e consolida **marcos já entregues** na linha `loanRequests`; **entregas fechadas** (ex.: **Bloco 2**) estão no **código** e nos **docs vivos** ([`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md)). Nenhuma linha **planejada futura** obriga código até decisão explícita de governança e critérios de entrada para implementação.
 
 - **Bloco 1 — funcionalmente fechado (Opção A, 2026-05-04):** entregues **A1a, A1b, A2a, B1, B2**; plano **arquivado** (histórico): [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **não** é plano ativo. **A2b/A2c** **não** implementadas — **backlog**; **não** impediram o fechamento funcional.
-- **Bloco 2 — conversão governada (`approved` → contrato local):** **FECHADO** (2026-05-04). [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md). **Commits:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**. **Sem** mudança a modelo Firestore/`loanRequests`; **sem** marcação remota converted; **Bloco2-E** — QA/docs. **Próximo planeamento:** mini ADR **snapshots de nomes** · **Visão Fornecedores** — ver § **Bloco 2** e ADR § Limitações.
+- **Bloco 2 — conversão governada (`approved` → contrato local):** **FECHADO** (2026-05-04). [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md). **Commits:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**. **Sem** mudança a modelo Firestore/`loanRequests`; **sem** marcação remota converted; **Bloco2-E** — QA/docs. **Mini ADR snapshots de nomes:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (**planejamento publicado**; execução §13); **Visão Fornecedores** — fase seguinte — ver § **Bloco 2** e ADR Bloco 2 § Limitações.
 
 ---
 
@@ -49,7 +49,7 @@ Campos **`archivedByClient`** / **`archivedBySupplier`**, quando forem objeto de
 | **F** | Conversão governada pedido → **contrato local** | **Não** no MVP remoto | **Sim** (só **local**, após confirmação humana) | [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) — **MVP fechado** |
 | **Bloco 2** | Nome de execução da **Fase F** — *Conversão Governada* | **Não** — modelo `loanRequests` inalterado | **Sim** — commits **`624c725`**, **`3badcbc`**, **`5dd4c36`** | ADR **fechado**; § Limitações / próxima mini ADR |
 
-**Bloco 1** encerrado funcionalmente — ver plano arquivado. **Bloco 2 (Fase F / conversão governada)** — **fechado**. Ordem sugerida para o que segue: **mini ADR snapshots de nomes** → **Visão Fornecedores**; **A2b/A2c** quando priorizado; **C** após avaliação da Fase **B** em uso; **D** / **E** conforme decisão e ADR.
+**Bloco 1** encerrado funcionalmente — ver plano arquivado. **Bloco 2 (Fase F / conversão governada)** — **fechado**. Ordem sugerida para o que segue: [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (**implementação futura**) → **Visão Fornecedores**; **A2b/A2c** quando priorizado; **C** após avaliação da Fase **B** em uso; **D** / **E** conforme decisão e ADR.
 
 ---
 
@@ -245,7 +245,7 @@ Ponta final controlada da ponte: **após confirmação humana inequívoca** (“
 
 ### Limitações e próximo trabalho
 
-Ver ADR **§ Limitações** e **§ Próxima fase recomendada:** mini ADR **snapshots de nomes** (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`, …); depois **Visão Fornecedores** (cliente). **Backlog:** modo técnico opcional em Configurações; **A2b/A2c**; converted remoto só com ADR+rules.
+Ver ADR **§ Limitações** e **§ Próxima fase recomendada:** mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`; §13 execução); depois **Visão Fornecedores** (cliente). **Backlog:** modo técnico opcional em Configurações; **A2b/A2c**; converted remoto só com ADR+rules.
 
 ### Alinhamento de UX
 
@@ -265,3 +265,4 @@ Ver ADR **§ Limitações** e **§ Próxima fase recomendada:** mini ADR **snaps
 | 2026-05-04 | **Bloco2-0:** [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado; **Bloco2-A–E** não concluídos na altura. |
 | 2026-05-04 | **Bloco 2 fechado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; ADR/QA/docs alinhados; próximo: snapshots de nomes · Visão Fornecedores. |
 | 2026-05-04 | **Governança Bloco 2:** ADR **aprovado**; implementação e fecho documental na mesma data — ver linha anterior. |
+| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — direção snapshots nome (`links`/`loanRequests`); só docs nesta rodada. |

@@ -20,7 +20,7 @@ Leitura recomendada junto com:
 
 **Proxima fase oficial:** [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) — ponte controlada fornecedor/cliente, pre-financeira, sem sync financeiro remoto e sem implementacao nesta etapa documental.
 
-**Roadmap evolutivo `loanRequest` (A1–F, planejamento vivo — não equivale ao histórico em `plans/completed/`):** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md). **Bloco 2 (conversão governada)** — **funcionalmente fechado** (2026-05-04): ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md); commits **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke/QA em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Bloco 2. **Próximo foco recomendado:** mini ADR *snapshots de nomes*; depois *Visão Fornecedores*.
+**Roadmap evolutivo `loanRequest` (A1–F, planejamento vivo — não equivale ao histórico em `plans/completed/`):** [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md). **Bloco 2 (conversão governada)** — **funcionalmente fechado** (2026-05-04): ADR [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md); commits **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke/QA em [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md) § Bloco 2. **Mini ADR «snapshots de nomes»:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (**documentação**; código/rules por subfases §13); depois *Visão Fornecedores*.
 
 **Contrato funcional loanRequest v1 (Subfase 1 documental concluída):** [`LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md`](./plans/completed/LOANREQUEST_V1_CONTRATO_FUNCIONAL_SUBFASE1.md).
 
@@ -264,7 +264,7 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | **Validado** | Automático recorrente (`vitest`/build); QA manual [`QA_MATRIX_GENERAL.md`](./QA_MATRIX_GENERAL.md); fatia vínculo [`QA_MATRIX_LINK_OPERATIONAL_VIEW.md`](./QA_MATRIX_LINK_OPERATIONAL_VIEW.md); **`loanRequest` v1 e v1.1** e **Bloco 2** com smoke/conferência conforme matrizes dedicadas e ADR; ADR pagamentos [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md). |
 | **Congelado** | Local-first financeiro; sem sync financeiro remoto; `calculations.js` na linha preservada; Firebase não como fonte financeira; `payment.linkContext` inexistente exceto revisit via ADR. |
 | **Fora do escopo** | Sync financeiro remoto; `payment.linkContext` persistido sem ADR; motor por vínculo sem plano. |
-| **Próximo foco** | **Pós-Bloco 2:** mini ADR *«Identidade pública e snapshots de nomes em vínculos/pedidos»*; depois *«Visão Fornecedores / UX por papel»*. **Backlog:** **A2b/A2c** (arquivamento). **Fora de escopo até decisão explícita:** sync financeiro remoto; `payment.linkContext` sem ADR; marcação remota «converted». |
+| **Próximo foco** | **Pós-Bloco 2:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (mini ADR **publicado** — execução futura §13); depois *«Visão Fornecedores / UX por papel»*. **Backlog:** **A2b/A2c** (arquivamento). **Fora de escopo até decisão explícita:** sync financeiro remoto; `payment.linkContext` sem ADR; marcação remota «converted». |
 
 ### Decisão de fechamento local-first
 
@@ -317,3 +317,4 @@ Evoluções além disso (snapshot por pagamento, sync remoto financeiro, regras 
 | 2026-05-04 | **Subfase A2a documentada** (arquivamento por lado — só decisões): plano Bloco 1 §6; matriz QA § A2a; checkpoint/handoff; **sem** implementação. **Próxima recomendada:** **B1** (salvo A2b primeiro). |
 | 2026-05-04 | **Subfase B1 concluída (análise):** métrica **`availableMoney`** / **`calculateGlobalStats`** para **B2**; **B2** **não** implementada. **Próxima:** **B2** (salvo A2b). |
 | 2026-05-04 | **Subfase B2 entregue (`07ef7e5`):** alerta fornecedor documentado na matriz QA v1.1 § B2; **seguido** da **Opção A** (fechamento funcional Bloco 1 e arquivo do plano em `completed/`). |
+| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — documentação oficial snapshots de nome (`links`/`loanRequests`); sem código/rules/testes nesta rodada. |

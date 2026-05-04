@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2 nesta matriz) · **Próximo:** mini ADR snapshots de nomes |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** (Opção A) — plano arquivado · **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2 nesta matriz) · **Próximo:** [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (planejamento §13) |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -159,15 +159,15 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 
 ### Limitações / backlog (pós-MVP)
 
-- Nomes entre aparelhos: fallback **«Cliente da plataforma»** até **mini ADR** de snapshots (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`, …).  
-- **Visão Fornecedores** (cliente): fase própria, depois dos snapshots.  
+- Nomes entre aparelhos: fallback **«Cliente da plataforma»** até implementação da mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (`clientDisplayNameSnapshot`, `supplierDisplayNameSnapshot`; **ADR publicado — código/rules ainda não**).  
+- **Visão Fornecedores** (cliente): fase própria, **depois** da execução da mini ADR acima.  
 - IDs técnicos: só dados internos; UI principal oculta (**Bloco2-D**); modo avançado Configurações — backlog.  
 - **A2b/A2c** arquivamento — backlog.  
 - Marcação remota converted — só com ADR + rules + QA.
 
 ### Próxima fase recomendada
 
-Mini ADR **«Identidade pública e snapshots de nomes em vínculos/pedidos»**; depois **«Visão Fornecedores»** — ver [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) (**planejamento oficial**; regressões futuras §14 do ADR); depois **«Visão Fornecedores»** — ver [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
 
 ---
 
@@ -187,3 +187,4 @@ Mini ADR **«Identidade pública e snapshots de nomes em vínculos/pedidos»**; 
 | 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano arquivado; **Bloco 2** recomendado em seguida. |
 | 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado e **aprovado**. |
 | 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |
+| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — próxima fase pós-Bloco 2 **documentada**; QA de implementação futura conforme §14 do ADR. |
