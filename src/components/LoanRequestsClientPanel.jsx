@@ -22,6 +22,7 @@ import {
   isLoanRequestTerminalStatusV1,
 } from '../firebase/loanRequests';
 import { LINK_STATUSES } from '../firebase/links';
+import { deriveLoanRequestSupplierFriendlyName } from '../utils/displayNameSnapshots';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -400,9 +401,16 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                 className="rounded-design-md border border-edge bg-surface-muted px-4 py-3"
               >
                 <p className="text-xs font-medium uppercase tracking-wide text-content-muted">
-                  Fornecedor (UID)
+                  Fornecedor
                 </p>
-                <p className="mt-0.5 break-all text-sm font-medium text-content">{link.supplierId}</p>
+                <p className="mt-0.5 text-sm font-semibold text-content">
+                  {deriveLoanRequestSupplierFriendlyName(link)}
+                </p>
+                {typeof link.supplierId === 'string' && link.supplierId.length > 0 ? (
+                  <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">
+                    UID: {link.supplierId}
+                  </p>
+                ) : null}
 
                 {draftLinkId === link.id ? (
                   <div className="mt-4 space-y-3">
@@ -592,11 +600,18 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                     </p>
                   ) : null}
                   <p className="mt-2 text-xs font-medium uppercase tracking-wide text-content-muted">
-                    Fornecedor (UID)
+                    Fornecedor
                   </p>
-                  <p className="break-all text-xs text-content-soft">
-                    {typeof r.supplierId === 'string' ? r.supplierId : '—'}
+                  <p className="text-sm font-semibold text-content-soft">
+                    {deriveLoanRequestSupplierFriendlyName(r)}
                   </p>
+                  {typeof r.supplierId === 'string' && r.supplierId.length > 0 ? (
+                    <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">
+                      UID: {r.supplierId}
+                    </p>
+                  ) : (
+                    <p className="mt-1 text-xs text-content-muted">—</p>
+                  )}
                   {typeof r.clientNote === 'string' && r.clientNote.length > 0 && (
                     <p className="mt-2 text-xs leading-relaxed text-content-muted">
                       <span className="font-medium text-content-soft">Sua observação: </span>

@@ -22,10 +22,8 @@ import {
 import { parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import ConvertLoanRequestToContractReview from './ConvertLoanRequestToContractReview';
 import { hasConvertedLoanRequestDuplicate } from '../utils/convertLoanRequestToLocalContract';
-import {
-  LOAN_REQUEST_SUPPLIER_EXPANDED_LINK_CAPTION,
-  LOAN_REQUEST_SUPPLIER_ROW_CLIENT_CAPTION,
-} from '../utils/platformFriendlyLabels';
+import { deriveLoanRequestClientFriendlyName } from '../utils/displayNameSnapshots';
+import { LOAN_REQUEST_SUPPLIER_EXPANDED_LINK_CAPTION } from '../utils/platformFriendlyLabels';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -446,9 +444,16 @@ export default function LoanRequestsSupplierPanel({
                     ) : null}
                     <p className="text-xs text-content-muted">
                       {hasPlatformLink ? (
-                        <span className="font-medium text-content-soft">
-                          {LOAN_REQUEST_SUPPLIER_ROW_CLIENT_CAPTION}
-                        </span>
+                        <>
+                          <span className="font-semibold text-content-soft">
+                            {deriveLoanRequestClientFriendlyName(r)}
+                          </span>
+                          {typeof r.clientId === 'string' && r.clientId.length > 0 ? (
+                            <span className="mt-0.5 block break-all font-mono text-[11px] leading-snug text-content-muted">
+                              UID: {r.clientId}
+                            </span>
+                          ) : null}
+                        </>
                       ) : (
                         <span className="text-content-soft">Solicitação sem vínculo completo na plataforma</span>
                       )}

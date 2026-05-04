@@ -29,6 +29,10 @@ import {
   listLoanRequestsForClient,
   listLoanRequestsForSupplier,
 } from '../firebase/loanRequestsFirestore';
+import {
+  deriveLoanRequestClientFriendlyName,
+  deriveLoanRequestSupplierFriendlyName,
+} from '../utils/displayNameSnapshots';
 import { countUnreadLoanRequests } from '../utils/loanRequestUnreadCount';
 import LoanRequestsClientPanel from './LoanRequestsClientPanel';
 import LoanRequestsSupplierPanel from './LoanRequestsSupplierPanel';
@@ -1037,6 +1041,10 @@ function AccountScreen({
                     {links.map((link) => {
                       const otherUid =
                         link.supplierId === user.uid ? link.clientId : link.supplierId;
+                      const otherFriendly =
+                        link.supplierId === user.uid
+                          ? deriveLoanRequestClientFriendlyName(link)
+                          : deriveLoanRequestSupplierFriendlyName(link);
                       const statusLabel = getLinkStatusLabelPt(link.status);
                       const busy = linkGlobalBusy;
                       return (
@@ -1045,11 +1053,14 @@ function AccountScreen({
                           className="rounded-design-md border border-edge bg-surface-muted px-4 py-3"
                         >
                           <p className="text-xs font-medium uppercase tracking-wide text-content-muted">
-                            Outra parte (UID)
+                            Outra parte
                           </p>
-                          <p className="mt-0.5 break-all text-sm font-medium text-content">
-                            {otherUid}
-                          </p>
+                          <p className="mt-0.5 text-sm font-semibold text-content">{otherFriendly}</p>
+                          {typeof otherUid === 'string' && otherUid.length > 0 ? (
+                            <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">
+                              UID: {otherUid}
+                            </p>
+                          ) : null}
                           <p className="mt-2 text-xs text-content-muted">
                             Status:{' '}
                             <span className="font-medium text-content-soft">{statusLabel}</span>
