@@ -3,6 +3,8 @@
  * Não acessa Firestore nem altera cálculos financeiros.
  */
 
+import { LOCAL_LINK_CONTEXT_FRIENDLY_LINE_COMPLETE } from './platformFriendlyLabels';
+
 /**
  * Mascaramento mínimo de UID longo (somente exibição local).
  * @param {string} [uid]
@@ -26,7 +28,7 @@ export function formatLocalVinculoLineFromContext(lc) {
   if (typeof s !== 'string' || typeof cl !== 'string' || !s || !cl) {
     return 'Anotação de vínculo (local)';
   }
-  return `Par: ${maskUidForLocalLabel(s)} · ${maskUidForLocalLabel(cl)}`;
+  return LOCAL_LINK_CONTEXT_FRIENDLY_LINE_COMPLETE;
 }
 
 /**

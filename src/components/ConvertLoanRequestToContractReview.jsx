@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 
 import { formatMoney, formatRate } from '../utils/format';
-import {
-  approvedAmountCentsToReaisOrNull,
-  deriveLoanRequestClientDisplayLabel,
-} from '../utils/convertLoanRequestReviewDerive';
-import { applyApprovedLoanRequestConversion, todayIsoDateLocal } from '../utils/convertLoanRequestToLocalContract';
+import { approvedAmountCentsToReaisOrNull } from '../utils/convertLoanRequestReviewDerive';
+import { LOAN_REQUEST_MODAL_CLIENT_CAPTION } from '../utils/platformFriendlyLabels';
+import { applyApprovedLoanRequestConversion, hasConvertedLoanRequestDuplicate, todayIsoDateLocal } from '../utils/convertLoanRequestToLocalContract';
 import { generateId } from '../utils/ids';
 
 /**
@@ -44,7 +42,7 @@ export default function ConvertLoanRequestToContractReview({
   const approvedReais = approvedAmountCentsToReaisOrNull(request.approvedAmount);
   const amountLabel =
     approvedReais != null ? formatMoney(approvedReais) : '— (valor aprovado indisponível)';
-  const clientLabel = deriveLoanRequestClientDisplayLabel(request.clientId);
+  const clientLabel = LOAN_REQUEST_MODAL_CLIENT_CAPTION;
   const suggestedDate = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
@@ -60,6 +58,12 @@ export default function ConvertLoanRequestToContractReview({
     const list = Array.isArray(clients) ? clients : [];
     if (typeof onUpdateClients !== 'function') {
       showToast?.('Não foi possível atualizar os dados locais.');
+      return;
+    }
+
+    const reqId = typeof request.id === 'string' ? request.id.trim() : '';
+    if (reqId && hasConvertedLoanRequestDuplicate(list, reqId)) {
+      showToast?.('Este pedido já foi registrado como contrato local neste aparelho.');
       return;
     }
 
@@ -120,7 +124,7 @@ export default function ConvertLoanRequestToContractReview({
             <dd className="text-sm font-semibold tabular-nums text-content">{amountLabel}</dd>
           </div>
           <div>
-            <dt className="text-xs font-medium text-content-muted">Cliente (identificação)</dt>
+            <dt className="text-xs font-medium text-content-muted">Cliente</dt>
             <dd className="text-sm text-content-soft">{clientLabel}</dd>
           </div>
           <div>
@@ -138,12 +142,6 @@ export default function ConvertLoanRequestToContractReview({
               Igual à taxa padrão das suas configurações (como em novo contrato manual nesta versão).
             </p>
           </div>
-          {typeof request.id === 'string' && request.id.length > 0 ? (
-            <div>
-              <dt className="text-xs font-medium text-content-muted">ID do pedido (plataforma)</dt>
-              <dd className="break-all font-mono text-[11px] text-content-muted">{request.id}</dd>
-            </div>
-          ) : null}
         </dl>
 
         <div

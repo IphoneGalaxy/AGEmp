@@ -1,9 +1,7 @@
 import { LOAN_REQUEST_STATUSES } from '../firebase/loanRequests';
-import {
-  approvedAmountCentsToReaisOrNull,
-  deriveLoanRequestClientDisplayLabel,
-} from './convertLoanRequestReviewDerive';
+import { approvedAmountCentsToReaisOrNull } from './convertLoanRequestReviewDerive';
 import { buildLocalLinkContext } from './linkContext';
+import { deriveNewLocalClientNameFromLoanRequest } from './platformFriendlyLabels';
 import { buildLoanWithOptionalLinkContext, canInheritLinkContextToLoan } from './loanLinkContextInherit';
 import { buildNewClientWithOptionalLinkContext } from './newClientLinkInherit';
 
@@ -235,7 +233,7 @@ export function applyApprovedLoanRequestConversion({
 
   const newClient = buildNewClientWithOptionalLinkContext({
     id: newClientId,
-    name: deriveLoanRequestClientDisplayLabel(request.clientId),
+    name: deriveNewLocalClientNameFromLoanRequest(),
     loans: [],
     includeLinkContext: !!template,
     templateLinkContext: template,

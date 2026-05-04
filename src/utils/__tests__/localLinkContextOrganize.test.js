@@ -13,14 +13,13 @@ describe('localLinkContextOrganize', () => {
     expect(maskUidForLocalLabel('abcdefghijk')).toBe('abcd…hijk');
   });
 
-  it('formatLocalVinculoLineFromContext usa supplier e client', () => {
+  it('formatLocalVinculoLineFromContext usa rótulo amigável quando par completo', () => {
     const line = formatLocalVinculoLineFromContext({
       linkId: 'a__b',
       supplierId: 'supplierUidLongerThanEight',
       clientId: 'clientX',
     });
-    expect(line).toContain('Par:');
-    expect(line).toContain('·');
+    expect(line).toBe('Vínculo com cliente na plataforma');
   });
 
   it('listDistinctLocalLinkOptions agrega e ordena', () => {

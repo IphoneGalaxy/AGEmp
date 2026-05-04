@@ -408,7 +408,7 @@ const ClientsList = ({
             {localLinkIdFilter && inheritTemplate
               ? ` · vínculo ativo: ${formatLocalVinculoLineFromContext(inheritTemplate)}`
               : localLinkIdFilter
-                ? ` · refinamento: ${localLinkIdFilter}`
+                ? ' · refinamento por vínculo da plataforma'
                 : ''}
           </p>
           <p className="text-[11px] leading-snug text-content-muted">

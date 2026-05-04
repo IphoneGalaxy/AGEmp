@@ -185,6 +185,7 @@ describe('convertLoanRequestToLocalContract', () => {
       if (!res.ok) return;
       expect(res.nextClients).toHaveLength(1);
       expect(res.nextClients[0].id).toBe('c-new');
+      expect(res.nextClients[0].name).toBe('Cliente da plataforma');
       expect(res.nextClients[0].loans).toHaveLength(1);
       expect(res.nextClients[0].loans[0].convertedFromLoanRequestId).toBe('lr-fire-1');
       expect(res.nextClients[0].loans[0].amount).toBe(500);

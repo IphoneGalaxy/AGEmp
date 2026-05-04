@@ -21,6 +21,11 @@ import {
 } from '../firebase/loanRequests';
 import { parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import ConvertLoanRequestToContractReview from './ConvertLoanRequestToContractReview';
+import { hasConvertedLoanRequestDuplicate } from '../utils/convertLoanRequestToLocalContract';
+import {
+  LOAN_REQUEST_SUPPLIER_EXPANDED_LINK_CAPTION,
+  LOAN_REQUEST_SUPPLIER_ROW_CLIENT_CAPTION,
+} from '../utils/platformFriendlyLabels';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -398,6 +403,12 @@ export default function LoanRequestsSupplierPanel({
                 r.requestedAmount,
                 availableMoney,
               );
+              const hasPlatformLink =
+                (typeof r.linkId === 'string' && r.linkId.length > 0) ||
+                (typeof r.clientId === 'string' && r.clientId.length > 0);
+              const alreadyRegisteredLocally =
+                r.status === LOAN_REQUEST_STATUSES.APPROVED &&
+                hasConvertedLoanRequestDuplicate(clients, typeof r.id === 'string' ? r.id : '');
 
               return (
                 <li
@@ -434,10 +445,13 @@ export default function LoanRequestsSupplierPanel({
                       </p>
                     ) : null}
                     <p className="text-xs text-content-muted">
-                      Cliente (UID):{' '}
-                      <span className="break-all font-medium text-content-soft">
-                        {typeof r.clientId === 'string' ? r.clientId : '—'}
-                      </span>
+                      {hasPlatformLink ? (
+                        <span className="font-medium text-content-soft">
+                          {LOAN_REQUEST_SUPPLIER_ROW_CLIENT_CAPTION}
+                        </span>
+                      ) : (
+                        <span className="text-content-soft">Solicitação sem vínculo completo na plataforma</span>
+                      )}
                     </p>
                     <p className="text-xs text-content-muted">
                       Recebido em {formatRequestTimestamp(r.createdAt)} · toque para{' '}
@@ -471,10 +485,15 @@ export default function LoanRequestsSupplierPanel({
                           {r.clientNote}
                         </p>
                       )}
-                      <p className="text-xs text-content-muted">
-                        Vínculo (linkId):{' '}
-                        <span className="break-all font-mono text-content-soft">{r.linkId ?? '—'}</span>
-                      </p>
+                      {hasPlatformLink ? (
+                        <p className="text-xs leading-relaxed text-content-muted">
+                          {LOAN_REQUEST_SUPPLIER_EXPANDED_LINK_CAPTION}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-content-muted">
+                          Vínculo na plataforma ausente ou incompleto neste registro.
+                        </p>
+                      )}
                       {hasFirestoreTimestampSeconds(r.readByClientAt) ? (
                         <p className="text-xs text-content-muted">
                           Cliente visualizou em {formatRequestTimestamp(r.readByClientAt)} — registro opcional na
@@ -510,25 +529,43 @@ export default function LoanRequestsSupplierPanel({
                         </p>
                       )}
 
-                      {r.status === LOAN_REQUEST_STATUSES.APPROVED && (
-                        <div className="rounded-design-md border border-edge/80 bg-surface-muted/30 px-3 py-2.5">
-                          <p className="text-xs leading-relaxed text-content-muted">
-                            Pedido <span className="font-medium text-content-soft">aprovado na plataforma</span>{' '}
-                            — ainda não existe contrato no app. Para registrar no seu financeiro local após a
-                            transferência real, use o botão abaixo (revisão obrigatória).
-                          </p>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConvertReviewRequest(r);
-                            }}
-                            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                      {r.status === LOAN_REQUEST_STATUSES.APPROVED &&
+                        (alreadyRegisteredLocally ? (
+                          <div
+                            className="rounded-design-md border border-edge/80 bg-surface-muted/30 px-3 py-2.5"
+                            role="status"
                           >
-                            Registrar contrato local
-                          </button>
-                        </div>
-                      )}
+                            <p className="text-xs font-medium leading-relaxed text-content-soft">
+                              Contrato já registrado localmente
+                            </p>
+                            <p className="mt-1 text-xs leading-relaxed text-content-muted">
+                              Este pedido já foi registrado no financeiro local neste aparelho.
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+                              Você pode encontrar o contrato na aba Clientes.
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="rounded-design-md border border-edge/80 bg-surface-muted/30 px-3 py-2.5">
+                            <p className="text-xs leading-relaxed text-content-muted">
+                              Pedido{' '}
+                              <span className="font-medium text-content-soft">aprovado na plataforma</span>
+                              {' — '}
+                              ainda não existe contrato no app. Para registrar no seu financeiro local após a
+                              transferência real, use o botão abaixo (revisão obrigatória).
+                            </p>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConvertReviewRequest(r);
+                              }}
+                              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                            >
+                              Registrar contrato local
+                            </button>
+                          </div>
+                        ))}
 
                       {supplierNegotiation && (
                         <>
