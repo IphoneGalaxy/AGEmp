@@ -10,6 +10,7 @@ import {
   where,
 } from 'firebase/firestore';
 
+import { normalizeDisplayNameForSnapshot } from '../utils/displayNameSnapshots';
 import { mapLinkFirestoreError, normalizeFirestoreErrorCode } from './firestoreErrors';
 import { db } from './index';
 import { USER_ROLES, profileHasEffectiveAccountRole } from './roles';
@@ -177,7 +178,8 @@ export function buildLinkData({
 export function formatLinkWritePayloadForDevLog(data) {
   const createdAtAndUpdatedAtSameReference =
     data.createdAt != null && data.createdAt === data.updatedAt;
-  return {
+  /** @type {Record<string, unknown>} */
+  const out = {
     supplierId: data.supplierId,
     clientId: data.clientId,
     status: data.status,
@@ -186,6 +188,13 @@ export function formatLinkWritePayloadForDevLog(data) {
     updatedAt: '[FieldValue.serverTimestamp]',
     createdAtAndUpdatedAtSameReference,
   };
+  if (Object.prototype.hasOwnProperty.call(data, 'clientDisplayNameSnapshot')) {
+    out.clientDisplayNameSnapshot = data.clientDisplayNameSnapshot;
+  }
+  if (Object.prototype.hasOwnProperty.call(data, 'supplierDisplayNameSnapshot')) {
+    out.supplierDisplayNameSnapshot = data.supplierDisplayNameSnapshot;
+  }
+  return out;
 }
 
 function validateLinkParticipants(supplierId, clientId) {
@@ -206,7 +215,10 @@ function validateLinkParticipants(supplierId, clientId) {
  *
  * @param {string} clientId
  * @param {string} supplierId
- * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ * @returns {Promise<
+ *   | { ok: true; clientProfile: Record<string, unknown>; supplierProfile: Record<string, unknown> }
+ *   | { ok: false; message: string }
+ * >}
  */
 export async function preflightUsersForLinkCreate(clientId, supplierId) {
   let clientProfile;
@@ -269,7 +281,7 @@ export async function preflightUsersForLinkCreate(clientId, supplierId) {
     };
   }
 
-  return { ok: true };
+  return { ok: true, clientProfile, supplierProfile };
 }
 
 /**
@@ -373,7 +385,13 @@ export async function createLinkRequest({
       const snapshot = await transaction.get(linkRef);
 
       if (!snapshot.exists()) {
+        const clientSnap = normalizeDisplayNameForSnapshot(
+          preflight.clientProfile?.displayName,
+        );
         const linkPayload = buildLinkData({ supplierId, clientId, requestedBy });
+        if (clientSnap !== null) {
+          linkPayload.clientDisplayNameSnapshot = clientSnap;
+        }
         if (import.meta.env.DEV) {
           console.info(
             '[links] createLinkRequest: payload antes do transaction.set',
@@ -419,6 +437,8 @@ export async function createLinkRequest({
         };
       }
 
+      // Reabertura: rules só permitem diff em `status` e `updatedAt` — não é possível
+      // atualizar clientDisplayNameSnapshot aqui sem nova rodada nas rules (ADR Subfase 2).
       transaction.update(linkRef, {
         status: LINK_STATUSES.PENDING,
         updatedAt: serverTimestamp(),
@@ -470,10 +490,36 @@ export async function transitionLinkStatus({
   }
 
   try {
-    await updateDoc(getLinkRef(supplierId, clientId), {
+    /** @type {Record<string, unknown>} */
+    const patch = {
       status: nextStatus,
       updatedAt: serverTimestamp(),
-    });
+    };
+
+    if (
+      actorRole === USER_ROLES.SUPPLIER &&
+      currentStatus === LINK_STATUSES.PENDING &&
+      nextStatus === LINK_STATUSES.APPROVED
+    ) {
+      try {
+        const supplierProfile = await getUserProfile(supplierId);
+        const supplierSnap = normalizeDisplayNameForSnapshot(
+          supplierProfile?.displayName,
+        );
+        if (supplierSnap !== null) {
+          patch.supplierDisplayNameSnapshot = supplierSnap;
+        }
+      } catch (e) {
+        if (import.meta.env.DEV) {
+          console.warn(
+            '[links] transitionLinkStatus: falha ao ler displayName do fornecedor; segue sem snapshot',
+            normalizeFirestoreErrorCode(e),
+          );
+        }
+      }
+    }
+
+    await updateDoc(getLinkRef(supplierId, clientId), patch);
     return { ok: true };
   } catch (e) {
     return { ok: false, message: mapLinkFirestoreError(e) };

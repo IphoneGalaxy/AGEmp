@@ -59,8 +59,8 @@ describe('firebase/links', () => {
   beforeEach(() => {
     mockGetUserProfile.mockReset();
     mockGetUserProfile.mockImplementation(async (uid) => {
-      if (uid === 'supplier-1') return { role: 'supplier' };
-      if (uid === 'client-1') return { role: 'client' };
+      if (uid === 'supplier-1') return { role: 'supplier', displayName: 'Fornecedor Snap' };
+      if (uid === 'client-1') return { role: 'client', displayName: 'Cliente Snap' };
       return null;
     });
     mockCollection.mockClear();
@@ -113,6 +113,25 @@ describe('firebase/links', () => {
         createdAt: '[FieldValue.serverTimestamp]',
         updatedAt: '[FieldValue.serverTimestamp]',
         createdAtAndUpdatedAtSameReference: true,
+      });
+    });
+
+    it('espelha snapshots quando presentes no payload', () => {
+      const ts = {};
+      expect(
+        formatLinkWritePayloadForDevLog({
+          supplierId: 's',
+          clientId: 'c',
+          status: LINK_STATUSES.PENDING,
+          requestedBy: LINK_REQUESTED_BY.CLIENT,
+          createdAt: ts,
+          updatedAt: ts,
+          clientDisplayNameSnapshot: 'Cliente',
+          supplierDisplayNameSnapshot: 'Fornecedor',
+        }),
+      ).toMatchObject({
+        clientDisplayNameSnapshot: 'Cliente',
+        supplierDisplayNameSnapshot: 'Fornecedor',
       });
     });
   });
@@ -412,8 +431,36 @@ describe('firebase/links', () => {
           requestedBy: LINK_REQUESTED_BY.CLIENT,
           createdAt: 'SERVER_TIMESTAMP',
           updatedAt: 'SERVER_TIMESTAMP',
+          clientDisplayNameSnapshot: 'Cliente Snap',
         }
       );
+    });
+
+    it('primeira criação omite clientDisplayNameSnapshot quando displayName do cliente está vazio', async () => {
+      mockGetUserProfile.mockImplementation(async (uid) => {
+        if (uid === 'supplier-1') return { role: 'supplier', displayName: 'S' };
+        if (uid === 'client-1') return { role: 'client', displayName: '' };
+        return null;
+      });
+
+      const transactionSet = vi.fn();
+      mockRunTransaction.mockImplementation(async (_database, callback) => {
+        const transaction = {
+          get: vi.fn().mockResolvedValue({
+            exists: () => false,
+          }),
+          set: transactionSet,
+        };
+        return callback(transaction);
+      });
+
+      await expect(
+        createLinkRequest({ supplierId: 'supplier-1', clientId: 'client-1' })
+      ).resolves.toEqual({ ok: true, id: 'supplier-1__client-1' });
+
+      const payload = transactionSet.mock.calls[0][1];
+      expect(payload).not.toHaveProperty('clientDisplayNameSnapshot');
+      expect(payload).not.toHaveProperty('supplierDisplayNameSnapshot');
     });
 
     it('não chama transação quando não há perfil do fornecedor para o UID', async () => {
@@ -525,8 +572,61 @@ describe('firebase/links', () => {
         {
           status: LINK_STATUSES.APPROVED,
           updatedAt: 'SERVER_TIMESTAMP',
+          supplierDisplayNameSnapshot: 'Fornecedor Snap',
         }
       );
+    });
+
+    it('recusa vínculo pendente sem gravar supplierDisplayNameSnapshot', async () => {
+      mockUpdateDoc.mockResolvedValue(undefined);
+
+      await expect(
+        transitionLinkStatus({
+          supplierId: 'supplier-1',
+          clientId: 'client-1',
+          actorRole: 'supplier',
+          currentStatus: LINK_STATUSES.PENDING,
+          nextStatus: LINK_STATUSES.REJECTED,
+        })
+      ).resolves.toEqual({ ok: true });
+
+      expect(mockUpdateDoc).toHaveBeenCalledWith(
+        {
+          database: { name: 'mock-db' },
+          id: 'supplier-1__client-1',
+          path: 'links/supplier-1__client-1',
+        },
+        {
+          status: LINK_STATUSES.REJECTED,
+          updatedAt: 'SERVER_TIMESTAMP',
+        },
+      );
+      expect(mockUpdateDoc.mock.calls[0][1]).not.toHaveProperty('supplierDisplayNameSnapshot');
+    });
+
+    it('aprovação omite supplierDisplayNameSnapshot quando displayName do fornecedor está vazio', async () => {
+      mockGetUserProfile.mockImplementation(async (uid) => {
+        if (uid === 'supplier-1') return { role: 'supplier', displayName: '' };
+        if (uid === 'client-1') return { role: 'client' };
+        return null;
+      });
+      mockUpdateDoc.mockResolvedValue(undefined);
+
+      await expect(
+        transitionLinkStatus({
+          supplierId: 'supplier-1',
+          clientId: 'client-1',
+          actorRole: 'supplier',
+          currentStatus: LINK_STATUSES.PENDING,
+          nextStatus: LINK_STATUSES.APPROVED,
+        }),
+      ).resolves.toEqual({ ok: true });
+
+      expect(mockUpdateDoc.mock.calls[0][1]).toEqual({
+        status: LINK_STATUSES.APPROVED,
+        updatedAt: 'SERVER_TIMESTAMP',
+      });
+      expect(mockUpdateDoc.mock.calls[0][1]).not.toHaveProperty('supplierDisplayNameSnapshot');
     });
   });
 });
