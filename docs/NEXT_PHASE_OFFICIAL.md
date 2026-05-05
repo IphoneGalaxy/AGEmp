@@ -42,7 +42,7 @@ Nao e uma nova trilha funcional local-first por inercia, e tambem nao e inicio d
 
 **Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md)** — **fechada** (commits **`6793461`** … **`28f3f4a`**; deploy **`agemp-financas-pro`** pós-**`cdc55d9`**).
 
-**Próximo recorte de produto** não está fixado neste arquivo — candidatos em backlog ([`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.6; [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)): revogação remota de vínculo; **A2b/A2c**; refinamentos registry (backup/export) e UI.
+**Próximo recorte de produto** não está fixado neste arquivo — candidatos em backlog ([`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.6; [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)): revogação remota de vínculo; **A2b/A2c**; refinamentos registry (backup/export) e UI. **Planejamento documentado adicional (ortogonal ao roadmap `loanRequests`):** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`** local-first para papel Cliente; **implementação não iniciada**.
 
 *(O parágrafo abaixo refere-se à decisão documental original da ponte pré-financeira; permanece válido como contexto — o produto já inclui `loanRequests` v1+v1.1 e conversão governada local.)*
 
@@ -200,3 +200,4 @@ Continuam fora desta fase:
 | 2026-05-04 | **Governança Bloco 2 (aprovação inicial):** ADR **aprovado**; implementação subsequente nos commits acima. |
 | 2026-05-05 | Mini ADR snapshots — **fechada** (implementação **`6793461`**–**`28f3f4a`**; deploy **`agemp-financas-pro`**; QA § [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md)); próximo **Visão Fornecedores**. |
 | 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — direção snapshots (`links`/`loanRequests`); só docs na rodada inicial (Subfase 0). |
+| 2026-05-04 | **ADR planejada — Financeiro Local do Cliente / «Minhas dívidas»:** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`**; primeira fase sem **`calculations.js`**; **implementação não iniciada**. |

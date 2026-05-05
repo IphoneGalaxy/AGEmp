@@ -214,6 +214,7 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 - **A2b/A2c** (continuam backlog).
 - Backup/export do registry local se necessário.
 - Melhoria visual / extração de componentes se necessário.
+- **Financeiro Local do Cliente («Minhas dívidas»):** quando implementado, registrar regressão explícita — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente; cenários conforme [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) (critérios de aceite / QA futura).
 
 ---
 
