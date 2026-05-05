@@ -6,6 +6,7 @@ import {
   resolveDisplayNameWithFallback,
   deriveLoanRequestClientFriendlyName,
   deriveLoanRequestSupplierFriendlyName,
+  deriveApprovedLinkSupplierFriendlyName,
   pickSnapshotFields,
   normalizeSnapshotPatch,
   buildDisplayNameSnapshotsPartial,
@@ -165,6 +166,38 @@ describe('deriveLoanRequestClientFriendlyName / SupplierFriendlyName', () => {
         supplierDisplayNameSnapshot: ' Loja ',
       }),
     ).toBe('Loja');
+  });
+
+  it('fornecedor usa perfil remoto quando snapshot não existe', () => {
+    expect(
+      deriveLoanRequestSupplierFriendlyName({}, ' Maria Fornecedora '),
+    ).toBe('Maria Fornecedora');
+  });
+});
+
+describe('deriveApprovedLinkSupplierFriendlyName', () => {
+  it('usa fallback quando não há snapshot nem perfil', () => {
+    expect(deriveApprovedLinkSupplierFriendlyName({ supplierId: 'x' })).toBe(
+      PLATFORM_SUPPLIER_DISPLAY_FALLBACK,
+    );
+  });
+
+  it('usa perfil quando snapshot falta', () => {
+    expect(
+      deriveApprovedLinkSupplierFriendlyName({ supplierId: 'u1' }, 'Fornecedor Remoto'),
+    ).toBe('Fornecedor Remoto');
+  });
+
+  it('preferência ao snapshot sobre perfil', () => {
+    expect(
+      deriveApprovedLinkSupplierFriendlyName(
+        {
+          supplierId: 'u1',
+          supplierDisplayNameSnapshot: 'Nome Fixado',
+        },
+        'Nome Remoto',
+      ),
+    ).toBe('Nome Fixado');
   });
 });
 

@@ -94,16 +94,38 @@ export function deriveLoanRequestClientFriendlyName(request) {
 }
 
 /**
- * Nome amigável do fornecedor num pedido remoto (snapshot → fallback de produto).
+ * Nome amigável do fornecedor num vínculo aprovado (snapshot → perfil remoto → fallback de produto).
+ * Sem usar UID como informação principal (`includeUid` desligado).
  *
- * @param {Record<string, unknown> | null | undefined} request
+ * @param {Record<string, unknown> | null | undefined} link
+ * @param {unknown} [profileDisplayName] — `users.displayName` do fornecedor, quando já carregado
  * @returns {string}
  */
-export function deriveLoanRequestSupplierFriendlyName(request) {
-  const n = normalizeDisplayNameForSnapshot(
-    request?.supplierDisplayNameSnapshot,
-  );
-  return n ?? PLATFORM_SUPPLIER_DISPLAY_FALLBACK;
+export function deriveApprovedLinkSupplierFriendlyName(link, profileDisplayName) {
+  return resolveDisplayNameWithFallback({
+    snapshot: link?.supplierDisplayNameSnapshot,
+    profileDisplayName,
+    fallbackText: PLATFORM_SUPPLIER_DISPLAY_FALLBACK,
+    includeUid: false,
+    uid: typeof link?.supplierId === 'string' ? link.supplierId : '',
+  });
+}
+
+/**
+ * Nome amigável do fornecedor num pedido remoto (snapshot → perfil remoto opcional → fallback de produto).
+ *
+ * @param {Record<string, unknown> | null | undefined} request
+ * @param {unknown} [profileDisplayName] — `users.displayName` do fornecedor, quando já carregado
+ * @returns {string}
+ */
+export function deriveLoanRequestSupplierFriendlyName(request, profileDisplayName) {
+  return resolveDisplayNameWithFallback({
+    snapshot: request?.supplierDisplayNameSnapshot,
+    profileDisplayName,
+    fallbackText: PLATFORM_SUPPLIER_DISPLAY_FALLBACK,
+    includeUid: false,
+    uid: typeof request?.supplierId === 'string' ? request.supplierId : '',
+  });
 }
 
 /**

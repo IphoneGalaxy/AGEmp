@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useSupplierDisplayNameMap } from '../hooks/useSupplierDisplayNameMap';
 import { formatMoney } from '../utils/format';
 import { normalizeNoteForLoanRequest, parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
@@ -22,7 +23,10 @@ import {
   isLoanRequestTerminalStatusV1,
 } from '../firebase/loanRequests';
 import { LINK_STATUSES } from '../firebase/links';
-import { deriveLoanRequestSupplierFriendlyName } from '../utils/displayNameSnapshots';
+import {
+  deriveApprovedLinkSupplierFriendlyName,
+  deriveLoanRequestSupplierFriendlyName,
+} from '../utils/displayNameSnapshots';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -70,6 +74,24 @@ function firestoreTimestampSecondsOrNull(ts) {
 function maxSecondsOrNull(candidates) {
   const nums = candidates.filter((x) => typeof x === 'number' && Number.isFinite(x));
   return nums.length ? Math.max(...nums) : null;
+}
+
+/**
+ * @param {Object} props
+ * @param {string} [props.supplierId]
+ */
+function SupplierUidDetails({ supplierId }) {
+  if (typeof supplierId !== 'string' || supplierId.length === 0) {
+    return null;
+  }
+  return (
+    <details className="mt-2 rounded-design-sm border border-edge/70 bg-surface/60 px-2 py-1">
+      <summary className="cursor-pointer select-none text-[11px] font-medium text-content-muted underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring">
+        Identificador técnico da conta (opcional)
+      </summary>
+      <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">{supplierId}</p>
+    </details>
+  );
 }
 
 /**
@@ -214,6 +236,23 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
       ),
     [links, user?.uid],
   );
+
+  const supplierIdsForDisplayNames = useMemo(() => {
+    const s = new Set();
+    for (const l of approvedAsClient) {
+      if (typeof l.supplierId === 'string' && l.supplierId.trim()) {
+        s.add(l.supplierId.trim());
+      }
+    }
+    for (const r of requests) {
+      if (typeof r.supplierId === 'string' && r.supplierId.trim()) {
+        s.add(r.supplierId.trim());
+      }
+    }
+    return [...s];
+  }, [approvedAsClient, requests]);
+
+  const { supplierDisplayNames } = useSupplierDisplayNameMap(supplierIdsForDisplayNames);
 
   const loadRequests = useCallback(async () => {
     if (!user?.uid) {
@@ -383,7 +422,11 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
       <div className={sectionCardClass}>
         <h3 className="mb-1 text-base font-semibold text-content">Fornecedores com vínculo aprovado</h3>
         <p className="mb-4 text-xs leading-relaxed text-content-muted">
-          Só é possível pedir quando o vínculo com o fornecedor está aprovado em Conta → Vínculos.
+          Vínculo <span className="font-medium text-content-soft">aprovado na plataforma</span> entre contas (relacional).
+          Isso{' '}
+          <span className="font-medium text-content-soft">não é contrato financeiro local</span>, não altera caixa e não
+          sincroniza seu cadastro neste aparelho. Para criar ou revisar vínculos, use{' '}
+          <span className="font-medium text-content-soft">Conta → Vínculos</span>.
         </p>
 
         {linksLoading ? (
@@ -404,13 +447,12 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                   Fornecedor
                 </p>
                 <p className="mt-0.5 text-sm font-semibold text-content">
-                  {deriveLoanRequestSupplierFriendlyName(link)}
+                  {deriveApprovedLinkSupplierFriendlyName(
+                    link,
+                    supplierDisplayNames[link.supplierId],
+                  )}
                 </p>
-                {typeof link.supplierId === 'string' && link.supplierId.length > 0 ? (
-                  <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">
-                    UID: {link.supplierId}
-                  </p>
-                ) : null}
+                <SupplierUidDetails supplierId={link.supplierId} />
 
                 {draftLinkId === link.id ? (
                   <div className="mt-4 space-y-3">
@@ -603,12 +645,10 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                     Fornecedor
                   </p>
                   <p className="text-sm font-semibold text-content-soft">
-                    {deriveLoanRequestSupplierFriendlyName(r)}
+                    {deriveLoanRequestSupplierFriendlyName(r, supplierDisplayNames[r.supplierId])}
                   </p>
                   {typeof r.supplierId === 'string' && r.supplierId.length > 0 ? (
-                    <p className="mt-1 break-all font-mono text-[11px] leading-snug text-content-muted">
-                      UID: {r.supplierId}
-                    </p>
+                    <SupplierUidDetails supplierId={r.supplierId} />
                   ) : (
                     <p className="mt-1 text-xs text-content-muted">—</p>
                   )}

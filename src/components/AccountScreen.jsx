@@ -36,6 +36,7 @@ import {
 import { countUnreadLoanRequests } from '../utils/loanRequestUnreadCount';
 import LoanRequestsClientPanel from './LoanRequestsClientPanel';
 import LoanRequestsSupplierPanel from './LoanRequestsSupplierPanel';
+import ClientSuppliersPanel from './ClientSuppliersPanel';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -134,7 +135,7 @@ function AccountScreen({
   const [linkRequestError, setLinkRequestError] = useState('');
   const [linkActionId, setLinkActionId] = useState(null);
   const [uidCopyFeedback, setUidCopyFeedback] = useState('idle');
-  /** 'main' | 'loanRequests' (cliente) | 'loanRequestsSupplier' — fluxo isolado sem nova aba principal. */
+  /** 'main' | 'loanRequests' (cliente) | 'loanRequestsSupplier' | 'clientSuppliers' — fluxo isolado sem nova aba principal. */
   const [accountSubView, setAccountSubView] = useState('main');
   /** null = ainda não carregado ou fora da vista principal; número após fetch (A1b). */
   const [loanRequestUnreadClientCount, setLoanRequestUnreadClientCount] = useState(null);
@@ -627,6 +628,35 @@ function AccountScreen({
     );
   }
 
+  if (authReady && authAvailable && user && accountSubView === 'clientSuppliers') {
+    return (
+      <div className="space-y-6 p-4 pb-20">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setAccountSubView('main')}
+            className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-design-md text-sm font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            aria-label="Voltar à conta"
+          >
+            ←
+          </button>
+          <h2 className="text-lg font-semibold tracking-tight text-content">Fornecedores</h2>
+        </div>
+        <p className="text-xs leading-relaxed text-content-muted">
+          Relação pré-financeira na plataforma por fornecedor. Isso não substitui contratos locais nem
+          sincroniza seu cadastro neste aparelho.
+        </p>
+        <ClientSuppliersPanel
+          user={user}
+          showToast={showToast}
+          links={links}
+          linksLoading={linksLoading}
+          onOpenSolicitations={() => setAccountSubView('loanRequests')}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 p-4 pb-20">
       <div className="flex items-center gap-2">
@@ -853,22 +883,32 @@ function AccountScreen({
                     Envie um pedido ao fornecedor com vínculo aprovado. Isso não cria contrato no
                     app, não altera caixa e não sincroniza seu financeiro local.
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => setAccountSubView('loanRequests')}
-                    disabled={!hasPlatformRole || linkGlobalBusy}
-                    className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
-                  >
-                    <span>Abrir solicitações</span>
-                    {loanRequestUnreadClientCount > 0 ? (
-                      <span
-                        className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums leading-snug text-primary ring-1 ring-edge/40"
-                        aria-label={`${loanRequestUnreadClientCount} com novidade`}
-                      >
-                        {loanRequestUnreadClientCount}
-                      </span>
-                    ) : null}
-                  </button>
+                  <div className="space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setAccountSubView('loanRequests')}
+                      disabled={!hasPlatformRole || linkGlobalBusy}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-design-md border border-edge bg-primary-soft px-4 text-sm font-semibold text-primary transition-colors active:bg-primary-soft/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                    >
+                      <span>Abrir solicitações</span>
+                      {loanRequestUnreadClientCount > 0 ? (
+                        <span
+                          className="inline-flex shrink-0 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium tabular-nums leading-snug text-primary ring-1 ring-edge/40"
+                          aria-label={`${loanRequestUnreadClientCount} com novidade`}
+                        >
+                          {loanRequestUnreadClientCount}
+                        </span>
+                      ) : null}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAccountSubView('clientSuppliers')}
+                      disabled={!hasPlatformRole || linkGlobalBusy}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface-muted px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                    >
+                      Abrir fornecedores
+                    </button>
+                  </div>
                   {!hasPlatformRole && (
                     <p className="mt-3 text-xs leading-relaxed text-content-muted">
                       Defina seu papel na plataforma acima para usar solicitações.
