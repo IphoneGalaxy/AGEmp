@@ -5,6 +5,7 @@ import {
   attachLoanLinkContextFromConversion,
   clientMatchesLoanRequestForConversion,
   deriveLocalClientNameForApprovedLoanRequestConversion,
+  buildLoanRequestConversionRegistryEntry,
   findLoanRequestConversionCandidates,
   hasConvertedLoanRequestDuplicate,
   hasFullLoanRequestLinkTrio,
@@ -33,6 +34,25 @@ const approvedRequest = (over = {}) => ({
   approvedAmount: 50_000,
   requestedAmount: 50_000,
   ...over,
+});
+
+describe('buildLoanRequestConversionRegistryEntry', () => {
+  it('monta entrada mínima válida', () => {
+    const e = buildLoanRequestConversionRegistryEntry(approvedRequest(), {
+      localClientId: 'c1',
+      localLoanId: 'l1',
+      convertedAtIso: '2026-05-05T12:00:00.000Z',
+    });
+    expect(e).toMatchObject({
+      loanRequestId: 'lr-fire-1',
+      supplierId: 'sup-a',
+      clientId: 'cli-b',
+      localClientId: 'c1',
+      localLoanId: 'l1',
+      convertedAt: '2026-05-05T12:00:00.000Z',
+      amountCents: 50_000,
+    });
+  });
 });
 
 describe('convertLoanRequestToLocalContract', () => {
@@ -197,9 +217,14 @@ describe('convertLoanRequestToLocalContract', () => {
         loanId: 'loan-new',
         newClientId: 'c-new',
         conversionDateIso: '2026-05-04',
+        registryConvertedAtIso: '2026-05-05T10:00:00.000Z',
       });
       expect(res.ok).toBe(true);
       if (!res.ok) return;
+      expect(res.registryEntry?.loanRequestId).toBe('lr-fire-1');
+      expect(res.registryEntry?.localClientId).toBe('c-new');
+      expect(res.registryEntry?.localLoanId).toBe('loan-new');
+      expect(res.registryEntry?.convertedAt).toBe('2026-05-05T10:00:00.000Z');
       expect(res.nextClients[0].name).toBe('Mello');
     });
 
@@ -212,9 +237,11 @@ describe('convertLoanRequestToLocalContract', () => {
         loanId: 'loan-new',
         newClientId: 'c-new',
         conversionDateIso: '2026-05-04',
+        registryConvertedAtIso: '2026-05-05T10:00:00.000Z',
       });
       expect(res.ok).toBe(true);
       if (!res.ok) return;
+      expect(res.registryEntry?.loanRequestId).toBe('lr-fire-1');
       expect(res.nextClients).toHaveLength(1);
       expect(res.nextClients[0].id).toBe('c-new');
       expect(res.nextClients[0].name).toBe('Cliente da plataforma');
@@ -240,9 +267,12 @@ describe('convertLoanRequestToLocalContract', () => {
         loanId: 'loan-x',
         newClientId: 'unused',
         conversionDateIso: '2026-05-04',
+        registryConvertedAtIso: '2026-05-05T10:00:00.000Z',
       });
       expect(res.ok).toBe(true);
       if (!res.ok) return;
+      expect(res.registryEntry?.localClientId).toBe('c-ex');
+      expect(res.registryEntry?.localLoanId).toBe('loan-x');
       expect(res.nextClients).toHaveLength(1);
       expect(res.nextClients[0].loans).toHaveLength(1);
       expect(res.nextClients[0].loans[0].interestRate).toBe(12);
@@ -297,8 +327,11 @@ describe('convertLoanRequestToLocalContract', () => {
         interestRate: 10,
         loanId: 'loan-x',
         newClientId: 'n-new',
+        registryConvertedAtIso: '2026-05-05T10:00:00.000Z',
       });
       expect(res.ok).toBe(true);
+      if (!res.ok) return;
+      expect(res.registryEntry?.localLoanId).toBe('loan-x');
       expect(JSON.stringify(clients)).toBe(jsonBefore);
       expect(inner.loans).toHaveLength(0);
     });

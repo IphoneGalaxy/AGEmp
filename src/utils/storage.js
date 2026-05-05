@@ -4,7 +4,8 @@
  * normalização de dados e operações de backup.
  */
 
-import { SCOPE_ANONYMOUS, getScopedDataKey } from './storageScope';
+import { SCOPE_ANONYMOUS, getScopedDataKey, getScopedConvertedLoanRequestsRegistryKey } from './storageScope';
+import { normalizeLoanRequestConversionRegistry } from './loanRequestConversionRegistry';
 
 /**
  * Normaliza um empréstimo individual, garantindo que possua interestRate.
@@ -52,6 +53,9 @@ const normalizeClient = (client, defaultRate) => {
     const migrated = { id: client.id, name: client.name, loans: newLoans };
     if (client.linkContext != null) {
       migrated.linkContext = client.linkContext;
+    }
+    if (client.archivedAt != null && typeof client.archivedAt === 'string' && client.archivedAt.trim()) {
+      migrated.archivedAt = client.archivedAt.trim();
     }
     return migrated;
   }
@@ -162,3 +166,36 @@ export const parseBackupFile = (file) => {
     reader.readAsText(file);
   });
 };
+
+/**
+ * Registry escopado de conversões pré-financeiras já aplicadas neste aparelho.
+ *
+ * @param {string} [scope]
+ * @returns {Record<string, unknown>[]}
+ */
+export function loadLoanRequestConversionRegistry(scope = SCOPE_ANONYMOUS) {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(getScopedConvertedLoanRequestsRegistryKey(scope));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return normalizeLoanRequestConversionRegistry(parsed);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * @param {unknown[]} registry
+ * @param {string} [scope]
+ */
+export function saveLoanRequestConversionRegistry(registry, scope = SCOPE_ANONYMOUS) {
+  if (typeof localStorage === 'undefined') return;
+  const key = getScopedConvertedLoanRequestsRegistryKey(scope);
+  try {
+    const normalized = normalizeLoanRequestConversionRegistry(registry);
+    localStorage.setItem(key, JSON.stringify(normalized));
+  } catch (e) {
+    console.warn('[storage] Falha ao salvar registry de conversões:', key, e);
+  }
+}

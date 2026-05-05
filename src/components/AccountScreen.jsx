@@ -89,7 +89,9 @@ const ModeToggle = ({ mode, onModeChange }) => (
  * @param {(msg: string) => void} [props.showToast]
  * @param {number} [props.availableMoney] — Total disponível local (reais) para alerta B2 no painel do fornecedor.
  * @param {number} [props.defaultInterestRate] — Taxa padrão (%) para sugestão na revisão Bloco 2 (novo contrato manual).
- * @param {unknown[]} [props.clients] — Clientes financeiros locais para conversão LoanRequest → contrato (Bloco2-C).
+ * @param {unknown[]} [props.clients] — lista completa (inclui arquivados) para conversão e dedupe.
+ * @param {unknown[]} [props.loanRequestConversionRegistry]
+ * @param {(entry: Record<string, unknown>) => void} [props.onUpsertLoanRequestConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
  */
 function AccountScreen({
@@ -98,6 +100,8 @@ function AccountScreen({
   availableMoney,
   defaultInterestRate = 10,
   clients = [],
+  loanRequestConversionRegistry = [],
+  onUpsertLoanRequestConversionRegistry,
   onUpdateClients,
 }) {
   const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
@@ -594,6 +598,8 @@ function AccountScreen({
           availableMoney={availableMoney}
           defaultInterestRate={defaultInterestRate}
           clients={clients}
+          loanRequestConversionRegistry={loanRequestConversionRegistry}
+          onUpsertLoanRequestConversionRegistry={onUpsertLoanRequestConversionRegistry}
           onUpdateClients={onUpdateClients}
         />
       </div>

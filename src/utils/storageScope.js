@@ -25,6 +25,19 @@ export const LEGACY_KEYS = {
   autoBackups: 'loanManagerAutoBackups',
 };
 
+/** Metadado local por escopo — não faz parte do backup TXT principal (`loanManagerData`). */
+export const LOCAL_META_KEYS = Object.freeze({
+  convertedLoanRequestsRegistry: 'financasPro_convertedLoanRequestsRegistry',
+});
+
+/**
+ * @param {string} scope
+ * @returns {string}
+ */
+export function getScopedConvertedLoanRequestsRegistryKey(scope) {
+  return `${LOCAL_META_KEYS.convertedLoanRequestsRegistry}:${scope}`;
+}
+
 const DEVICE_SETTINGS_KEY = 'financasPro_deviceSettings';
 
 /** Registro de decisão do usuário sobre legado anônimo x conta. */
@@ -241,6 +254,10 @@ export function associateAnonymousDataWithAccount(accountUid) {
     [getScopedDataKey(from), getScopedDataKey(to)],
     [getScopedSettingsKey(from), getScopedSettingsKey(to)],
     [getScopedAutoBackupsKey(from), getScopedAutoBackupsKey(to)],
+    [
+      getScopedConvertedLoanRequestsRegistryKey(from),
+      getScopedConvertedLoanRequestsRegistryKey(to),
+    ],
   ];
   for (const [a, b] of pairKeys) {
     const v = localStorage.getItem(a);
@@ -259,6 +276,7 @@ export function associateAnonymousDataWithAccount(accountUid) {
     localStorage.removeItem(getScopedDataKey(from));
     localStorage.removeItem(getScopedSettingsKey(from));
     localStorage.removeItem(getScopedAutoBackupsKey(from));
+    localStorage.removeItem(getScopedConvertedLoanRequestsRegistryKey(from));
   } catch {
     // noop
   }

@@ -77,7 +77,9 @@ const OptionGroup = ({ options, value, onChange }) => (
  * @param {string} [props.localStorageScope] - Escopo ativo (anonymous / account:uid) para backups.
  * @param {string} [props.localDataContextLine] - Linha discreta de contexto local.
  * @param {number} [props.availableMoney] - Total disponível local (reais), de calculateGlobalStats — painel fornecedor LoanRequest (B2).
- * @param {unknown[]} [props.clients] - Clientes locais para conversão governada LoanRequest (Bloco2-C).
+ * @param {unknown[]} [props.clients] — snapshot financeiro local completo (escopo atual); inclui arquivados para deduplicação de conversão.
+ * @param {unknown[]} [props.loanRequestConversionRegistry]
+ * @param {(entry: Record<string, unknown>) => void} [props.onUpsertLoanRequestConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
  */
 const Settings = ({
@@ -91,6 +93,8 @@ const Settings = ({
   localDataContextLine,
   availableMoney,
   clients,
+  loanRequestConversionRegistry,
+  onUpsertLoanRequestConversionRegistry,
   onUpdateClients,
 }) => {
   const fileInputRef = useRef(null);
@@ -141,6 +145,8 @@ const Settings = ({
         availableMoney={availableMoney}
         defaultInterestRate={effectiveDefaultInterestRateFromSettings(settings)}
         clients={clients}
+        loanRequestConversionRegistry={loanRequestConversionRegistry}
+        onUpsertLoanRequestConversionRegistry={onUpsertLoanRequestConversionRegistry}
         onUpdateClients={onUpdateClients}
       />
     );

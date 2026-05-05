@@ -5,7 +5,12 @@ import {
   approvedAmountCentsToReaisOrNull,
   deriveLoanRequestConversionReviewClientLabel,
 } from '../utils/convertLoanRequestReviewDerive';
-import { applyApprovedLoanRequestConversion, hasConvertedLoanRequestDuplicate, todayIsoDateLocal } from '../utils/convertLoanRequestToLocalContract';
+import {
+  applyApprovedLoanRequestConversion,
+  hasConvertedLoanRequestDuplicate,
+  todayIsoDateLocal,
+} from '../utils/convertLoanRequestToLocalContract';
+import { findLoanRequestConversionRegistryEntry } from '../utils/loanRequestConversionRegistry';
 import { generateId } from '../utils/ids';
 
 /**
@@ -16,6 +21,8 @@ import { generateId } from '../utils/ids';
  * @param {Record<string, unknown> | null} props.request — linha do painel fornecedor (`approved`).
  * @param {number} props.defaultInterestRate — taxa sugerida (%), mesma base que novos contratos manuais.
  * @param {unknown[]} props.clients — snapshot financeiro local (escopo atual).
+ * @param {unknown[]} [props.conversionRegistry]
+ * @param {(entry: Record<string, unknown>) => void} [props.onUpsertConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} props.onUpdateClients — mesmo contrato que ClientView.
  * @param {() => void} props.onClose
  * @param {(msg: string) => void} [props.showToast]
@@ -25,16 +32,20 @@ export default function ConvertLoanRequestToContractReview({
   request,
   defaultInterestRate,
   clients,
+  conversionRegistry = [],
+  onUpsertConversionRegistry,
   onUpdateClients,
   onClose,
   showToast,
 }) {
   const [transferConfirmed, setTransferConfirmed] = useState(false);
+  const [reconversionConfirmed, setReconversionConfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       setTransferConfirmed(false);
+      setReconversionConfirmed(false);
       setSubmitting(false);
     }
   }, [open, request?.id]);
@@ -55,15 +66,24 @@ export default function ConvertLoanRequestToContractReview({
       ? defaultInterestRate
       : 10;
 
+  const list = Array.isArray(clients) ? clients : [];
+  const reqId = typeof request.id === 'string' ? request.id.trim() : '';
+  const historicalReconversion =
+    !!reqId &&
+    !!findLoanRequestConversionRegistryEntry(conversionRegistry, reqId) &&
+    !hasConvertedLoanRequestDuplicate(list, reqId);
+
   const handleConfirm = () => {
     if (!transferConfirmed || submitting) return;
-    const list = Array.isArray(clients) ? clients : [];
+    if (historicalReconversion && !reconversionConfirmed) {
+      showToast?.('Confirme também a reconversão para continuar.');
+      return;
+    }
     if (typeof onUpdateClients !== 'function') {
       showToast?.('Não foi possível atualizar os dados locais.');
       return;
     }
 
-    const reqId = typeof request.id === 'string' ? request.id.trim() : '';
     if (reqId && hasConvertedLoanRequestDuplicate(list, reqId)) {
       showToast?.('Este pedido já foi registrado como contrato local neste aparelho.');
       return;
@@ -90,12 +110,18 @@ export default function ConvertLoanRequestToContractReview({
       }
 
       onUpdateClients(() => result.nextClients);
+      if (typeof onUpsertConversionRegistry === 'function' && result.registryEntry) {
+        onUpsertConversionRegistry(result.registryEntry);
+      }
       showToast?.('Contrato registrado localmente a partir do pedido na plataforma.');
       onClose();
     } finally {
       setSubmitting(false);
     }
   };
+
+  const canSubmit =
+    transferConfirmed && (!historicalReconversion || reconversionConfirmed) && !submitting;
 
   return (
     <div
@@ -119,6 +145,21 @@ export default function ConvertLoanRequestToContractReview({
           Revise os dados antes de gravar no livro caixa deste aparelho. O pedido na plataforma continua
           sendo apenas pré-financeiro.
         </p>
+
+        {historicalReconversion ? (
+          <div
+            className="mt-4 rounded-design-md border border-warning/40 bg-warning/10 px-3 py-2.5"
+            role="status"
+          >
+            <p className="text-xs font-semibold leading-snug text-content-soft">
+              Reconversão após contrato apagado
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+              Este pedido já foi registrado localmente antes, mas o contrato foi apagado deste aparelho.
+              Registrar de novo cria um novo contrato local — só faça se for adequado à sua operação.
+            </p>
+          </div>
+        ) : null}
 
         <dl className="mt-4 space-y-3 rounded-design-md border border-edge/70 bg-surface-muted/50 px-3 py-3">
           <div>
@@ -173,6 +214,22 @@ export default function ConvertLoanRequestToContractReview({
           </span>
         </label>
 
+        {historicalReconversion ? (
+          <label className="mt-3 flex cursor-pointer gap-3 rounded-design-md border border-edge border-warning/35 bg-warning/5 px-3 py-3">
+            <input
+              type="checkbox"
+              checked={reconversionConfirmed}
+              disabled={submitting}
+              onChange={(e) => setReconversionConfirmed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-50"
+            />
+            <span className="text-sm leading-snug text-content-soft">
+              Entendo que estou registrando de novo neste aparelho após um contrato local anterior ter sido
+              apagado, e que isso não altera vínculos nem pedidos na plataforma.
+            </span>
+          </label>
+        ) : null}
+
         <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
           <button
             type="button"
@@ -184,7 +241,7 @@ export default function ConvertLoanRequestToContractReview({
           </button>
           <button
             type="button"
-            disabled={!transferConfirmed || submitting}
+            disabled={!canSubmit}
             onClick={handleConfirm}
             className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md bg-primary px-4 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
           >

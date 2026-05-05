@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { calculateGlobalStats } from './utils/calculations';
-import { loadData, saveData, exportBackup, parseBackupFile, normalizeClients } from './utils/storage';
+import { loadData, saveData, exportBackup, parseBackupFile, normalizeClients, loadLoanRequestConversionRegistry, saveLoanRequestConversionRegistry } from './utils/storage';
+import { upsertLoanRequestConversionRegistryEntry } from './utils/loanRequestConversionRegistry';
+import { isClientArchived } from './utils/clientArchive';
 import { loadSettings, saveSettings, getEffectiveTheme } from './utils/settings';
 import { createAutoBackup, restoreAutoBackup } from './utils/autoBackup';
 import { formatMoney } from './utils/format';
@@ -45,6 +47,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [fundsTransactions, setFundsTransactions] = useState([]);
   const [clients, setClients] = useState([]);
+  const [loanRequestConversionRegistry, setLoanRequestConversionRegistry] = useState([]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [legacyModalOpen, setLegacyModalOpen] = useState(false);
@@ -63,9 +66,10 @@ function App() {
   useEffect(() => {
     clientsRef.current = clients;
   }, [clients]);
+  const conversionRegistryRef = useRef([]);
   useEffect(() => {
-    settingsRef.current = settings;
-  }, [settings]);
+    conversionRegistryRef.current = loanRequestConversionRegistry;
+  }, [loanRequestConversionRegistry]);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -122,6 +126,7 @@ function App() {
       try {
         saveData(fundsRef.current, clientsRef.current, oldScope);
         saveSettings(settingsRef.current, oldScope);
+        saveLoanRequestConversionRegistry(conversionRegistryRef.current, oldScope);
       } catch (e) {
         console.warn('[App] Falha ao persistir escopo anterior:', e);
       }
@@ -136,6 +141,7 @@ function App() {
       setActiveTab(s.defaultTab || 'dashboard');
       setFundsTransactions([]);
       setClients([]);
+      setLoanRequestConversionRegistry([]);
       setSelectedClient(null);
       setValuesRevealed(false);
       setLegacyModalOpen(true);
@@ -157,6 +163,7 @@ function App() {
       setFundsTransactions([]);
       setClients([]);
     }
+    setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(newScope));
     setSelectedClient(null);
     setValuesRevealed(false);
     lastScopeRef.current = newScope;
@@ -174,6 +181,7 @@ function App() {
     if (!bootstrapped || !settings) return;
     const scope = getActiveStorageScope(user);
     saveData(fundsTransactions, clients, scope);
+    saveLoanRequestConversionRegistry(loanRequestConversionRegistry, scope);
     if (legacyModalOpen) {
       return;
     }
@@ -181,7 +189,7 @@ function App() {
       createAutoBackup(fundsTransactions, clients, settings.maxAutoBackups, scope);
       pendingAutoBackup.current = false;
     }
-  }, [fundsTransactions, clients, settings, user?.uid, bootstrapped, legacyModalOpen]);
+  }, [fundsTransactions, clients, loanRequestConversionRegistry, settings, user?.uid, bootstrapped, legacyModalOpen]);
 
   const triggerAutoBackup = () => {
     pendingAutoBackup.current = true;
@@ -273,6 +281,7 @@ function App() {
         setFundsTransactions([]);
         setClients([]);
       }
+      setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(sc));
       showToast('✅ Dados associados a esta conta (neste aparelho).');
     } catch (e) {
       console.warn(e);
@@ -289,6 +298,7 @@ function App() {
     setSettings(s);
     setFundsTransactions([]);
     setClients([]);
+    setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(sc));
     showToast('Dados anteriores permanecem acessíveis após sair da conta.');
   }, [user]);
 
@@ -311,6 +321,29 @@ function App() {
     setClients(updater);
     triggerAutoBackup();
   };
+
+  const handleUpsertLoanRequestConversionRegistry = useCallback((entry) => {
+    if (!entry || typeof entry !== 'object') return;
+    setLoanRequestConversionRegistry((prev) =>
+      upsertLoanRequestConversionRegistryEntry(prev, /** @type {any} */ (entry)),
+    );
+    triggerAutoBackup();
+  }, []);
+
+  const activeClientsForList = useMemo(
+    () => clients.filter((c) => !isClientArchived(c)),
+    [clients],
+  );
+
+  const activeProcessedClients = useMemo(
+    () => globalStats.processedClients.filter((c) => !isClientArchived(c)),
+    [globalStats.processedClients],
+  );
+
+  const archivedProcessedClients = useMemo(
+    () => globalStats.processedClients.filter((c) => isClientArchived(c)),
+    [globalStats.processedClients],
+  );
 
   if (!authReady || !bootstrapped) {
     return (
@@ -414,8 +447,9 @@ function App() {
         )}
         {activeTab === 'clients' && (
           <ClientsList
-            clients={clients}
-            processedClients={globalStats.processedClients}
+            clients={activeClientsForList}
+            processedClients={activeProcessedClients}
+            archivedProcessedClients={archivedProcessedClients}
             onAddClient={handleAddClient}
             onUpdateClients={handleUpdateClients}
             onSelectClient={setSelectedClient}
@@ -435,6 +469,8 @@ function App() {
             localDataContextLine={scopeLine}
             availableMoney={globalStats.availableMoney}
             clients={clients}
+            loanRequestConversionRegistry={loanRequestConversionRegistry}
+            onUpsertLoanRequestConversionRegistry={handleUpsertLoanRequestConversionRegistry}
             onUpdateClients={handleUpdateClients}
           />
         )}

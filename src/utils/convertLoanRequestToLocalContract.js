@@ -141,6 +141,61 @@ export function attachLoanLinkContextFromConversion(loanBase, request, clientLin
 }
 
 /**
+ * Monta entrada do registry local após conversão bem-sucedida (sem gravar storage).
+ *
+ * @param {Record<string, unknown>} request
+ * @param {{ localClientId: string; localLoanId: string; convertedAtIso: string }} meta
+ */
+export function buildLoanRequestConversionRegistryEntry(request, {
+  localClientId,
+  localLoanId,
+  convertedAtIso,
+}) {
+  const loanRequestId =
+    typeof request?.id === 'string' ? request.id.trim() : '';
+  const supplierId =
+    typeof request?.supplierId === 'string' ? request.supplierId.trim() : '';
+  const clientId =
+    typeof request?.clientId === 'string' ? request.clientId.trim() : '';
+  const lc = typeof localClientId === 'string' ? localClientId.trim() : '';
+  const ll = typeof localLoanId === 'string' ? localLoanId.trim() : '';
+  const ct =
+    typeof convertedAtIso === 'string' ? convertedAtIso.trim() : '';
+  if (!loanRequestId || !supplierId || !clientId || !lc || !ll || !ct) {
+    return null;
+  }
+
+  let amountCents;
+  if (typeof request.approvedAmount === 'number' && Number.isFinite(request.approvedAmount)) {
+    amountCents = Math.round(request.approvedAmount);
+  } else if (
+    typeof request.requestedAmount === 'number' &&
+    Number.isFinite(request.requestedAmount)
+  ) {
+    amountCents = Math.round(request.requestedAmount);
+  }
+
+  const snap = normalizeDisplayNameForSnapshot(request?.clientDisplayNameSnapshot);
+
+  /** @type {Record<string, unknown>} */
+  const entry = {
+    loanRequestId,
+    convertedAt: ct,
+    supplierId,
+    clientId,
+    localClientId: lc,
+    localLoanId: ll,
+  };
+  if (amountCents != null && Number.isFinite(amountCents)) {
+    entry.amountCents = amountCents;
+  }
+  if (snap !== null) {
+    entry.clientDisplayNameSnapshot = snap;
+  }
+  return entry;
+}
+
+/**
  * Conversão governada: anti-duplicidade, cliente único ou novo, contrato local imutável.
  *
  * @param {Object} p
@@ -150,7 +205,8 @@ export function attachLoanLinkContextFromConversion(loanBase, request, clientLin
  * @param {string} p.loanId id local do novo contrato (`generateId`)
  * @param {string} p.newClientId id local se precisar criar cliente (`generateId`)
  * @param {string} [p.conversionDateIso] YYYY-MM-DD (D6); default hoje local
- * @returns {{ ok: true, nextClients: unknown[] } | { ok: false, message: string }}
+ * @param {string} [p.registryConvertedAtIso] ISO gravado no registry local; default agora (UTC)
+ * @returns {{ ok: true, nextClients: unknown[], registryEntry: Record<string, unknown> } | { ok: false, message: string }}
  */
 export function applyApprovedLoanRequestConversion({
   clients,
@@ -159,6 +215,7 @@ export function applyApprovedLoanRequestConversion({
   loanId,
   newClientId,
   conversionDateIso,
+  registryConvertedAtIso,
 }) {
   if (!Array.isArray(clients)) {
     return { ok: false, message: 'Dados locais indisponíveis para registrar o contrato.' };
@@ -194,6 +251,11 @@ export function applyApprovedLoanRequestConversion({
   if (typeof loanId !== 'string' || !loanId || typeof newClientId !== 'string' || !newClientId) {
     return { ok: false, message: 'Erro interno ao gerar identificadores locais.' };
   }
+
+  const convertedAtRegistry =
+    typeof registryConvertedAtIso === 'string' && registryConvertedAtIso.trim()
+      ? registryConvertedAtIso.trim()
+      : new Date().toISOString();
 
   const dateIso =
     typeof conversionDateIso === 'string' && conversionDateIso.trim()
@@ -234,7 +296,15 @@ export function applyApprovedLoanRequestConversion({
       const prevLoans = Array.isArray(c.loans) ? c.loans : [];
       return { ...c, loans: [loan, ...prevLoans] };
     });
-    return { ok: true, nextClients };
+    const registryEntry = buildLoanRequestConversionRegistryEntry(request, {
+      localClientId: target.id,
+      localLoanId: loanId,
+      convertedAtIso: convertedAtRegistry,
+    });
+    if (!registryEntry) {
+      return { ok: false, message: 'Erro ao montar registro local da conversão.' };
+    }
+    return { ok: true, nextClients, registryEntry };
   }
 
   const template =
@@ -264,5 +334,13 @@ export function applyApprovedLoanRequestConversion({
 
   const clientWithLoan = { ...newClient, loans: [loan] };
   const nextClients = [clientWithLoan, ...clients];
-  return { ok: true, nextClients };
+  const registryEntry = buildLoanRequestConversionRegistryEntry(request, {
+    localClientId: newClientId,
+    localLoanId: loanId,
+    convertedAtIso: convertedAtRegistry,
+  });
+  if (!registryEntry) {
+    return { ok: false, message: 'Erro ao montar registro local da conversão.' };
+  }
+  return { ok: true, nextClients, registryEntry };
 }

@@ -36,8 +36,9 @@ import {
  * - Badges de status (OK, Falta, Sem dívidas)
  *
  * @param {Object} props
- * @param {Array}    props.clients - Clientes brutos (estado; mesmos ids que processedClients).
- * @param {Array}    props.processedClients - Clientes com dados processados.
+ * @param {Array}    props.clients - Clientes ativos (não arquivados); alinhados a processedClients.
+ * @param {Array}    props.processedClients - Processados só de clientes ativos.
+ * @param {Array}    [props.archivedProcessedClients] - Clientes arquivados (processados), opcional.
  * @param {Function} props.onAddClient - Callback para adicionar novo cliente.
  * @param {Function} props.onUpdateClients - Callback (updater) => void para atualizar o array de clientes.
  * @param {Function} props.onSelectClient - Callback para selecionar/abrir um cliente.
@@ -47,6 +48,7 @@ import {
 const ClientsList = ({
   clients = [],
   processedClients = [],
+  archivedProcessedClients = [],
   onAddClient,
   onUpdateClients,
   onSelectClient,
@@ -54,6 +56,9 @@ const ClientsList = ({
   displayMoney,
 }) => {
   const clientsCount = clients.length;
+  const archivedCount = archivedProcessedClients.length;
+
+  const [showArchivedClients, setShowArchivedClients] = useState(false);
 
   const [newClientName, setNewClientName] = useState('');
   const [inheritVinculoOnCreate, setInheritVinculoOnCreate] = useState(true);
@@ -397,6 +402,63 @@ const ClientsList = ({
         </div>
       )}
 
+      {archivedCount > 0 ? (
+        <div className="mb-6 rounded-design-lg border border-edge bg-surface-muted/40 p-4 shadow-design-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold text-content">Arquivados neste aparelho</h3>
+              <p className="mt-1 text-xs leading-relaxed text-content-muted">
+                {archivedCount} cliente{archivedCount === 1 ? '' : 's'} fora da lista principal. Dados e
+                contratos locais continuam guardados — não afeta vínculos remotos nem a outra conta.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowArchivedClients((v) => !v)}
+              className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-design-md border border-edge bg-surface px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            >
+              {showArchivedClients ? 'Ocultar arquivados' : `Mostrar arquivados (${archivedCount})`}
+            </button>
+          </div>
+          {showArchivedClients ? (
+            <ul className="mt-4 space-y-3 border-t border-edge/60 pt-4">
+              {archivedProcessedClients.map((client) => (
+                <li key={client.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectClient(client)}
+                    className="flex w-full flex-col gap-1 rounded-design-lg border border-dashed border-edge bg-surface/80 p-4 text-left shadow-design-sm transition-colors hover:bg-surface-muted/50 sm:p-5"
+                  >
+                    <p className="text-lg font-semibold leading-snug text-content-soft">{client.name}</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-content-muted">
+                      Arquivado
+                    </p>
+                    {client.linkContext && (
+                      <p className="mt-1 line-clamp-2 text-xs text-info">
+                        {formatLocalVinculoLineFromContext(client.linkContext)}
+                      </p>
+                    )}
+                    <p className="mt-2 text-xs text-content-muted">
+                      Toque para abrir a ficha e restaurar na lista principal, se quiser.
+                    </p>
+                    <div className="mt-2 text-right">
+                      <span className="text-xs font-medium text-content-muted">Dívida total</span>
+                      <p
+                        className={`text-base font-bold tabular-nums ${
+                          client.currentDebt > 0 ? 'text-danger' : 'text-success'
+                        }`}
+                      >
+                        {displayMoney(client.currentDebt)}
+                      </p>
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
       {batchSelectMode && clientsCount > 0 && (
         <div
           className="sticky top-0 z-20 -mx-4 space-y-2 border-b border-edge bg-base/95 px-4 py-2.5 backdrop-blur sm:mx-0 sm:rounded-design-md sm:border sm:shadow-design-sm"
@@ -584,9 +646,19 @@ const ClientsList = ({
           </div>
         )}
 
-        {clientsCount === 0 && (
+        {clientsCount === 0 && archivedCount === 0 && (
           <div className="mt-10 rounded-design-lg border border-dashed border-edge bg-surface-muted/60 px-5 py-12 text-center">
             <p className="text-sm text-content-muted">Nenhum cliente cadastrado.</p>
+          </div>
+        )}
+
+        {clientsCount === 0 && archivedCount > 0 && (
+          <div className="mt-6 rounded-design-lg border border-dashed border-edge bg-surface-muted/60 px-5 py-10 text-center">
+            <p className="text-sm text-content-muted">
+              Nenhum cliente ativo na lista principal. Você tem {archivedCount} arquivado
+              {archivedCount === 1 ? '' : 's'} — use &quot;Mostrar arquivados&quot; acima para abrir a
+              ficha.
+            </p>
           </div>
         )}
       </div>

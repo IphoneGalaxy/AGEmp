@@ -22,6 +22,7 @@ import {
 import { parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import ConvertLoanRequestToContractReview from './ConvertLoanRequestToContractReview';
 import { hasConvertedLoanRequestDuplicate } from '../utils/convertLoanRequestToLocalContract';
+import { findLoanRequestConversionRegistryEntry } from '../utils/loanRequestConversionRegistry';
 import { deriveLoanRequestClientFriendlyName } from '../utils/displayNameSnapshots';
 import { LOAN_REQUEST_SUPPLIER_EXPANDED_LINK_CAPTION } from '../utils/platformFriendlyLabels';
 
@@ -177,6 +178,8 @@ function shouldShowLocalAvailableShortfall(status, requestedAmountCents, availab
  * @param {number} [props.availableMoney] Total disponível local em reais (calculateGlobalStats)
  * @param {number} [props.defaultInterestRate] Taxa padrão (%) para sugestão na revisão Bloco 2 — igual à configuração de novo contrato manual.
  * @param {unknown[]} [props.clients] Clientes financeiros locais (escopo atual) para conversão Bloco2-C.
+ * @param {unknown[]} [props.loanRequestConversionRegistry] Registry local de conversões anteriores neste aparelho.
+ * @param {(entry: Record<string, unknown>) => void} [props.onUpsertLoanRequestConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients] Atualização imutável de clientes (mesmo contrato que ClientView).
  */
 export default function LoanRequestsSupplierPanel({
@@ -185,6 +188,8 @@ export default function LoanRequestsSupplierPanel({
   availableMoney,
   defaultInterestRate = 10,
   clients = [],
+  loanRequestConversionRegistry = [],
+  onUpsertLoanRequestConversionRegistry,
   onUpdateClients,
 }) {
   const [requests, setRequests] = useState([]);
@@ -404,9 +409,18 @@ export default function LoanRequestsSupplierPanel({
               const hasPlatformLink =
                 (typeof r.linkId === 'string' && r.linkId.length > 0) ||
                 (typeof r.clientId === 'string' && r.clientId.length > 0);
+              const reqId = typeof r.id === 'string' ? r.id : '';
               const alreadyRegisteredLocally =
                 r.status === LOAN_REQUEST_STATUSES.APPROVED &&
-                hasConvertedLoanRequestDuplicate(clients, typeof r.id === 'string' ? r.id : '');
+                hasConvertedLoanRequestDuplicate(clients, reqId);
+              const registryRow =
+                reqId && Array.isArray(loanRequestConversionRegistry)
+                  ? findLoanRequestConversionRegistryEntry(loanRequestConversionRegistry, reqId)
+                  : undefined;
+              const historicalConversionContractMissing =
+                r.status === LOAN_REQUEST_STATUSES.APPROVED &&
+                !!registryRow &&
+                !alreadyRegisteredLocally;
 
               return (
                 <li
@@ -550,6 +564,31 @@ export default function LoanRequestsSupplierPanel({
                               Você pode encontrar o contrato na aba Clientes.
                             </p>
                           </div>
+                        ) : historicalConversionContractMissing ? (
+                          <div className="rounded-design-md border border-warning/40 bg-warning/10 px-3 py-2.5">
+                            <p className="text-xs font-semibold leading-snug text-content-soft">
+                              Histórico local de conversão anterior
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+                              Este pedido já foi registrado localmente antes, mas o contrato foi apagado deste
+                              aparelho. Na plataforma o pedido continua apenas pré-financeiro — não é erro nem
+                              pedido novo.
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-content-muted">
+                              Você pode registrar de novo no livro-caixa deste aparelho apenas se fizer sentido na
+                              sua operação — a revisão vai pedir uma confirmação extra para reconversão.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConvertReviewRequest(r);
+                              }}
+                              className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                            >
+                              Registrar de novo neste aparelho…
+                            </button>
+                          </div>
                         ) : (
                           <div className="rounded-design-md border border-edge/80 bg-surface-muted/30 px-3 py-2.5">
                             <p className="text-xs leading-relaxed text-content-muted">
@@ -683,6 +722,8 @@ export default function LoanRequestsSupplierPanel({
         request={convertReviewRequest}
         defaultInterestRate={defaultInterestRate}
         clients={clients}
+        conversionRegistry={loanRequestConversionRegistry}
+        onUpsertConversionRegistry={onUpsertLoanRequestConversionRegistry}
         onUpdateClients={onUpdateClients}
         onClose={() => setConvertReviewRequest(null)}
         showToast={showToast}

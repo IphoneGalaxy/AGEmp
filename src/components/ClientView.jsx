@@ -32,6 +32,7 @@ import {
   LINK_STATUSES,
 } from '../firebase/links';
 import { IconEdit, IconDelete, IconBack } from './Icons';
+import { isClientArchived, archiveClientNowIso } from '../utils/clientArchive';
 
 /**
  * Componente Visão do Cliente (overlay).
@@ -75,6 +76,7 @@ const ClientView = ({
 
   // --- Estado local de confirmações e edições ---
   const [confirmDeleteClient, setConfirmDeleteClient] = useState(false);
+  const [deleteRemoteUnderstanding, setDeleteRemoteUnderstanding] = useState(false);
   const [editingLoan, setEditingLoan] = useState(null);
   const [confirmDeleteLoanId, setConfirmDeleteLoanId] = useState(null);
   const [editingPayment, setEditingPayment] = useState(null);
@@ -165,23 +167,53 @@ const ClientView = ({
   }, [user?.uid]);
 
   useEffect(() => {
+    if (!confirmDeleteClient) {
+      setDeleteRemoteUnderstanding(false);
+    }
+  }, [confirmDeleteClient]);
+
+  useEffect(() => {
     setInheritLinkContextOnNewLoan(canInheritLinkContextToLoan(clientData.linkContext));
   }, [clientData.linkContext]);
 
   // ==================== HANDLERS ====================
 
   const handleDeleteClientClick = () => {
-    if (settings.confirmDeleteClient) {
-      setConfirmDeleteClient(true);
-    } else {
-      executeDeleteClient();
-    }
+    setConfirmDeleteClient(true);
   };
 
   const executeDeleteClient = () => {
+    if (!deleteRemoteUnderstanding) {
+      showToast('Marque a confirmação para apagar o cliente neste aparelho.');
+      return;
+    }
     onUpdateClients((clients) => clients.filter((c) => c.id !== clientData.id));
+    setConfirmDeleteClient(false);
+    setDeleteRemoteUnderstanding(false);
     onClose();
-    showToast('🗑️ Cliente deletado.');
+    showToast('🗑️ Cliente removido apenas deste aparelho.');
+  };
+
+  const handleArchiveClient = () => {
+    onUpdateClients((clients) =>
+      clients.map((c) =>
+        c.id === clientData.id ? { ...c, archivedAt: archiveClientNowIso() } : c,
+      ),
+    );
+    onClose();
+    showToast('📁 Cliente arquivado neste aparelho. Contratos locais foram preservados.');
+  };
+
+  const handleRestoreArchivedClient = () => {
+    onUpdateClients((clients) =>
+      clients.map((c) => {
+        if (c.id !== clientData.id) return c;
+        const next = { ...c };
+        delete next.archivedAt;
+        return next;
+      }),
+    );
+    showToast('Cliente restaurado na lista principal.');
   };
 
   const handleAddLoan = (e) => {
@@ -550,6 +582,8 @@ const ClientView = ({
     return 'Sem anotação local';
   };
 
+  const clientArchived = isClientArchived(clientData);
+
   // ==================== RENDERIZAÇÃO ====================
 
   return (
@@ -579,12 +613,75 @@ const ClientView = ({
         </button>
       </header>
 
+      {clientArchived ? (
+        <div className="mb-6 rounded-design-lg border border-edge bg-surface-muted/60 px-4 py-4 shadow-design-sm sm:px-5">
+          <p className="text-sm font-semibold text-content-soft">Cliente arquivado neste aparelho</p>
+          <p className="mt-2 text-xs leading-relaxed text-content-muted">
+            Ele não aparece na lista principal de Clientes. Contratos e pagamentos locais continuam aqui —
+            nada foi enviado à nuvem nem à contraparte por causa do arquivamento.
+          </p>
+          <button
+            type="button"
+            onClick={handleRestoreArchivedClient}
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto"
+          >
+            Restaurar na lista principal
+          </button>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-design-lg border border-primary/25 bg-primary-soft/25 px-4 py-4 shadow-design-sm sm:px-5">
+          <p className="text-sm font-semibold text-content-soft">Governança local</p>
+          <p className="mt-2 text-xs leading-relaxed text-content-muted">
+            Para tirar o cliente da lista principal sem apagar contratos neste aparelho, prefira{' '}
+            <span className="font-medium text-content-soft">arquivar</span>. Excluir é destrutivo só aqui —
+            não remove vínculo remoto nem pedidos na plataforma.
+          </p>
+          <button
+            type="button"
+            onClick={handleArchiveClient}
+            className="mt-4 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md bg-primary px-4 text-sm font-semibold text-content-inverse shadow-design-sm transition-colors hover:bg-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto"
+          >
+            Arquivar cliente (recomendado)
+          </button>
+        </div>
+      )}
+
       {/* Confirmação de exclusão do cliente */}
       {confirmDeleteClient && (
-        <div className="mb-6 animate-fade-in rounded-design-lg border border-edge bg-danger-soft p-4 text-center shadow-design-sm sm:p-5">
-          <p className="mb-4 text-sm font-semibold leading-snug text-danger">
-            Apagar cliente e todo o histórico?
+        <div className="mb-6 animate-fade-in rounded-design-lg border border-edge bg-danger-soft p-4 text-left shadow-design-sm sm:p-5">
+          <p className="mb-3 text-sm font-semibold leading-snug text-danger">
+            Excluir cliente apenas neste aparelho?
           </p>
+          <ul className="mb-4 list-inside list-disc space-y-1.5 text-xs leading-relaxed text-content-soft">
+            <li>
+              Apaga o cadastro e o histórico financeiro deste cliente{' '}
+              <span className="font-medium">somente neste dispositivo</span>.
+            </li>
+            <li>
+              <span className="font-medium">Não</span> apaga vínculo remoto na plataforma.
+            </li>
+            <li>
+              <span className="font-medium">Não</span> apaga pedidos remotos (pré-financeiro).
+            </li>
+            <li>
+              <span className="font-medium">Não</span> altera a conta nem o aplicativo da outra pessoa.
+            </li>
+          </ul>
+          <p className="mb-4 text-xs leading-relaxed text-content-muted">
+            Se quiser só esconder da lista principal mantendo dados locais, volte e use{' '}
+            <span className="font-medium text-content-soft">Arquivar cliente</span>.
+          </p>
+          <label className="mb-4 flex cursor-pointer gap-3 rounded-design-md border border-edge bg-surface/60 px-3 py-3">
+            <input
+              type="checkbox"
+              checked={deleteRemoteUnderstanding}
+              onChange={(e) => setDeleteRemoteUnderstanding(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+            />
+            <span className="text-sm leading-snug text-content-soft">
+              Li e entendo que isso não apaga dados na plataforma nem na conta da outra pessoa.
+            </span>
+          </label>
           <div className="flex gap-2">
             <button
               type="button"
@@ -595,10 +692,11 @@ const ClientView = ({
             </button>
             <button
               type="button"
+              disabled={!deleteRemoteUnderstanding}
               onClick={executeDeleteClient}
-              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-danger px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+              className="flex min-h-[44px] flex-1 items-center justify-center rounded-design-md bg-danger px-3 text-sm font-semibold text-content-inverse shadow-design-sm transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Sim, Apagar
+              Sim, excluir neste aparelho
             </button>
           </div>
         </div>
