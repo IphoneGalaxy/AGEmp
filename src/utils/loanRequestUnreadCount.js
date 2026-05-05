@@ -96,6 +96,22 @@ export function shouldShowUnreadBadgeForClient(r) {
   return true;
 }
 
+/**
+ * @param {Record<string, unknown>} r
+ * @returns {boolean}
+ */
+function isLoanRequestArchivedForClientSide(r) {
+  return firestoreTimestampSecondsOrNull(r.archivedByClientAt) != null;
+}
+
+/**
+ * @param {Record<string, unknown>} r
+ * @returns {boolean}
+ */
+function isLoanRequestArchivedForSupplierSide(r) {
+  return firestoreTimestampSecondsOrNull(r.archivedBySupplierAt) != null;
+}
+
 /** @param {Record<string, unknown>} r */
 function isPendingUnreadWindowSupplier(r) {
   const sec = firestoreTimestampSecondsOrNull(r.createdAt);
@@ -187,9 +203,11 @@ export function countUnreadLoanRequests(requests, uid, role) {
 
     if (role === 'client') {
       if (r.clientId !== uid) continue;
+      if (isLoanRequestArchivedForClientSide(r)) continue;
       if (shouldShowUnreadBadgeForClient(r)) n += 1;
     } else {
       if (r.supplierId !== uid) continue;
+      if (isLoanRequestArchivedForSupplierSide(r)) continue;
       if (shouldShowUnreadBadgeForSupplier(r)) n += 1;
     }
   }

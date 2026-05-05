@@ -423,7 +423,9 @@ service cloud.firestore {
         'supplierNote',
         'counterofferAmount',
         'readByClientAt',
-        'readBySupplierAt'
+        'readBySupplierAt',
+        'archivedByClientAt',
+        'archivedBySupplierAt'
       ]);
     }
 
@@ -536,6 +538,8 @@ service cloud.firestore {
         'counterofferedAt',
         'readByClientAt',
         'readBySupplierAt',
+        'archivedByClientAt',
+        'archivedBySupplierAt',
         'clientDisplayNameSnapshot',
         'supplierDisplayNameSnapshot'
       ]);
@@ -784,6 +788,71 @@ service cloud.firestore {
         );
     }
 
+    // A2b/A2c — arquivamento por lado (terminais apenas); não altera status nem updatedAt.
+    function loanRequestArchiveByClientValid() {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return request.auth.uid == resource.data.clientId &&
+        userHasEffectiveAccountRole(resource.data.clientId, 'client') &&
+        loanRequestTerminalStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        loanRequestCoreImmutableOnUpdate() &&
+        affected.hasOnly(['archivedByClientAt']) &&
+        (
+          (
+            !resource.data.keys().hasAny(['archivedByClientAt']) &&
+            request.resource.data.keys().hasAny(['archivedByClientAt']) &&
+            request.resource.data.archivedByClientAt is timestamp &&
+            loanRequestReadMarkerTsMonotone(
+              false,
+              null,
+              request.resource.data.archivedByClientAt
+            )
+          ) ||
+          (
+            resource.data.keys().hasAny(['archivedByClientAt']) &&
+            !request.resource.data.keys().hasAny(['archivedByClientAt'])
+          )
+        );
+    }
+
+    function loanRequestArchiveBySupplierValid() {
+      let affected = request.resource.data.diff(resource.data).affectedKeys();
+      return request.auth.uid == resource.data.supplierId &&
+        userHasEffectiveAccountRole(resource.data.supplierId, 'supplier') &&
+        loanRequestTerminalStatus(resource.data.status) &&
+        loanRequestLinkApprovedForLoanRequest(
+          resource.data.linkId,
+          resource.data.supplierId,
+          resource.data.clientId
+        ) &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.updatedAt == resource.data.updatedAt &&
+        loanRequestCoreImmutableOnUpdate() &&
+        affected.hasOnly(['archivedBySupplierAt']) &&
+        (
+          (
+            !resource.data.keys().hasAny(['archivedBySupplierAt']) &&
+            request.resource.data.keys().hasAny(['archivedBySupplierAt']) &&
+            request.resource.data.archivedBySupplierAt is timestamp &&
+            loanRequestReadMarkerTsMonotone(
+              false,
+              null,
+              request.resource.data.archivedBySupplierAt
+            )
+          ) ||
+          (
+            resource.data.keys().hasAny(['archivedBySupplierAt']) &&
+            !request.resource.data.keys().hasAny(['archivedBySupplierAt'])
+          )
+        );
+    }
+
     function loanRequestUpdateValid() {
       return loanRequestAllowedV1Keys(request.resource.data) &&
         !loanRequestV1ForbiddenKeysAlways() &&
@@ -803,6 +872,8 @@ service cloud.firestore {
         (
           loanRequestReadByClientValid() ||
           loanRequestReadBySupplierValid() ||
+          loanRequestArchiveByClientValid() ||
+          loanRequestArchiveBySupplierValid() ||
           (
             !loanRequestTerminalStatus(resource.data.status) &&
             (

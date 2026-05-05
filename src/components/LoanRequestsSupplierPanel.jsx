@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formatMoney } from '../utils/format';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
+  archiveLoanRequestForSupplier,
   listLoanRequestsForSupplier,
   markLoanRequestReadBySupplier,
   supplierApproveLoanRequest,
   supplierMarkLoanRequestUnderReview,
   supplierProposeLoanRequestCounteroffer,
   supplierRejectLoanRequest,
+  unarchiveLoanRequestForSupplier,
 } from '../firebase/loanRequestsFirestore';
 import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
@@ -199,8 +201,15 @@ export default function LoanRequestsSupplierPanel({
   const [notesDraft, setNotesDraft] = useState({});
   const [counterofferInput, setCounterofferInput] = useState({});
   const [actingId, setActingId] = useState(null);
+  const [archiveBusyId, setArchiveBusyId] = useState(null);
+  const [showArchivedReceived, setShowArchivedReceived] = useState(false);
   /** Bloco 2 — revisão de conversão (sem persistência nesta rodada). */
   const [convertReviewRequest, setConvertReviewRequest] = useState(null);
+
+  const visibleReceivedRequests = useMemo(() => {
+    if (showArchivedReceived) return requests;
+    return requests.filter((r) => firestoreTimestampSecondsOrNull(r.archivedBySupplierAt) == null);
+  }, [requests, showArchivedReceived]);
 
   const loadRequests = useCallback(async () => {
     if (!user?.uid) {
@@ -339,6 +348,42 @@ export default function LoanRequestsSupplierPanel({
     }
   };
 
+  const handleArchiveReceivedRequest = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setArchiveBusyId(requestId);
+    try {
+      const result = await archiveLoanRequestForSupplier({ requestId, supplierUid: user.uid });
+      if (result.ok) {
+        showToast?.('Pedido arquivado na sua lista (continua na plataforma para o cliente).');
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setArchiveBusyId(null);
+    }
+  };
+
+  const handleUnarchiveReceivedRequest = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setArchiveBusyId(requestId);
+    try {
+      const result = await unarchiveLoanRequestForSupplier({ requestId, supplierUid: user.uid });
+      if (result.ok) {
+        showToast?.('Pedido desarquivado.');
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setArchiveBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className={sectionCardClass}>
@@ -353,17 +398,32 @@ export default function LoanRequestsSupplierPanel({
       </div>
 
       <div className={sectionCardClass}>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <h3 className="text-base font-semibold text-content">Pedidos recebidos</h3>
-          <button
-            type="button"
-            onClick={() => void loadRequests()}
-            disabled={requestsLoading}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface-muted px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 disabled:opacity-60"
-          >
-            {requestsLoading ? 'Atualizando…' : 'Atualizar lista'}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <label className="inline-flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-content-soft">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                checked={showArchivedReceived}
+                onChange={(e) => setShowArchivedReceived(e.target.checked)}
+              />
+              Mostrar arquivados
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadRequests()}
+              disabled={requestsLoading}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface-muted px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 disabled:opacity-60"
+            >
+              {requestsLoading ? 'Atualizando…' : 'Atualizar lista'}
+            </button>
+          </div>
         </div>
+
+        <p className="mb-4 text-[11px] leading-relaxed text-content-muted">
+          Arquivar oculta só para você neste painel — não apaga o pedido nem altera o cliente.
+        </p>
 
         {requestsError && (
           <div
@@ -381,9 +441,13 @@ export default function LoanRequestsSupplierPanel({
             Nenhum pedido recebido ainda. Quando um cliente vinculado enviar uma solicitação, ela
             aparece aqui.
           </p>
+        ) : visibleReceivedRequests.length === 0 ? (
+          <p className="text-sm leading-relaxed text-content-muted">
+            Nenhum pedido na lista principal. Marque &quot;Mostrar arquivados&quot; para ver pedidos que você ocultou só para si.
+          </p>
         ) : (
           <ul className="space-y-3">
-            {requests.map((r) => {
+            {visibleReceivedRequests.map((r) => {
               const amount =
                 typeof r.requestedAmount === 'number'
                   ? formatMoney(r.requestedAmount / 100)
@@ -400,6 +464,9 @@ export default function LoanRequestsSupplierPanel({
               const isUnderReview = r.status === LOAN_REQUEST_STATUSES.UNDER_REVIEW;
               const expanded = expandedId === r.id;
               const busy = actingId === r.id;
+              const archivedSupplierSide =
+                firestoreTimestampSecondsOrNull(r.archivedBySupplierAt) != null;
+              const archiveBusy = archiveBusyId === r.id;
               const showUnreadBadge = shouldShowUnreadBadgeSupplierPanel(r);
               const showLocalAvailableWarning = shouldShowLocalAvailableShortfall(
                 r.status,
@@ -480,6 +547,35 @@ export default function LoanRequestsSupplierPanel({
                       <p className="text-xs text-content-muted">Cliente já visualizou (registro opcional).</p>
                     ) : null}
                   </button>
+
+                  {isTerminal ? (
+                    <div className="mt-3 border-t border-edge/60 pt-3">
+                      {archivedSupplierSide && showArchivedReceived ? (
+                        <p className="mb-2 text-[11px] font-medium text-content-muted">
+                          Arquivado só na sua lista — o cliente não é afetado.
+                        </p>
+                      ) : null}
+                      {archivedSupplierSide ? (
+                        <button
+                          type="button"
+                          disabled={archiveBusy}
+                          onClick={() => void handleUnarchiveReceivedRequest(r.id)}
+                          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                        >
+                          {archiveBusy ? 'Salvando…' : 'Desarquivar'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={archiveBusy}
+                          onClick={() => void handleArchiveReceivedRequest(r.id)}
+                          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                        >
+                          {archiveBusy ? 'Salvando…' : 'Arquivar'}
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
 
                   {expanded ? (
                     <div className="mt-4 space-y-3 border-t border-edge/60 pt-4">

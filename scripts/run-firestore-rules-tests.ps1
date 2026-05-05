@@ -64,7 +64,7 @@ Push-Location $repoRoot
 
 try {
   # Emulators só aceitam emulador oficial; comando único igual ao npm script anterior.
-  npx -y firebase-tools@latest emulators:exec --only firestore "npx vitest run src/firebase/__tests__/loanRequestsCreate.rules.test.js src/firebase/__tests__/loanRequestsCounteroffer.rules.test.js src/firebase/__tests__/linksSnapshots.rules.test.js src/firebase/__tests__/loanRequestsSnapshots.rules.test.js"
+  npx -y firebase-tools@latest emulators:exec --only firestore "npx vitest run src/firebase/__tests__/loanRequestsCreate.rules.test.js src/firebase/__tests__/loanRequestsCounteroffer.rules.test.js src/firebase/__tests__/loanRequestsArchive.rules.test.js src/firebase/__tests__/linksSnapshots.rules.test.js src/firebase/__tests__/loanRequestsSnapshots.rules.test.js"
 } finally {
   Pop-Location
 }

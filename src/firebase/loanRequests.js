@@ -112,6 +112,11 @@ export const LOAN_REQUEST_READ_BY_CLIENT_AT_FIELD = 'readByClientAt';
 /** v1.1 RB — só metadado operacional; rules são autoritativas sobre escrita */
 export const LOAN_REQUEST_READ_BY_SUPPLIER_AT_FIELD = 'readBySupplierAt';
 
+/** A2b/A2c — arquivamento remoto por lado (terminais apenas); não altera status nem updatedAt nas rules */
+export const LOAN_REQUEST_ARCHIVED_BY_CLIENT_AT_FIELD = 'archivedByClientAt';
+/** A2b/A2c — arquivamento remoto por lado (terminais apenas) */
+export const LOAN_REQUEST_ARCHIVED_BY_SUPPLIER_AT_FIELD = 'archivedBySupplierAt';
+
 const SUPPLIER_TRANSITIONS = Object.freeze({
   [LOAN_REQUEST_STATUSES.PENDING]: Object.freeze([
     LOAN_REQUEST_STATUSES.UNDER_REVIEW,

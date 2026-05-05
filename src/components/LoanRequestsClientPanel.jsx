@@ -5,6 +5,7 @@ import { formatMoney } from '../utils/format';
 import { normalizeNoteForLoanRequest, parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
+  archiveLoanRequestForClient,
   cancelLoanRequestByClient,
   clientAcceptLoanRequestCounteroffer,
   clientDeclineLoanRequestCounteroffer,
@@ -12,6 +13,7 @@ import {
   findOpenLoanRequestForLinkId,
   listLoanRequestsForClient,
   markLoanRequestReadByClient,
+  unarchiveLoanRequestForClient,
 } from '../firebase/loanRequestsFirestore';
 import {
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
@@ -225,6 +227,8 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
 
   const [cancellingId, setCancellingId] = useState(null);
   const [counterofferBusyId, setCounterofferBusyId] = useState(null);
+  const [archiveBusyId, setArchiveBusyId] = useState(null);
+  const [showArchivedSent, setShowArchivedSent] = useState(false);
 
   const approvedAsClient = useMemo(
     () =>
@@ -253,6 +257,11 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
   }, [approvedAsClient, requests]);
 
   const { supplierDisplayNames } = useSupplierDisplayNameMap(supplierIdsForDisplayNames);
+
+  const visibleSentRequests = useMemo(() => {
+    if (showArchivedSent) return requests;
+    return requests.filter((r) => firestoreTimestampSecondsOrNull(r.archivedByClientAt) == null);
+  }, [requests, showArchivedSent]);
 
   const loadRequests = useCallback(async () => {
     if (!user?.uid) {
@@ -406,6 +415,42 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
     }
   };
 
+  const handleArchiveSentRequest = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setArchiveBusyId(requestId);
+    try {
+      const result = await archiveLoanRequestForClient({ requestId, clientUid: user.uid });
+      if (result.ok) {
+        showToast?.('Pedido arquivado na sua lista (continua na plataforma para o fornecedor).');
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setArchiveBusyId(null);
+    }
+  };
+
+  const handleUnarchiveSentRequest = async (requestId) => {
+    if (!requestId || !user?.uid) return;
+    setArchiveBusyId(requestId);
+    try {
+      const result = await unarchiveLoanRequestForClient({ requestId, clientUid: user.uid });
+      if (result.ok) {
+        showToast?.('Pedido desarquivado.');
+        await loadRequests();
+      } else {
+        showToast?.(result.message);
+      }
+    } catch (e) {
+      showToast?.(mapFirestoreError(e));
+    } finally {
+      setArchiveBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className={sectionCardClass}>
@@ -539,17 +584,32 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
       </div>
 
       <div className={sectionCardClass}>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <h3 className="text-base font-semibold text-content">Meus pedidos enviados</h3>
-          <button
-            type="button"
-            onClick={() => void loadRequests()}
-            disabled={requestsLoading}
-            className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface-muted px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 disabled:opacity-60"
-          >
-            {requestsLoading ? 'Atualizando…' : 'Atualizar lista'}
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+            <label className="inline-flex cursor-pointer select-none items-center gap-2 text-xs font-medium text-content-soft">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-edge text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+                checked={showArchivedSent}
+                onChange={(e) => setShowArchivedSent(e.target.checked)}
+              />
+              Mostrar arquivados
+            </label>
+            <button
+              type="button"
+              onClick={() => void loadRequests()}
+              disabled={requestsLoading}
+              className="inline-flex min-h-[40px] items-center justify-center rounded-design-md border border-edge bg-surface-muted px-3 text-xs font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 disabled:opacity-60"
+            >
+              {requestsLoading ? 'Atualizando…' : 'Atualizar lista'}
+            </button>
+          </div>
         </div>
+
+        <p className="mb-4 text-[11px] leading-relaxed text-content-muted">
+          Arquivar oculta só para você neste painel — não apaga o pedido nem altera o fornecedor.
+        </p>
 
         {requestsError && (
           <div
@@ -567,9 +627,13 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
             Nenhum pedido enviado ainda. Depois que você enviar um pedido a um fornecedor com vínculo
             aprovado, ele aparece aqui para acompanhamento.
           </p>
+        ) : visibleSentRequests.length === 0 ? (
+          <p className="text-sm leading-relaxed text-content-muted">
+            Nenhum pedido na lista principal. Marque &quot;Mostrar arquivados&quot; para ver pedidos que você ocultou só para si.
+          </p>
         ) : (
           <ul className="space-y-3">
-            {requests.map((r) => {
+            {visibleSentRequests.map((r) => {
               const requestedMoney =
                 typeof r.requestedAmount === 'number'
                   ? formatMoney(r.requestedAmount / 100)
@@ -598,6 +662,11 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                 declinedCounteroffer;
               const busy = cancellingId === r.id;
               const counterBusy = counterofferBusyId === r.id;
+              const isTerminalRow =
+                typeof r.status === 'string' && isLoanRequestTerminalStatusV1(r.status);
+              const archivedClientSide =
+                firestoreTimestampSecondsOrNull(r.archivedByClientAt) != null;
+              const archiveBusy = archiveBusyId === r.id;
               return (
                 <li
                   key={r.id}
@@ -755,6 +824,31 @@ export default function LoanRequestsClientPanel({ user, showToast, links, linksL
                       {busy ? 'Cancelando…' : 'Cancelar pedido'}
                     </button>
                   )}
+                  {archivedClientSide && showArchivedSent ? (
+                    <p className="mt-2 text-[11px] font-medium text-content-muted">
+                      Arquivado só na sua lista — o fornecedor não é afetado.
+                    </p>
+                  ) : null}
+                  {isTerminalRow &&
+                    (archivedClientSide ? (
+                      <button
+                        type="button"
+                        disabled={archiveBusy}
+                        onClick={() => void handleUnarchiveSentRequest(r.id)}
+                        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                      >
+                        {archiveBusy ? 'Salvando…' : 'Desarquivar'}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={archiveBusy}
+                        onClick={() => void handleArchiveSentRequest(r.id)}
+                        className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
+                      >
+                        {archiveBusy ? 'Salvando…' : 'Arquivar'}
+                      </button>
+                    ))}
                 </li>
               );
             })}

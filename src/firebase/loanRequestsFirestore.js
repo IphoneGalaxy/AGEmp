@@ -1,6 +1,7 @@
 import {
   addDoc,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -14,6 +15,8 @@ import {
 
 import { db } from './index';
 import {
+  LOAN_REQUEST_ARCHIVED_BY_CLIENT_AT_FIELD,
+  LOAN_REQUEST_ARCHIVED_BY_SUPPLIER_AT_FIELD,
   LOAN_REQUEST_MAX_AMOUNT_CENTS,
   LOAN_REQUEST_MAX_NOTE_CHARS,
   LOAN_REQUEST_MIN_AMOUNT_CENTS,
@@ -23,6 +26,7 @@ import {
   LOAN_REQUEST_STATUSES,
   LOAN_REQUESTS_COLLECTION,
   buildLoanRequestCreateSnapshotFields,
+  isLoanRequestTerminalStatusV1,
 } from './loanRequests';
 import { mapFirestoreError, normalizeFirestoreErrorCode } from './firestoreErrors';
 import { normalizeNoteForLoanRequest } from '../utils/brlMoneyInput';
@@ -542,6 +546,170 @@ export async function markLoanRequestReadByClient({ requestId, clientUid }) {
   } catch (e) {
     if (import.meta.env.DEV) {
       console.warn('[loanRequests] markLoanRequestReadByClient', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
+/**
+ * A2b/A2c — arquivar pedido terminal só para o lado cliente (`updatedAt` intocado nas rules).
+ *
+ * @param {{ requestId: string; clientUid: string }} params
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function archiveLoanRequestForClient({ requestId, clientUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !clientUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.clientId !== clientUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de cliente aqui.' };
+    }
+    if (!isLoanRequestTerminalStatusV1(data.status)) {
+      return {
+        ok: false,
+        message: 'Só é possível arquivar pedidos já encerrados neste fluxo (terminais).',
+      };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_ARCHIVED_BY_CLIENT_AT_FIELD]: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] archiveLoanRequestForClient', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
+/**
+ * @param {{ requestId: string; clientUid: string }} params
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function unarchiveLoanRequestForClient({ requestId, clientUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !clientUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.clientId !== clientUid) {
+      return { ok: false, message: 'Este pedido não pertence ao seu papel de cliente aqui.' };
+    }
+    if (!isLoanRequestTerminalStatusV1(data.status)) {
+      return {
+        ok: false,
+        message: 'Só é possível desarquivar pedidos já encerrados neste fluxo (terminais).',
+      };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_ARCHIVED_BY_CLIENT_AT_FIELD]: deleteField(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] unarchiveLoanRequestForClient', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
+/**
+ * A2b/A2c — arquivar pedido terminal só para o lado fornecedor.
+ *
+ * @param {{ requestId: string; supplierUid: string }} params
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function archiveLoanRequestForSupplier({ requestId, supplierUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !supplierUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.supplierId !== supplierUid) {
+      return { ok: false, message: 'Este pedido não pertence à sua conta como fornecedor.' };
+    }
+    if (!isLoanRequestTerminalStatusV1(data.status)) {
+      return {
+        ok: false,
+        message: 'Só é possível arquivar pedidos já encerrados neste fluxo (terminais).',
+      };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_ARCHIVED_BY_SUPPLIER_AT_FIELD]: serverTimestamp(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] archiveLoanRequestForSupplier', e);
+    }
+    return { ok: false, message: mapLoanRequestWriteError(e) };
+  }
+}
+
+/**
+ * @param {{ requestId: string; supplierUid: string }} params
+ * @returns {Promise<{ ok: true } | { ok: false; message: string }>}
+ */
+export async function unarchiveLoanRequestForSupplier({ requestId, supplierUid }) {
+  if (!db) {
+    return { ok: false, message: 'Firestore não está configurado neste ambiente.' };
+  }
+  if (!requestId || !supplierUid) {
+    return { ok: false, message: 'Pedido inválido.' };
+  }
+
+  const ref = doc(db, LOAN_REQUESTS_COLLECTION, requestId);
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      return { ok: false, message: 'Pedido não encontrado.' };
+    }
+    const data = snap.data();
+    if (data.supplierId !== supplierUid) {
+      return { ok: false, message: 'Este pedido não pertence à sua conta como fornecedor.' };
+    }
+    if (!isLoanRequestTerminalStatusV1(data.status)) {
+      return {
+        ok: false,
+        message: 'Só é possível desarquivar pedidos já encerrados neste fluxo (terminais).',
+      };
+    }
+    await updateDoc(ref, {
+      [LOAN_REQUEST_ARCHIVED_BY_SUPPLIER_AT_FIELD]: deleteField(),
+    });
+    return { ok: true };
+  } catch (e) {
+    if (import.meta.env.DEV) {
+      console.warn('[loanRequests] unarchiveLoanRequestForSupplier', e);
     }
     return { ok: false, message: mapLoanRequestWriteError(e) };
   }

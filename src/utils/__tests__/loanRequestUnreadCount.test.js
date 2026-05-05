@@ -266,6 +266,47 @@ describe('countUnreadLoanRequests', () => {
     ).toBe(1);
   });
 
+  it('pedido arquivado pelo cliente não entra na contagem de não lidos', () => {
+    expect(
+      countUnreadLoanRequests(
+        [
+          {
+            clientId: CLIENT,
+            supplierId: SUPPLIER,
+            status: 'approved',
+            respondedAt: { seconds: 500 },
+            updatedAt: { seconds: 500 },
+            archivedByClientAt: { seconds: 600 },
+          },
+        ],
+        CLIENT,
+        'client',
+      ),
+    ).toBe(0);
+  });
+
+  it('pedido arquivado pelo fornecedor não entra na contagem de não lidos', () => {
+    const nowSec = 1_700_000_000;
+    vi.useFakeTimers();
+    vi.setSystemTime(nowSec * 1000);
+    const createdSec = nowSec - 3600;
+    expect(
+      countUnreadLoanRequests(
+        [
+          {
+            supplierId: SUPPLIER,
+            clientId: CLIENT,
+            status: 'pending',
+            createdAt: { seconds: createdSec },
+            archivedBySupplierAt: { seconds: 1 },
+          },
+        ],
+        SUPPLIER,
+        'supplier',
+      ),
+    ).toBe(0);
+  });
+
   it('getClientEventSecondsForSupplierBadge usa approved via contraproposta com timestamps mistos', () => {
     const sec = getClientEventSecondsForSupplierBadge({
       status: 'approved',
