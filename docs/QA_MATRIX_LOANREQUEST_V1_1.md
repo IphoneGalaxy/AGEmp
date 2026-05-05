@@ -101,7 +101,7 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | **Escopo** | Indicador agregado derivado de `readBy*` e dados existentes; **somente** `AccountScreen` |
 | **Commits** | **`dcc9f80`** (A1a) · **`4951bdf`** (A1b) |
 | **Fora do escopo (confirmado)** | Mudança de **`firestore.rules`**; alteração de **`calculations.js`**; novo schema Firestore; `payment.linkContext`; sync financeiro remoto; contrato automático |
-| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** — **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2) · **Mini ADR snapshots FECHADA** (`6793461` … `28f3f4a`; § abaixo) · **Próximo:** **«Visão Fornecedores»** |
+| **Próxima subfase do plano** | **Bloco 1 funcionalmente fechado** — **A2b/A2c** backlog · **Bloco 2 FECHADO** (`624c725`, `3badcbc`, `5dd4c36`; § Bloco 2) · **Mini ADR snapshots FECHADA** (`6793461` … `28f3f4a`; § abaixo) · **«Visão Fornecedores + Governança local» FECHADA** (`0be3e0b`, `c921d8d`, `a6c2d8c`; § «Visão Fornecedores» abaixo) |
 
 ### Subfase B2 — Bloco 1 (alerta fornecedor — concluída)
 
@@ -186,14 +186,34 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 ### Limitações / backlog (pós-mini ADR snapshots)
 
 - **Vínculos legados** sem **`supplierDisplayNameSnapshot`** podem continuar a mostrar **«Fornecedor da plataforma»** no cartão de vínculo — refinamento futuro: fallback por **perfil remoto** ou **atualização controlada** de snapshot em links legados (**sem** migração obrigatória nesta mini fase).
-- **Visão Fornecedores** (cliente): **próxima fase recomendada**, **não** implementada aqui — [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) §11–15 · [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+- **«Visão Fornecedores + Governança local»:** **fechada** — ver § seguinte (**commits `0be3e0b`, `c921d8d`, `a6c2d8c`**).
 - IDs técnicos: só dados internos na linha pré-financeira; UI principal favorece nomes amigáveis quando snapshot existe; modo avançado Configurações — backlog.
-- **A2b/A2c** arquivamento — backlog.
+- **A2b/A2c** arquivamento **remoto** (`loanRequests`) — backlog (**distinto** do arquivamento **local** do cliente na fase Visão Fornecedores).
 - Marcação remota `converted_to_contract` — só com ADR + rules + QA.
 
-### Próxima fase recomendada
+### Encaminhamento
 
-**«Visão Fornecedores»** / UX de relacionamento por papel. Referência mini ADR fechada: [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) §17.
+Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:** [`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.6 · [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) · [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md).
+
+---
+
+## «Visão Fornecedores + Governança local» — Pacotes **1–3** **FECHADOS**
+
+### Registo de execução (Pacote 3 — QA/docs)
+
+| Campo | Registo |
+|-------|---------|
+| **ADR / guardrails** | [`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16 — **sem** sync financeiro remoto; **sem** contrato remoto; **sem** `payment.linkContext`; **sem** **`calculations.js`** nesta fase; **`firestore.rules`** intocado; **sem** revogação remota de vínculo |
+| **Commits** | **`0be3e0b`** — ADR/plano inicial · **`c921d8d`** — conta-cliente (Fornecedores, agrupamento, CTA **Solicitar novo valor**, fallback nome + UID opcional) · **`a6c2d8c`** — registry local, reconversão, `archivedAt`, lista/restaurar arquivados, exclusão local forte |
+| **Firestore / rules** | **Nenhuma** alteração a modelo `loanRequests` nem deploy de rules nesta fase — [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) |
+| **Smoke manual sugerido/necessário** | §16.4 da ADR — cliente abre **Fornecedores**; pedidos agrupados; **Solicitar novo valor**; arquivar/restaurar; exclusão com confirmação forte; apagar contrato/cliente local **não** «reset» total da história de conversão; reconversão com confirmação extra |
+
+### Backlog explícito (pós-fase)
+
+- Revogação / desfazer vínculo **remoto**.
+- **A2b/A2c** (continuam backlog).
+- Backup/export do registry local se necessário.
+- Melhoria visual / extração de componentes se necessário.
 
 ---
 
@@ -213,5 +233,6 @@ A governança v1.1 promoveu primeiro **somente RB** (`lkg-2026-05-03-loanrequest
 | 2026-05-04 | **Governança Opção A:** **Bloco 1 funcionalmente fechado**; plano arquivado; **Bloco 2** recomendado em seguida. |
 | 2026-05-04 | **Bloco2-0:** ADR/plano [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) criado e **aprovado**. |
 | 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |
-| 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**; próximo **Visão Fornecedores**. |
+| 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**. |
+| 2026-05-05 | **«Visão Fornecedores + Governança local» — Pacotes 1–3:** fecho documental § dedicado nesta matriz; commits **`0be3e0b`**, **`c921d8d`**, **`a6c2d8c`**; sem mudança Firestore/rules — [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md). |
 | 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — **Subfase 0** só docs; implementação §13 posterior. |

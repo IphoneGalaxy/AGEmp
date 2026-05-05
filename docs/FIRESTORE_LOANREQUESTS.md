@@ -53,6 +53,8 @@ Os documentos **`links/{linkId}`** incluem os mesmos dois snapshots com escrita 
 
 O **Bloco 2** permite ao fornecedor registar um contrato **local** a partir de um pedido **`approved`**, com confirmação humana e metadado **`convertedFromLoanRequestId`** apenas no objeto **`loan`** persistido em **`localStorage`** (escopo da conta). **Não** foram adicionados campos novos aos documentos **`loanRequests`** no Firestore para marcar conversão remota; **não** houve alteração a **`firestore.rules`** nem a este quadro de modelo **pelo** MVP Bloco 2 (commits **`624c725`** … **`5dd4c36`**). O nome amigável do **cliente local** criado pela conversão pode vir de **`clientDisplayNameSnapshot`** no pedido quando existir (**`28f3f4a`**) — metadado relacional pré-existente no doc remoto; o financeiro continua só local.
 
+**Fase «Visão Fornecedores + Governança local» (2026-05):** UI conta-cliente + registry/arquivamento **locais** (**`c921d8d`**, **`a6c2d8c`**); **`loanRequests`**, índices e `firestore.rules` **permanecem como neste documento** — sem novos campos nem deploy de rules motivado por esta fase (confirmado em [`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.5).
+
 **Fatia RB (`readBy*`)**: apenas o papel correspondente pode escrever o próprio campo; diff **somente** o marcador; **`updatedAt` não muda** (política B); estados permitidos incluem **`counteroffer`** e **`counteroffer_declined`** (ver `loanRequestStatusAllowsReadMarkers` em `firestore.rules`).
 
 ## Valores em centavos

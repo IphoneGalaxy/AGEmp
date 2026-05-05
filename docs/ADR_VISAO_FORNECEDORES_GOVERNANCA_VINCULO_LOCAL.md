@@ -4,6 +4,8 @@
 **Projeto:** AGEmp / Finanças Pro  
 **Escopo:** UX relacional do lado cliente + governança local explícita de clientes/contratos convertidos, preservando o financeiro local-first.
 
+**Estado da fase (Pacotes 1–3):** **funcionalmente fechada** — fecho documental em **§16**. Commits de referência: **`0be3e0b`** (ADR/plano inicial) · **`c921d8d`** (conta-cliente: visão Fornecedores e nomes remotos) · **`a6c2d8c`** (local: registry de conversões e arquivamento de cliente).
+
 ---
 
 ## 1. Estado atual confirmado
@@ -12,12 +14,14 @@
 - Firebase continua como camada **remota relacional e pré-financeira**: Auth, perfil remoto, `accountRoles`, vínculos e `loanRequests`.
 - **Bloco 2** está fechado: fornecedor pode registrar contrato **local** a partir de `loanRequest.approved`, com confirmação humana, sem contrato remoto e sem sync financeiro remoto.
 - A mini ADR de snapshots de nomes também está fechada: nomes amigáveis já aparecem em vínculos, pedidos e conversão local quando o snapshot existe.
-- O cliente já possui painel de pedidos enviados em `Conta`, mas ainda **não** tem uma visão dedicada de fornecedores vinculados com leitura agrupada por fornecedor.
-- O card **“Fornecedores com vínculo aprovado”** ainda pode mostrar **“Fornecedor da plataforma”** em vínculos legados sem `supplierDisplayNameSnapshot`, mesmo quando o perfil remoto já teria um `displayName` útil.
-- Excluir cliente local hoje apaga apenas o cadastro financeiro deste aparelho; vínculo remoto e pedido remoto permanecem intactos.
-- A anti-duplicidade atual da conversão depende da existência de contrato local com `convertedFromLoanRequestId`; se o contrato for apagado, o pedido pode voltar a parecer “nunca convertido”.
+- O cliente possui **visão Fornecedores** na Conta com pedidos **agrupados por fornecedor**, CTA **Solicitar novo valor** e fallback de nome **snapshot → `displayName` remoto → «Fornecedor da plataforma»**; **UID** permanece informação opcional em detalhe (**Pacote 1** — **`c921d8d`**).
+- Vínculos legados sem `supplierDisplayNameSnapshot` podem ainda cair no rótulo genérico quando o remoto não estiver disponível; refinamento futuro permanece em backlog (roadmap/handoff).
+- **Governança local (Pacote 2 — `a6c2d8c`):** existe **registry local** de conversões (histórico separado do cadastro), **aviso de reconversão** com confirmação extra, **arquivar cliente** com `archivedAt`, lista de **arquivados**, **restaurar**, e **excluir cliente local** com confirmação forte — sempre sem apagar vínculo/pedido remotos.
+- A anti-duplicidade da conversão continua ancorada no contrato local com `convertedFromLoanRequestId`; o **registry** reduz a sensação de pedido “totalmente novo” após exclusão local de contrato/cliente, sem alterar regras remotas.
 
 ## 2. Problemas de produto
+
+*(Diagnóstico que motivou o ADR; mitigações principais nos Pacotes **1–2** — ver **§1** e **§16**.)*
 
 - O cliente não tem uma superfície clara para acompanhar a relação com cada fornecedor aprovado.
 - A leitura atual mistura pedaços de informação entre vínculos, pedidos e cadastro financeiro local.
@@ -263,35 +267,70 @@
 
 ## 13. Smoke manual
 
-1. Cliente abre **Visão Fornecedores** e vê fornecedores vinculados com nomes amigáveis.
-2. Vínculo legado sem snapshot mostra nome remoto quando possível; senão usa fallback estável.
-3. Pedidos aparecem agrupados por fornecedor com status corretos.
-4. **Solicitar novo valor** parte do fornecedor correto.
-5. A interface deixa claro que pedido aprovado na plataforma **não é contrato local**.
-6. Ao excluir cliente local, o app avisa que o vínculo remoto e o pedido remoto continuam existindo.
-7. Pedido já convertido antes, mas com contrato apagado, mostra aviso de histórico local de conversão anterior.
-8. Se houver reconversão, ela exige confirmação extra.
+Checklist histórico de planejamento; o fecho operacional da fase e o smoke **sugerido/necessário** após Pacote 3 estão consolidados em **§16.4**.
 
-## 14. Decisões pendentes
+## 14. Decisões fechadas nesta fase (registro)
 
-- Estratégia exata de fallback para vínculos legados:
-  - carregar perfil remoto sob demanda;
-  - ou pré-carregar perfis dos fornecedores aprovados.
-- Superfície final da Visão Fornecedores:
-  - nova subview dedicada;
-  - ou evolução do painel atual com separação clara.
-- Política final de reconversão:
-  - bloquear por padrão;
-  - ou permitir com confirmação forte quando o contrato foi apagado.
-- Nível de visibilidade da ação **Excluir cliente**:
-  - manter visível com confirmação forte;
-  - ou mover para seção mais avançada do `ClientView`.
+- **Fallback de nome do fornecedor (cliente):** **snapshot → perfil remoto (`displayName`) → «Fornecedor da plataforma»**; UID só em detalhe opcional.
+- **Superfície «Fornecedores»:** visão dedicada na Conta com agrupamento por fornecedor e CTA **Solicitar novo valor** alinhada ao fornecedor correto.
+- **Reconversão:** permitida com **confirmação extra** quando aplicável; registry local preserva memória de conversão sem tocar Firestore.
+- **Excluir cliente local:** mantida como ação destrutiva com **confirmação forte**; remoto intacto.
+- **Arquivar cliente local:** `archivedAt` + lista separada + restaurar — distinto do arquivamento **remoto** planejado em **A2b/A2c** (ainda backlog).
+
+Refinamentos futuros (pré-carregamento agressivo de perfis, posição da ação **Excluir** na UI, backup/export do registry) permanecem **backlog** — **§16.6**.
 
 ## 15. Próxima ação recomendada
 
-- Aprovar este ADR/plano como referência oficial da fase.
-- Executar em pacotes pequenos, na ordem:
-  - **Pacote 1:** **Bloco A + Bloco B mínimo**
-  - **Pacote 2:** **Bloco D + parte segura do Bloco C**
-  - **Pacote 3:** **QA/docs finais**
-- Ao concluir cada pacote, atualizar os docs vivos e registrar smoke curto antes de avançar para o seguinte.
+- **Pacotes 1–3:** **concluídos**. Manter este ADR como referência da fase entregue; detalhes de fecho, smoke e backlog em **§16**.
+- **Continuidade:** priorizar próximos recortes apenas a partir de [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md), [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md), [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md) e [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md) — **sem** inferir nova funcionalidade a partir deste arquivo sozinho.
+
+## 16. Fechamento da fase (Pacote 3 — QA/docs)
+
+### 16.1 Fase funcionalmente fechada
+
+A fase **«Visão Fornecedores + Governança de vínculo/local»** está **fechada** nos entregáveis dos Pacotes **1** a **3** (incluindo este fecho documental). **Commits:** **`0be3e0b`** · **`c921d8d`** · **`a6c2d8c`**.
+
+### 16.2 Pacote 1 entregue
+
+- Visão **Fornecedores** do cliente.
+- Pedidos **agrupados por fornecedor**.
+- CTA **Solicitar novo valor**.
+- Fallback de nome: **snapshot → `displayName` remoto → «Fornecedor da plataforma»**.
+- **UID** em detalhe **opcional**.
+
+### 16.3 Pacote 2 entregue
+
+- **Registry local** de conversões.
+- **Aviso de reconversão** (fluxo com confirmação adicional).
+- **Arquivar cliente local** com **`archivedAt`**.
+- **Lista de arquivados** e **restaurar** cliente arquivado.
+- **Excluir cliente local** com **confirmação forte**.
+
+### 16.4 Smoke manual sugerido / necessário
+
+1. Cliente abre **Fornecedores** na Conta.
+2. Pedidos aparecem **agrupados** por fornecedor.
+3. **Solicitar novo valor** encaminha no contexto do fornecedor correto.
+4. **Arquivar** cliente remove da lista principal e mantém entrada **recuperável** na lista de arquivados.
+5. **Restaurar** cliente volta à lista principal.
+6. **Excluir** cliente dispara **confirmação forte** e preserva vínculo/pedido remotos (mensagem coerente com o modelo).
+7. Apagar contrato/cliente local **não** faz o pedido parecer totalmente novo sem contexto — **registry** / aviso de reconversão coerentes.
+8. **Reconversão** exige **confirmação extra**.
+
+### 16.5 Guardrails preservados (confirmados)
+
+- **Sem** sync financeiro remoto.
+- **Sem** contrato remoto autoritativo.
+- **Sem** `payment.linkContext`.
+- **Sem** alterações em **`calculations.js`** nesta fase.
+- **Sem** alterações em **`firestore.rules`** nesta fase.
+- **Sem** revogação remota de vínculo (produto continua sem “desfazer vínculo” remoto neste recorte).
+
+### 16.6 Backlog explícito (pós-fase)
+
+- **Revogação / desfazer vínculo remoto:** continua **fora** deste escopo.
+- **A2b / A2c** (`loanRequests`, arquivamento **por lado** no Firestore + UI): continuam **backlog** — **não** confundir com arquivamento **local** do cliente nesta fase.
+- **Backup / export** do registry local: refinamento futuro **se** necessário após uso real.
+- **Melhoria visual / extração de componentes:** opcional se a manutenção pedir.
+
+**Nota — `FIRESTORE_LOANREQUESTS`:** esta fase **não** alterou modelo, campos nem **Security Rules** da coleção `loanRequests`; evoluções remotas continuam disciplinadas por [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md) e roadmap **A2b/A2c** quando priorizado.
