@@ -4,8 +4,9 @@
  * normalização de dados e operações de backup.
  */
 
-import { SCOPE_ANONYMOUS, getScopedDataKey, getScopedConvertedLoanRequestsRegistryKey } from './storageScope';
+import { SCOPE_ANONYMOUS, getScopedDataKey, getScopedConvertedLoanRequestsRegistryKey, getScopedClientDebtLedgerKey } from './storageScope';
 import { normalizeLoanRequestConversionRegistry } from './loanRequestConversionRegistry';
+import { emptyClientDebtLedger, normalizeClientDebtLedger } from './clientDebtLedger';
 
 /**
  * Normaliza um empréstimo individual, garantindo que possua interestRate.
@@ -197,5 +198,41 @@ export function saveLoanRequestConversionRegistry(registry, scope = SCOPE_ANONYM
     localStorage.setItem(key, JSON.stringify(normalized));
   } catch (e) {
     console.warn('[storage] Falha ao salvar registry de conversões:', key, e);
+  }
+}
+
+/**
+ * Livro local «Minhas dívidas» (cliente) — separado de `loanManagerData` e do registry de conversão.
+ *
+ * @param {string} [scope]
+ */
+export function loadClientDebtLedger(scope = SCOPE_ANONYMOUS) {
+  if (typeof localStorage === 'undefined') {
+    return emptyClientDebtLedger();
+  }
+  try {
+    const raw = localStorage.getItem(getScopedClientDebtLedgerKey(scope));
+    if (!raw) {
+      return emptyClientDebtLedger();
+    }
+    const parsed = JSON.parse(raw);
+    return normalizeClientDebtLedger(parsed);
+  } catch {
+    return emptyClientDebtLedger();
+  }
+}
+
+/**
+ * @param {unknown} ledger
+ * @param {string} [scope]
+ */
+export function saveClientDebtLedger(ledger, scope = SCOPE_ANONYMOUS) {
+  if (typeof localStorage === 'undefined') return;
+  const key = getScopedClientDebtLedgerKey(scope);
+  try {
+    const normalized = normalizeClientDebtLedger(ledger);
+    localStorage.setItem(key, JSON.stringify(normalized));
+  } catch (e) {
+    console.warn('[storage] Falha ao salvar clientDebtLedger:', key, e);
   }
 }
