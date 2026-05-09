@@ -81,6 +81,18 @@ const OptionGroup = ({ options, value, onChange }) => (
  * @param {unknown[]} [props.loanRequestConversionRegistry]
  * @param {(entry: Record<string, unknown>) => void} [props.onUpsertLoanRequestConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
+ * @param {Record<string, unknown> | null} props.remoteProfile
+ * @param {(next: Record<string, unknown> | null) => void} props.setRemoteProfile
+ * @param {boolean} props.profileLoading
+ * @param {string} props.profileError
+ * @param {() => void} props.reloadRemoteProfile
+ * @param {unknown[]} props.links
+ * @param {boolean} props.linksLoading
+ * @param {string} props.linksError
+ * @param {() => void} props.bumpLinksReload
+ * @param {'loanRequests' | null | undefined} [props.accountScreenBootSubView]
+ * @param {() => void} [props.onConsumedAccountScreenBootSubView]
+ * @param {() => void} [props.onNavigateToSuppliersMainTab]
  */
 const Settings = ({
   settings,
@@ -96,11 +108,31 @@ const Settings = ({
   loanRequestConversionRegistry,
   onUpsertLoanRequestConversionRegistry,
   onUpdateClients,
+  remoteProfile,
+  setRemoteProfile,
+  profileLoading,
+  profileError,
+  reloadRemoteProfile,
+  links,
+  linksLoading,
+  linksError,
+  bumpLinksReload,
+  accountScreenBootSubView,
+  onConsumedAccountScreenBootSubView,
+  onNavigateToSuppliersMainTab,
 }) => {
   const fileInputRef = useRef(null);
   const [confirmRestore, setConfirmRestore] = useState(false);
   /** 'main' | 'account' — sub-tela isolada; não cria aba principal. */
-  const [settingsView, setSettingsView] = useState('main');
+  const [settingsView, setSettingsView] = useState(() =>
+    accountScreenBootSubView ? 'account' : 'main',
+  );
+
+  useEffect(() => {
+    if (accountScreenBootSubView) {
+      setSettingsView('account');
+    }
+  }, [accountScreenBootSubView]);
 
   // Info de backups automáticos (lida direto do localStorage)
   const [backupInfo, setBackupInfo] = useState(() => ({
@@ -148,6 +180,18 @@ const Settings = ({
         loanRequestConversionRegistry={loanRequestConversionRegistry}
         onUpsertLoanRequestConversionRegistry={onUpsertLoanRequestConversionRegistry}
         onUpdateClients={onUpdateClients}
+        remoteProfile={remoteProfile}
+        setRemoteProfile={setRemoteProfile}
+        profileLoading={profileLoading}
+        profileError={profileError}
+        reloadRemoteProfile={reloadRemoteProfile}
+        links={links}
+        linksLoading={linksLoading}
+        linksError={linksError}
+        bumpLinksReload={bumpLinksReload}
+        bootAccountSubView={accountScreenBootSubView}
+        onConsumedAccountBootSubView={onConsumedAccountScreenBootSubView}
+        onNavigateToSuppliersMainTab={onNavigateToSuppliersMainTab}
       />
     );
   }

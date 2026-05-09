@@ -14,9 +14,14 @@ import {
   markKeepLegacySeparate,
 } from './utils/storageScope';
 import { useAuth } from './auth/AuthContext';
+import { mapFirestoreError } from './firebase/firestoreErrors';
+import { listUserLinks } from './firebase/links';
+import { USER_ROLES, profileHasEffectiveAccountRole } from './firebase/roles';
+import { ensureUserProfileExists, getUserProfile } from './firebase/users';
 import Dashboard from './components/Dashboard';
 import ClientsList from './components/ClientsList';
 import ClientView from './components/ClientView';
+import ClientSuppliersPanel from './components/ClientSuppliersPanel';
 import Settings from './components/Settings';
 import Toast from './components/Toast';
 import LegacyDataChoiceModal from './components/LegacyDataChoiceModal';
@@ -36,7 +41,7 @@ import './app.css';
  * - Controlar exibição/ocultação de valores monetários
  */
 function App() {
-  const { user, authReady } = useAuth();
+  const { user, authReady, authAvailable } = useAuth();
   const [bootstrapped, setBootstrapped] = useState(false);
   const [settings, setSettings] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -51,6 +56,18 @@ function App() {
   const [selectedClient, setSelectedClient] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [legacyModalOpen, setLegacyModalOpen] = useState(false);
+
+  const [remoteProfile, setRemoteProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileLoadToken, setProfileLoadToken] = useState(0);
+
+  const [links, setLinks] = useState([]);
+  const [linksLoading, setLinksLoading] = useState(false);
+  const [linksError, setLinksError] = useState('');
+  const [linksReloadToken, setLinksReloadToken] = useState(0);
+
+  const [accountScreenBootSubView, setAccountScreenBootSubView] = useState(null);
 
   const [valuesRevealed, setValuesRevealed] = useState(false);
   const shouldHideMoney = settings?.hideSensitiveValues && !valuesRevealed;
@@ -75,6 +92,22 @@ function App() {
     setToastMessage(message);
     setTimeout(() => setToastMessage(''), 3000);
   };
+
+  const bumpLinksReload = useCallback(() => setLinksReloadToken((t) => t + 1), []);
+  const reloadRemoteProfile = useCallback(() => setProfileLoadToken((t) => t + 1), []);
+
+  const consumeAccountScreenBootSubView = useCallback(() => {
+    setAccountScreenBootSubView(null);
+  }, []);
+
+  const handleOpenClientSolicitationsFromSuppliersTab = useCallback(() => {
+    setAccountScreenBootSubView('loanRequests');
+    setActiveTab('settings');
+  }, []);
+
+  const handleNavigateToSuppliersMainTab = useCallback(() => {
+    setActiveTab('suppliers');
+  }, []);
 
   const displayMoney = useCallback(
     (value) => {
@@ -169,6 +202,84 @@ function App() {
     lastScopeRef.current = newScope;
     setBootstrapped(true);
   }, [authReady, user?.uid]);
+
+  useEffect(() => {
+    setAccountScreenBootSubView(null);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || !authAvailable) {
+      setRemoteProfile(null);
+      setProfileError('');
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      setProfileLoading(true);
+      setProfileError('');
+      try {
+        let data = await getUserProfile(user.uid);
+        if (!cancelled && !data) {
+          await ensureUserProfileExists(user);
+          data = await getUserProfile(user.uid);
+        }
+        if (!cancelled) {
+          setRemoteProfile(data);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setProfileError(mapFirestoreError(e));
+        }
+      } finally {
+        if (!cancelled) {
+          setProfileLoading(false);
+        }
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, authAvailable, profileLoadToken]);
+
+  useEffect(() => {
+    if (!user?.uid || !authAvailable) {
+      setLinks([]);
+      setLinksError('');
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadLinks = async () => {
+      setLinksLoading(true);
+      setLinksError('');
+      try {
+        const list = await listUserLinks(user.uid);
+        if (!cancelled) {
+          setLinks(list);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setLinksError(mapFirestoreError(e));
+        }
+      } finally {
+        if (!cancelled) {
+          setLinksLoading(false);
+        }
+      }
+    };
+
+    void loadLinks();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid, authAvailable, linksReloadToken]);
 
   const handleUpdateSettings = (newSettings) => {
     setSettings(newSettings);
@@ -345,6 +456,23 @@ function App() {
     [globalStats.processedClients],
   );
 
+  const profileResolved = !profileLoading && !profileError;
+
+  const showClientsTab =
+    user?.uid == null ||
+    !authAvailable ||
+    !profileResolved ||
+    profileHasEffectiveAccountRole(remoteProfile, USER_ROLES.SUPPLIER);
+
+  const showSuppliersTab =
+    Boolean(user?.uid && authAvailable && profileResolved) &&
+    profileHasEffectiveAccountRole(remoteProfile, USER_ROLES.CLIENT);
+
+  useEffect(() => {
+    if (!bootstrapped) return;
+    setActiveTab((prev) => sanitizeMainTab(prev, showClientsTab, showSuppliersTab));
+  }, [bootstrapped, showClientsTab, showSuppliersTab]);
+
   if (!authReady || !bootstrapped) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base text-content-muted p-4">
@@ -410,17 +538,32 @@ function App() {
         >
           Painel
         </button>
-        <button
-          type="button"
-          className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
-            activeTab === 'clients'
-              ? 'tab-active'
-              : 'border-b-2 border-transparent text-content-muted'
-          }`}
-          onClick={() => setActiveTab('clients')}
-        >
-          Clientes
-        </button>
+        {showClientsTab ? (
+          <button
+            type="button"
+            className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+              activeTab === 'clients'
+                ? 'tab-active'
+                : 'border-b-2 border-transparent text-content-muted'
+            }`}
+            onClick={() => setActiveTab('clients')}
+          >
+            Clientes
+          </button>
+        ) : null}
+        {showSuppliersTab ? (
+          <button
+            type="button"
+            className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
+              activeTab === 'suppliers'
+                ? 'tab-active'
+                : 'border-b-2 border-transparent text-content-muted'
+            }`}
+            onClick={() => setActiveTab('suppliers')}
+          >
+            Fornecedores
+          </button>
+        ) : null}
         <button
           type="button"
           className={`inline-flex min-h-[44px] flex-1 items-center justify-center text-center text-sm transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring ${
@@ -445,7 +588,7 @@ function App() {
             displayMoney={displayMoney}
           />
         )}
-        {activeTab === 'clients' && (
+        {activeTab === 'clients' && showClientsTab && (
           <ClientsList
             clients={activeClientsForList}
             processedClients={activeProcessedClients}
@@ -456,6 +599,24 @@ function App() {
             showToast={showToast}
             displayMoney={displayMoney}
           />
+        )}
+        {activeTab === 'suppliers' && showSuppliersTab && (
+          <div className="space-y-6 p-4 pb-20">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-content">Fornecedores</h2>
+              <p className="mt-2 text-xs leading-relaxed text-content-muted">
+                Relação pré-financeira na plataforma por fornecedor. Isso não substitui contratos
+                locais nem sincroniza seu cadastro neste aparelho.
+              </p>
+            </div>
+            <ClientSuppliersPanel
+              user={user}
+              showToast={showToast}
+              links={links}
+              linksLoading={linksLoading}
+              onOpenSolicitations={handleOpenClientSolicitationsFromSuppliersTab}
+            />
+          </div>
         )}
         {activeTab === 'settings' && (
           <Settings
@@ -472,6 +633,18 @@ function App() {
             loanRequestConversionRegistry={loanRequestConversionRegistry}
             onUpsertLoanRequestConversionRegistry={handleUpsertLoanRequestConversionRegistry}
             onUpdateClients={handleUpdateClients}
+            remoteProfile={remoteProfile}
+            setRemoteProfile={setRemoteProfile}
+            profileLoading={profileLoading}
+            profileError={profileError}
+            reloadRemoteProfile={reloadRemoteProfile}
+            links={links}
+            linksLoading={linksLoading}
+            linksError={linksError}
+            bumpLinksReload={bumpLinksReload}
+            accountScreenBootSubView={accountScreenBootSubView}
+            onConsumedAccountScreenBootSubView={consumeAccountScreenBootSubView}
+            onNavigateToSuppliersMainTab={handleNavigateToSuppliersMainTab}
           />
         )}
       </div>
@@ -492,6 +665,17 @@ function App() {
       <Toast message={toastMessage} />
     </div>
   );
+}
+
+function sanitizeMainTab(tab, showClientsTab, showSuppliersTab) {
+  const raw = typeof tab === 'string' ? tab : 'dashboard';
+  const t =
+    raw === 'dashboard' || raw === 'clients' || raw === 'settings' || raw === 'suppliers'
+      ? raw
+      : 'dashboard';
+  if (t === 'clients' && !showClientsTab) return 'dashboard';
+  if (t === 'suppliers' && !showSuppliersTab) return 'dashboard';
+  return t;
 }
 
 export default App;

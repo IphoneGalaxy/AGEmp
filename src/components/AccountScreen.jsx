@@ -9,7 +9,6 @@ import {
   createLinkRequest,
   getLinkStatusLabelPt,
   LINK_STATUSES,
-  listUserLinks,
   transitionLinkStatus,
 } from '../firebase/links';
 import {
@@ -20,7 +19,6 @@ import {
 } from '../firebase/roles';
 import {
   addAccountRole,
-  ensureUserProfileExists,
   getUserProfile,
   setUserRole,
   updateUserDisplayNameWithAuthMirror,
@@ -36,7 +34,6 @@ import {
 import { countUnreadLoanRequests } from '../utils/loanRequestUnreadCount';
 import LoanRequestsClientPanel from './LoanRequestsClientPanel';
 import LoanRequestsSupplierPanel from './LoanRequestsSupplierPanel';
-import ClientSuppliersPanel from './ClientSuppliersPanel';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -93,6 +90,18 @@ const ModeToggle = ({ mode, onModeChange }) => (
  * @param {unknown[]} [props.loanRequestConversionRegistry]
  * @param {(entry: Record<string, unknown>) => void} [props.onUpsertLoanRequestConversionRegistry]
  * @param {(updater: (prev: unknown[]) => unknown[]) => void} [props.onUpdateClients]
+ * @param {Record<string, unknown> | null} props.remoteProfile
+ * @param {(next: Record<string, unknown> | null) => void} props.setRemoteProfile
+ * @param {boolean} props.profileLoading
+ * @param {string} props.profileError
+ * @param {() => void} props.reloadRemoteProfile
+ * @param {unknown[]} props.links
+ * @param {boolean} props.linksLoading
+ * @param {string} props.linksError
+ * @param {() => void} props.bumpLinksReload
+ * @param {'loanRequests' | 'loanRequestsSupplier' | null | undefined} [props.bootAccountSubView]
+ * @param {() => void} [props.onConsumedAccountBootSubView]
+ * @param {() => void} [props.onNavigateToSuppliersMainTab]
  */
 function AccountScreen({
   onBack,
@@ -103,6 +112,18 @@ function AccountScreen({
   loanRequestConversionRegistry = [],
   onUpsertLoanRequestConversionRegistry,
   onUpdateClients,
+  remoteProfile,
+  setRemoteProfile,
+  profileLoading,
+  profileError,
+  reloadRemoteProfile,
+  links,
+  linksLoading,
+  linksError,
+  bumpLinksReload,
+  bootAccountSubView,
+  onConsumedAccountBootSubView,
+  onNavigateToSuppliersMainTab,
 }) {
   const { user, authReady, authAvailable, login, signup, logout, requestPasswordReset } =
     useAuth();
@@ -115,12 +136,8 @@ function AccountScreen({
   const [passwordResetMessage, setPasswordResetMessage] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
 
-  const [remoteProfile, setRemoteProfile] = useState(null);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [profileError, setProfileError] = useState('');
   const [displayNameInput, setDisplayNameInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
-  const [profileLoadToken, setProfileLoadToken] = useState(0);
 
   const [roleDraft, setRoleDraft] = useState(USER_ROLES.SUPPLIER);
   const [roleSaving, setRoleSaving] = useState(false);
@@ -129,23 +146,16 @@ function AccountScreen({
   const [accountView, setAccountView] = useState(USER_ROLES.CLIENT);
   const [addRoleSaving, setAddRoleSaving] = useState(false);
 
-  const [links, setLinks] = useState([]);
-  const [linksLoading, setLinksLoading] = useState(false);
-  const [linksError, setLinksError] = useState('');
-  const [linksReloadToken, setLinksReloadToken] = useState(0);
-
   const [supplierUidForLink, setSupplierUidForLink] = useState('');
   const [linkRequestSubmitting, setLinkRequestSubmitting] = useState(false);
   const [linkRequestError, setLinkRequestError] = useState('');
   const [linkActionId, setLinkActionId] = useState(null);
   const [uidCopyFeedback, setUidCopyFeedback] = useState('idle');
-  /** 'main' | 'loanRequests' (cliente) | 'loanRequestsSupplier' | 'clientSuppliers' — fluxo isolado sem nova aba principal. */
+  /** 'main' | 'loanRequests' (cliente) | 'loanRequestsSupplier' — fluxos isolados sem nova aba principal (Fornecedores na barra). */
   const [accountSubView, setAccountSubView] = useState('main');
   /** null = ainda não carregado ou fora da vista principal; número após fetch (A1b). */
   const [loanRequestUnreadClientCount, setLoanRequestUnreadClientCount] = useState(null);
   const [loanRequestUnreadSupplierCount, setLoanRequestUnreadSupplierCount] = useState(null);
-
-  const bumpLinksReload = () => setLinksReloadToken((t) => t + 1);
 
   useEffect(() => {
     if (!user) {
@@ -154,48 +164,20 @@ function AccountScreen({
   }, [user]);
 
   useEffect(() => {
-    if (!user?.uid || !authAvailable) {
-      setRemoteProfile(null);
+    if (!bootAccountSubView) return;
+    setAccountSubView(bootAccountSubView);
+    onConsumedAccountBootSubView?.();
+  }, [bootAccountSubView, onConsumedAccountBootSubView]);
+
+  useEffect(() => {
+    if (!remoteProfile) {
       setDisplayNameInput('');
-      setProfileError('');
       return;
     }
-
-    let cancelled = false;
-
-    const loadProfile = async () => {
-      setProfileLoading(true);
-      setProfileError('');
-      try {
-        let data = await getUserProfile(user.uid);
-        if (!cancelled && !data) {
-          await ensureUserProfileExists(user);
-          data = await getUserProfile(user.uid);
-        }
-        if (!cancelled) {
-          setRemoteProfile(data);
-          setDisplayNameInput(
-            data?.displayName != null ? String(data.displayName) : ''
-          );
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setProfileError(mapFirestoreError(e));
-        }
-      } finally {
-        if (!cancelled) {
-          setProfileLoading(false);
-        }
-      }
-    };
-
-    void loadProfile();
-
-    return () => {
-      cancelled = true;
-    };
-    // user é lido no fechamento; user?.uid e profileLoadToken disparam recargas necessárias.
-  }, [user?.uid, authAvailable, profileLoadToken]);
+    setDisplayNameInput(
+      remoteProfile.displayName != null ? String(remoteProfile.displayName) : ''
+    );
+  }, [remoteProfile]);
 
   useEffect(() => {
     const roles = getEffectiveAccountRoles(remoteProfile);
@@ -208,41 +190,6 @@ function AccountScreen({
     }
     setAccountView((prev) => (roles.includes(prev) ? prev : roles[0]));
   }, [remoteProfile]);
-
-  useEffect(() => {
-    if (!user?.uid || !authAvailable) {
-      setLinks([]);
-      setLinksError('');
-      return;
-    }
-
-    let cancelled = false;
-
-    const loadLinks = async () => {
-      setLinksLoading(true);
-      setLinksError('');
-      try {
-        const list = await listUserLinks(user.uid);
-        if (!cancelled) {
-          setLinks(list);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setLinksError(mapFirestoreError(e));
-        }
-      } finally {
-        if (!cancelled) {
-          setLinksLoading(false);
-        }
-      }
-    };
-
-    void loadLinks();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.uid, authAvailable, linksReloadToken]);
 
   const resetForm = () => {
     setPassword('');
@@ -634,35 +581,6 @@ function AccountScreen({
     );
   }
 
-  if (authReady && authAvailable && user && accountSubView === 'clientSuppliers') {
-    return (
-      <div className="space-y-6 p-4 pb-20">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setAccountSubView('main')}
-            className="inline-flex min-h-[44px] min-w-[44px] shrink-0 items-center justify-center rounded-design-md text-sm font-semibold text-primary transition-colors hover:bg-primary-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
-            aria-label="Voltar à conta"
-          >
-            ←
-          </button>
-          <h2 className="text-lg font-semibold tracking-tight text-content">Fornecedores</h2>
-        </div>
-        <p className="text-xs leading-relaxed text-content-muted">
-          Relação pré-financeira na plataforma por fornecedor. Isso não substitui contratos locais nem
-          sincroniza seu cadastro neste aparelho.
-        </p>
-        <ClientSuppliersPanel
-          user={user}
-          showToast={showToast}
-          links={links}
-          linksLoading={linksLoading}
-          onOpenSolicitations={() => setAccountSubView('loanRequests')}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 p-4 pb-20">
       <div className="flex items-center gap-2">
@@ -739,7 +657,7 @@ function AccountScreen({
                 <p className="mb-4 text-sm font-semibold leading-snug text-danger">{profileError}</p>
                 <button
                   type="button"
-                  onClick={() => setProfileLoadToken((t) => t + 1)}
+                  onClick={() => reloadRemoteProfile()}
                   className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface px-3 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
                 >
                   Tentar novamente
@@ -908,11 +826,11 @@ function AccountScreen({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAccountSubView('clientSuppliers')}
+                      onClick={() => onNavigateToSuppliersMainTab?.()}
                       disabled={!hasPlatformRole || linkGlobalBusy}
                       className="inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-edge bg-surface-muted px-4 text-sm font-semibold text-content-soft transition-colors hover:bg-surface-muted/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring disabled:opacity-60"
                     >
-                      Abrir fornecedores
+                      Ver na aba Fornecedores
                     </button>
                   </div>
                   {!hasPlatformRole && (
