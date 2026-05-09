@@ -585,6 +585,23 @@ export function deriveLedgerTotals(ledger, referenceDate = new Date()) {
 }
 
 /**
+ * Localiza fornecedor no ledger pelo par estável da UI (vínculo aprovado).
+ *
+ * @param {ClientDebtLedger | unknown} ledger
+ * @param {string} supplierId
+ * @param {string} linkId
+ * @returns {ClientDebtSupplier | null}
+ */
+export function findSupplierEntry(ledger, supplierId, linkId) {
+  const L = normalizeClientDebtLedger(ledger);
+  const sid = typeof supplierId === 'string' ? supplierId.trim() : '';
+  const lid = typeof linkId === 'string' ? linkId.trim() : '';
+  if (!sid || !lid) return null;
+  const hit = L.suppliers.find((s) => s.supplierId === sid && s.linkId === lid);
+  return hit ?? null;
+}
+
+/**
  * @param {ClientDebtLedger} ledger
  * @param {string} supplierId
  * @param {ClientDebtDebt} debtDraft

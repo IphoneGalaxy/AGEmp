@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formatMoney } from '../utils/format';
+import {
+  deriveLedgerTotals,
+  deriveSupplierTotals,
+  findSupplierEntry,
+  normalizeClientDebtLedger,
+} from '../utils/clientDebtLedger';
 import { normalizeNoteForLoanRequest, parseBrlMoneyInputToCents } from '../utils/brlMoneyInput';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
@@ -25,6 +31,60 @@ import { useSupplierDisplayNameMap } from '../hooks/useSupplierDisplayNameMap';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
+
+/**
+ * Resumo local «eu devo» para um vínculo (supplierId + linkId).
+ *
+ * @param {Object} props
+ * @param {string} props.supplierId
+ * @param {string} props.linkId
+ * @param {import('../utils/clientDebtLedger').ClientDebtLedger} props.ledgerNorm
+ * @param {Date} props.refDate
+ * @param {(n: number) => string} props.displayMoney
+ */
+function LocalSupplierDebtStrip({ supplierId, linkId, ledgerNorm, refDate, displayMoney }) {
+  const totals = useMemo(() => {
+    const entry = findSupplierEntry(ledgerNorm, supplierId, linkId);
+    const stub = { id: '_stub', supplierId, linkId, debts: [] };
+    return deriveSupplierTotals(entry ?? stub, refDate);
+  }, [ledgerNorm, supplierId, linkId, refDate]);
+
+  const hasActiveLocal = totals.activeDebts > 0 || totals.openPrincipal > 0;
+
+  return (
+    <div className="mt-3 rounded-design-sm border border-primary/20 bg-primary-soft/20 px-3 py-3">
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+        Minhas dívidas neste aparelho
+      </p>
+      {!hasActiveLocal ? (
+        <p className="mt-2 text-xs leading-relaxed text-content-muted">
+          Nenhum registro local de dívida para este fornecedor. Valores aprovados na plataforma não
+          entram aqui automaticamente — você poderá registrar no financeiro local em uma próxima
+          etapa.
+        </p>
+      ) : (
+        <dl className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+          <div>
+            <dt className="text-content-muted">Principal (posição no livro)</dt>
+            <dd className="font-semibold text-content">{displayMoney(totals.openPrincipal)}</dd>
+          </div>
+          <div>
+            <dt className="text-content-muted">Juros estimados (mês)</dt>
+            <dd className="font-semibold text-content">{displayMoney(totals.estimatedMonthlyInterest)}</dd>
+          </div>
+          <div>
+            <dt className="text-content-muted">Quitação estimada</dt>
+            <dd className="font-semibold text-content">{displayMoney(totals.estimatedSettlement)}</dd>
+          </div>
+          <div className="sm:col-span-3">
+            <dt className="text-content-muted">Dívidas ativas (local)</dt>
+            <dd className="font-semibold text-content">{totals.activeDebts}</dd>
+          </div>
+        </dl>
+      )}
+    </div>
+  );
+}
 
 /**
  * @param {import('firebase/firestore').Timestamp | undefined} ts
@@ -70,6 +130,9 @@ function SupplierUidDetails({ supplierId }) {
  * @param {Array<{ id: string; supplierId?: string; clientId?: string; status?: string }>} props.links
  * @param {boolean} props.linksLoading
  * @param {() => void} [props.onOpenSolicitations]
+ * @param {import('../utils/clientDebtLedger').ClientDebtLedger} [props.clientDebtLedger]
+ * @param {Date} [props.ledgerReferenceDate]
+ * @param {(n: number) => string} [props.displayMoney]
  */
 export default function ClientSuppliersPanel({
   user,
@@ -77,7 +140,22 @@ export default function ClientSuppliersPanel({
   links,
   linksLoading,
   onOpenSolicitations,
+  clientDebtLedger,
+  ledgerReferenceDate,
+  displayMoney: displayMoneyProp,
 }) {
+  const displayMoney =
+    typeof displayMoneyProp === 'function' ? displayMoneyProp : (n) => formatMoney(n);
+
+  const refDate = useMemo(() => {
+    const d = ledgerReferenceDate;
+    if (d instanceof Date && !Number.isNaN(d.getTime())) return d;
+    return new Date();
+  }, [ledgerReferenceDate]);
+
+  const ledgerNorm = useMemo(() => normalizeClientDebtLedger(clientDebtLedger), [clientDebtLedger]);
+
+  const globalTotals = useMemo(() => deriveLedgerTotals(ledgerNorm, refDate), [ledgerNorm, refDate]);
   const [requests, setRequests] = useState([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [requestsError, setRequestsError] = useState('');
@@ -281,6 +359,24 @@ export default function ClientSuppliersPanel({
           Fornecedor na plataforma
         </p>
         <h4 className="mt-0.5 text-base font-semibold text-content">{headingName}</h4>
+
+        {linkId ? (
+          <LocalSupplierDebtStrip
+            supplierId={sid}
+            linkId={linkId}
+            ledgerNorm={ledgerNorm}
+            refDate={refDate}
+            displayMoney={displayMoney}
+          />
+        ) : (
+          <div className="mt-3 rounded-design-sm border border-edge/80 bg-surface/40 px-3 py-2">
+            <p className="text-[11px] leading-relaxed text-content-muted">
+              Resumo de dívidas locais por fornecedor aparece quando há vínculo aprovado associado a
+              esta linha.
+            </p>
+          </div>
+        )}
+
         <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
           Vínculo aprovado entre contas na plataforma. Os pedidos abaixo são só intenção pré-financeira
           remota —{' '}
@@ -390,6 +486,59 @@ export default function ClientSuppliersPanel({
 
   return (
     <div className="space-y-6">
+      <div className={`${sectionCardClass} border-primary/25`}>
+        <h3 className="text-base font-semibold text-content">Minhas dívidas locais</h3>
+        <p className="mt-2 text-xs leading-relaxed text-content-muted">
+          Registro opcional neste aparelho, separado da plataforma.{' '}
+          <span className="font-medium text-content-soft">
+            Não sincroniza com o fornecedor nem substitui o controle dele.
+          </span>{' '}
+          Um pedido aprovado na plataforma{' '}
+          <span className="font-medium text-content-soft">não cria dívida aqui automaticamente</span>.
+        </p>
+        <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
+          Os totais abaixo somam todo o livro local neste escopo (podem incluir fornecedores que não
+          aparecem na lista de vínculos atuais). Cada fornecedor mostra o recorte daquele vínculo.
+        </p>
+        <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
+          <div className="rounded-design-md border border-edge bg-surface-muted/60 px-3 py-2">
+            <dt className="text-content-muted">Principal (posição no livro)</dt>
+            <dd className="mt-0.5 text-base font-semibold text-content">
+              {displayMoney(globalTotals.openPrincipal)}
+            </dd>
+          </div>
+          <div className="rounded-design-md border border-edge bg-surface-muted/60 px-3 py-2">
+            <dt className="text-content-muted">Juros estimados (mês)</dt>
+            <dd className="mt-0.5 text-base font-semibold text-content">
+              {displayMoney(globalTotals.estimatedMonthlyInterest)}
+            </dd>
+          </div>
+          <div className="rounded-design-md border border-edge bg-surface-muted/60 px-3 py-2">
+            <dt className="text-content-muted">Quitação estimada</dt>
+            <dd className="mt-0.5 text-base font-semibold text-content">
+              {displayMoney(globalTotals.estimatedSettlement)}
+            </dd>
+          </div>
+          <div className="rounded-design-md border border-edge bg-surface-muted/60 px-3 py-2">
+            <dt className="text-content-muted">Fornecedores com dívida ativa (local)</dt>
+            <dd className="mt-0.5 text-base font-semibold text-content">
+              {globalTotals.suppliersWithOpenDebt}
+            </dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="relative py-1">
+        <div className="absolute inset-0 flex items-center" aria-hidden="true">
+          <div className="w-full border-t border-edge" />
+        </div>
+        <div className="relative flex justify-center">
+          <span className="bg-base px-3 text-[10px] font-semibold uppercase tracking-wide text-content-muted">
+            Plataforma — vínculos e pedidos remotos
+          </span>
+        </div>
+      </div>
+
       <div className={sectionCardClass}>
         <h3 className="mb-2 text-base font-semibold text-content">Visão por fornecedor</h3>
         <p className="text-xs leading-relaxed text-content-muted">

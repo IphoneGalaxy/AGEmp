@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { calculateGlobalStats } from './utils/calculations';
-import { loadData, saveData, exportBackup, parseBackupFile, normalizeClients, loadLoanRequestConversionRegistry, saveLoanRequestConversionRegistry } from './utils/storage';
+import {
+  loadData,
+  saveData,
+  exportBackup,
+  parseBackupFile,
+  normalizeClients,
+  loadLoanRequestConversionRegistry,
+  saveLoanRequestConversionRegistry,
+  loadClientDebtLedger,
+} from './utils/storage';
 import { upsertLoanRequestConversionRegistryEntry } from './utils/loanRequestConversionRegistry';
 import { isClientArchived } from './utils/clientArchive';
 import { loadSettings, saveSettings, getEffectiveTheme } from './utils/settings';
@@ -53,6 +62,7 @@ function App() {
   const [fundsTransactions, setFundsTransactions] = useState([]);
   const [clients, setClients] = useState([]);
   const [loanRequestConversionRegistry, setLoanRequestConversionRegistry] = useState([]);
+  const [clientDebtLedger, setClientDebtLedger] = useState(() => loadClientDebtLedger());
   const [selectedClient, setSelectedClient] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [legacyModalOpen, setLegacyModalOpen] = useState(false);
@@ -175,6 +185,7 @@ function App() {
       setFundsTransactions([]);
       setClients([]);
       setLoanRequestConversionRegistry([]);
+      setClientDebtLedger(loadClientDebtLedger(newScope));
       setSelectedClient(null);
       setValuesRevealed(false);
       setLegacyModalOpen(true);
@@ -197,6 +208,7 @@ function App() {
       setClients([]);
     }
     setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(newScope));
+    setClientDebtLedger(loadClientDebtLedger(newScope));
     setSelectedClient(null);
     setValuesRevealed(false);
     lastScopeRef.current = newScope;
@@ -393,6 +405,7 @@ function App() {
         setClients([]);
       }
       setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(sc));
+      setClientDebtLedger(loadClientDebtLedger(sc));
       showToast('✅ Dados associados a esta conta (neste aparelho).');
     } catch (e) {
       console.warn(e);
@@ -410,6 +423,7 @@ function App() {
     setFundsTransactions([]);
     setClients([]);
     setLoanRequestConversionRegistry(loadLoanRequestConversionRegistry(sc));
+    setClientDebtLedger(loadClientDebtLedger(sc));
     showToast('Dados anteriores permanecem acessíveis após sair da conta.');
   }, [user]);
 
@@ -615,6 +629,9 @@ function App() {
               links={links}
               linksLoading={linksLoading}
               onOpenSolicitations={handleOpenClientSolicitationsFromSuppliersTab}
+              clientDebtLedger={clientDebtLedger}
+              ledgerReferenceDate={timeInfo.today}
+              displayMoney={displayMoney}
             />
           </div>
         )}

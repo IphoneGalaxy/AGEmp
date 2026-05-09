@@ -21,6 +21,7 @@ import {
   normalizePayment,
   sanitizeInterestRatePercent,
   validateMinimumDebtForCommit,
+  findSupplierEntry,
 } from '../clientDebtLedger';
 import { loadClientDebtLedger, saveClientDebtLedger } from '../storage';
 import { getScopedClientDebtLedgerKey } from '../storageScope';
@@ -72,6 +73,16 @@ describe('clientDebtLedger', () => {
     expect(d.principalAmount).toBe(0);
     expect(d.interestRate).toBe(10);
     expect(d.status).toBe(DEBT_STATUS.SETTLED_LOCALLY);
+  });
+
+  it('findSupplierEntry retorna entrada ou null', () => {
+    const L = normalizeClientDebtLedger({
+      suppliers: [{ supplierId: 'a', linkId: 'b', debts: [] }],
+    });
+    expect(findSupplierEntry(L, '', 'b')).toBe(null);
+    expect(findSupplierEntry(L, 'a', '')).toBe(null);
+    expect(findSupplierEntry(L, 'a', 'x')).toBe(null);
+    expect(findSupplierEntry(L, 'a', 'b')?.supplierId).toBe('a');
   });
 
   it('normaliza payments inválidos (remove data inválida)', () => {
