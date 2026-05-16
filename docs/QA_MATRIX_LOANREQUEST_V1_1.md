@@ -214,7 +214,7 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 - **A2b/A2c** (continuam backlog).
 - Backup/export do registry local se necessário.
 - Melhoria visual / extração de componentes se necessário.
-- **Financeiro Local do Cliente («Minhas dívidas»):** quando implementado, registrar regressão explícita — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente; cenários conforme [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) (critérios de aceite / QA futura).
+- **Financeiro Local do Cliente («Minhas dívidas»):** **em entrega parcial** — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente; backup/export/import/auto-backup **incluem** **`clientDebtLedger`** (**`40fa3a4`**, **dados locais neste aparelho**); smoke/QA adicional: export → import; arquivo legado sem `clientDebtLedger`; auto-backup após edição do ledger — [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md).
 
 ---
 
@@ -236,4 +236,5 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 | 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |
 | 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**. |
 | 2026-05-05 | **«Visão Fornecedores + Governança local» — Pacotes 1–3:** fecho documental § dedicado nesta matriz; commits **`0be3e0b`**, **`c921d8d`**, **`a6c2d8c`**; sem mudança Firestore/rules — [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md). |
+| 2026-05-16 | **«Minhas dívidas» — backup com `clientDebtLedger`:** **`40fa3a4`**; § backlog «Minhas dívidas» atualizado; smoke recomendado export/import/auto-backup — ADR §18. |
 | 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — **Subfase 0** só docs; implementação §13 posterior. |

@@ -42,7 +42,7 @@ Nao e uma nova trilha funcional local-first por inercia, e tambem nao e inicio d
 
 **Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md)** — **fechada** (commits **`6793461`** … **`28f3f4a`**; deploy **`agemp-financas-pro`** pós-**`cdc55d9`**).
 
-**Próximo recorte de produto** não está fixado neste arquivo — candidatos em backlog ([`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.6; [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)): revogação remota de vínculo; **A2b/A2c**; refinamentos registry (backup/export) e UI. **Planejamento documentado adicional (ortogonal ao roadmap `loanRequests`):** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`** local-first para papel Cliente; **implementação não iniciada**.
+**Próximo recorte de produto** não está fixado neste arquivo — candidatos em backlog ([`ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md`](./ADR_VISAO_FORNECEDORES_GOVERNANCA_VINCULO_LOCAL.md) §16.6; [`LOANREQUEST_EVOLUTION_ROADMAP.md`](./LOANREQUEST_EVOLUTION_ROADMAP.md)): revogação remota de vínculo; **A2b/A2c**; refinamentos registry (backup/export) e UI. **Linha ortogonal (`loanRequests`):** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`** **local neste aparelho**; Subfases **A–D1** entregues no código (**`5fc8a58`** … **`40fa3a4`**); **D2** documental (**2026-05-16**); **sem** sincronização financeira remota; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados nesta linha — ver ADR §13.
 
 *(O parágrafo abaixo refere-se à decisão documental original da ponte pré-financeira; permanece válido como contexto — o produto já inclui `loanRequests` v1+v1.1 e conversão governada local.)*
 
@@ -160,7 +160,7 @@ Esta matriz e preparatoria. Ela deve ser refinada quando houver implementacao.
 | Q2 | Cliente com vinculo aprovado cria solicitacao futura. | Apenas intencao remota e criada; nenhum cliente/contrato/pagamento/caixa local e alterado automaticamente. |
 | Q3 | Fornecedor responde solicitacao futura. | Status relacional muda; financeiro local segue intocado. |
 | Q4 | Solicitacao aprovada futura. | Nao cria contrato automaticamente sem acao/fase propria. |
-| Q5 | Backup/exportacao local. | Nao inclui solicitacoes remotas como dominio financeiro local. |
+| Q5 | Backup/exportação local. | Continua **sem** embutir **`loanRequests`** remotos como domínio financeiro local; o pacote pode incluir **`clientDebtLedger`** (**dados locais neste aparelho**, escopo) normalizado junto a caixa + **`clients[]`** (**`40fa3a4`** — compatível com arquivos antigos sem o campo). |
 | Q6 | Pagamentos locais. | Continuam sem `payment.linkContext` persistido. |
 | Q7 | Dashboard/calculos. | Nao mudam por causa de solicitacoes remotas. |
 
@@ -197,7 +197,8 @@ Continuam fora desta fase:
 | 2026-05-04 | **Plano executavel Bloco 1** arquivado: [`plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md`](./plans/completed/PLANEJAMENTO_BLOCO1_LOANREQUEST_OPERACIONAL.md) — **Opção A**, **Bloco 1 funcionalmente fechado**; **Bloco 2** próxima fase recomendada. |
 | 2026-05-04 | **Bloco2-0:** ADR criado [`ADR_BLOCO2_CONVERSAO_GOVERNADA.md`](./ADR_BLOCO2_CONVERSAO_GOVERNADA.md) (posteriormente **aprovado** — ver linha seguinte). |
 | 2026-05-04 | **Bloco 2 fechado + Bloco2-E:** implementação **`624c725`**, **`3badcbc`**, **`5dd4c36`**; docs vivos + QA matriz § Bloco 2; **próximo:** mini ADR snapshots de nomes · Visão Fornecedores. |
+| 2026-05-04 | **ADR — Financeiro Local do Cliente / «Minhas dívidas»:** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`** planejado; primeira fase sem **`calculations.js`** (registo inicial). |
 | 2026-05-04 | **Governança Bloco 2 (aprovação inicial):** ADR **aprovado**; implementação subsequente nos commits acima. |
 | 2026-05-05 | Mini ADR snapshots — **fechada** (implementação **`6793461`**–**`28f3f4a`**; deploy **`agemp-financas-pro`**; QA § [`QA_MATRIX_LOANREQUEST_V1_1.md`](./QA_MATRIX_LOANREQUEST_V1_1.md)); próximo **Visão Fornecedores**. |
 | 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — direção snapshots (`links`/`loanRequests`); só docs na rodada inicial (Subfase 0). |
-| 2026-05-04 | **ADR planejada — Financeiro Local do Cliente / «Minhas dívidas»:** [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md) — **`clientDebtLedger`**; primeira fase sem **`calculations.js`**; **implementação não iniciada**. |
+| 2026-05-16 | **«Minhas dívidas» — Subfases A–D1 + D2 documental:** commits **`5fc8a58`**, **`e24eb25`**, **`0f2c43b`**, **`40fa3a4`**; backup/export/import/auto-backup incluem **`clientDebtLedger`**; **`calculations.js`**, **`firestore.rules`**, SDK e **`payment.linkContext`** intocados; matriz §10 Q5 e docs vivos alinhados. |

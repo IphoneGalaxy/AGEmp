@@ -4,9 +4,9 @@
 **Projeto:** AGEmp / Finanças Pro  
 **Escopo:** Evoluir a aba **Fornecedores** (papel **Cliente**) para uma superfície útil de **controle local-first das dívidas do cliente por fornecedor**, preservando a separação entre **plataforma remota pré-financeira** e **financeiro local**.
 
-**Estado da fase:** **planejamento oficial documentado** — **implementação não iniciada** neste arquivo.
+**Estado da fase:** **em implementação parcial no código** — Subfases **A**, **B**, **C** e **D1** entregues (`5fc8a58`, `e24eb25`, `0f2c43b`, `40fa3a4`); **Subfase D2** (só docs) registra o fecho documental da **D1**; restante da **Subfase D** e **Subfase E** continuam planejadas conforme §13.
 
-**Data do documento:** 2026-05-04
+**Data do documento:** 2026-05-04 · **Atualização registro D1/D2:** 2026-05-16
 
 ---
 
@@ -24,7 +24,7 @@ Esta ADR **não** revoga as anteriores; **estende** o produto com um **segundo l
 
 - O núcleo financeiro do app permanece **local-first**, por escopo (`anonymous` · `account:{uid}`), conforme [`HANDOFF_MASTER.md`](./HANDOFF_MASTER.md) e [`CHECKPOINT_CHECKLIST.md`](./CHECKPOINT_CHECKLIST.md).
 - Firebase cobre **identidade**, **papéis**, **vínculos** e **`loanRequests`** como camada **pré-financeira e relacional**, **sem** financeiro autoritativo na nuvem — [`NEXT_PHASE_OFFICIAL.md`](./NEXT_PHASE_OFFICIAL.md).
-- A aba **Fornecedores** (cliente) reúne hoje principalmente **vínculos aprovados** + **pedidos remotos** agrupados (superfície relacional); falta gestão explícita de **passivo local** com totais acionáveis (saldo, juros, quitação, histórico de pagamentos registrados pelo próprio cliente neste aparelho).
+- A aba **Fornecedores** (cliente) reúne **vínculos aprovados** + **pedidos remotos** agrupados (**pré-financeiro**, sem saldo oficial na nuvem) e, em paralelo, o bloco **«Minhas dívidas»** (**dados locais neste aparelho**) derivado de **`clientDebtLedger`**, com **detalhe por fornecedor** (dívidas e pagamentos locais, pedidos na plataforma só como contexto — sem criação automática de dívida local).
 - **`payment.linkContext`** permanece **proibido** — [`ADR_PAYMENT_LINK_CONTEXT.md`](./ADR_PAYMENT_LINK_CONTEXT.md).
 
 ---
@@ -157,6 +157,7 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 | [`src/components/ClientSuppliersPanel.jsx`](../src/components/ClientSuppliersPanel.jsx) ou extratos | Shell da nova UX com split **Plataforma** / **Minhas dívidas** |
 | [`src/utils/storageScope.js`](../src/utils/storageScope.js) | Nova chave escopada para `clientDebtLedger` |
 | Novo utilitário de persistência/normalização | Serialização, migração benigna, validação defensiva |
+| Backup manual / importação / auto-backup | **`clientDebtLedger`** incluído no mesmo pacote JSON que caixa + **`clients[]`** (`40fa3a4`); backups antigos **sem** o campo continuam válidos (ledger efetivo vazio normalizado); **sem** alterar **`calculations.js`**, **`firestore.rules`**, Firebase SDK nem **`payment.linkContext`** |
 | Novo helper de derivação | Cálculos locais espelhando semântica do motor sem alterar `calculations.js` |
 | [`src/utils/calculations.js`](../src/utils/calculations.js) | **Fora do escopo da primeira implementação** |
 | Firebase / [`firestore.rules`](../firestore.rules) | **Sem** nova coleção autoritativa de dívida; opcionalmente apenas **leituras já existentes** para contexto |
@@ -165,11 +166,14 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 
 ## 13. Subfases de implementação (oficiais)
 
-- **Subfase A — Fundamentos locais:** storage `clientDebtLedger` + normalização + helpers de cálculo/derivação + testes unitários.
-- **Subfase B — Resumo na aba Fornecedores:** KPIs «Minhas dívidas» + lista por fornecedor **sem** alterar dados remotos.
-- **Subfase C — Detalhe do fornecedor:** dívidas locais + pagamentos + pedidos remotos lado a lado, CTAs claros.
-- **Subfase D — Operações secundárias:** vencimentos/lembretes refinados, arquivamento local do ledger, **backup/export/import** do novo artefato (separado ou junto ao backup existente — decisão técnica na implementação, preservando compatibilidade).
-- **Subfase E — Avaliação:** eventual integração ao **Painel**/motor central ou fusão conceitual com `clients[]` — **somente** com ADR próprio + decisão explícita sobre `calculations.js`.
+- **Subfase A — Fundamentos locais:** **concluída** (`5fc8a58`) — storage `clientDebtLedger` + normalização + helpers de cálculo/derivação + testes unitários.
+- **Subfase B — Resumo na aba Fornecedores:** **concluída** (`e24eb25`) — KPIs «Minhas dívidas» + lista por fornecedor **sem** alterar dados remotos.
+- **Subfase C — Detalhe do fornecedor:** **concluída** (`0f2c43b`) — dívidas locais + pagamentos + pedidos remotos lado a lado, CTAs claros; confirmação explícita para dívida local; **sem** sync financeiro remoto.
+- **Subfase D — Operações secundárias (parcial):**
+  - **D1 — Backup/export/import/autoBackup:** **concluída** (`40fa3a4`) — campo raiz **`clientDebtLedger`** no JSON de backup manual e em `data` dos snapshots automáticos; import e restauração aplicam **`normalizeClientDebtLedger`** (ausência do campo ⇒ ledger vazio válido); ledger permanece **fora** de **`clients[]`**, **fora** de **`loanRequestConversionRegistry`** e **fora** do Firebase; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **não** foram alterados nesta entrega.
+  - **D2 — Registro documental (fecho da D1):** atualização dos docs vivos listados na própria execução (**2026-05-16**) — **sem** mudança em `src/`.
+  - **Restante da Subfase D (backlog):** vencimentos/lembretes refinados no produto; eventual **arquivamento local do ledger** como operação dedicada na UX se ainda não coberta pelo fluxo atual; outros refinamentos **locais neste aparelho** acordados em sprint própria.
+- **Subfase E — Avaliação:** eventual integração ao **Painel**/motor central ou fusão conceitual com `clients[]` — **somente** com ADR próprio + decisão explícita sobre `calculations.js` (**não iniciar** sem ADR).
 
 ---
 
@@ -181,7 +185,8 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - Fase 1: apenas fornecedores com vínculo **aprovado**.
 - Pedidos **`loanRequests`** continuam pré-financeiros; mudanças remotas **não** reescrevem saldos locais sem ação local.
 - **Sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** contrato remoto.
-- **`calculations.js`** permanece **inalterado** na primeira entrega técnica desta linha (Subfases A–D).
+- **`calculations.js`** permanece **inalterado** na primeira entrega técnica desta linha (**Subfases A–D1** entregues; **Subfase E** não iniciada).
+- Backup/import/auto-backup: arquivo `.txt` inclui **`clientDebtLedger`** normalizado; restauração **substitui** o ledger do escopo atual pelo do arquivo (sem merge), com confirmação no fluxo manual já existente no app.
 
 ---
 
@@ -191,7 +196,7 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - Helpers de derivação: juros, amortização, saldo zero, fallback de taxa, cenários com pagamentos parciais.
 - Fluxos UX: criar dívida manual; criar a partir de pedido **aprovado** com confirmação; garantir que **`approved` remoto sozinho** não cria linha local.
 - Regressão: **`loanRequests`** e vínculos **não** passam a gravar financeiro central (`clients[]`) por conta desta feature.
-- Backup/import (Subfase D): compatibilidade com backups antigos sem o novo campo.
+- Backup/import (**D1 — entregue):** compatibilidade com backups antigos sem o campo `clientDebtLedger`; dados inválidos absorvidos por **`normalizeClientDebtLedger`**; cobertura em `storage.test.js` / `autoBackup.test.js` (Vitest).
 
 ---
 
@@ -201,6 +206,8 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - Divergência inevitável entre valor **aprovado na plataforma** e valor **registrado localmente** pelo cliente.
 - Duplicação mental entre **`clients[]`** (fornecedor) e **`clientDebtLedger`** (cliente) — mitigar com nomenclatura e navegação por papel.
 - Pressão futura para mexer em **`calculations.js`** ou dashboard global antes da Subfase E — resistir até decisão formal.
+- **Residual pós-D1:** possível divergência futura entre derivações do ledger e o motor central até eventual alinhamento por decisão de produto (**Subfase E**).
+- **Residual pós-D1:** maior volume de dados em **`localStorage`** (snapshots automáticos + ledger); monitorar quota e comportamento já existente de fallback quando o armazenamento enche.
 
 ---
 
@@ -211,16 +218,16 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - **Não** criar contrato financeiro remoto.
 - **Não** sincronizar financeiro com o fornecedor.
 - **Não** criar **`payment.linkContext`**.
-- **Não** alterar **`calculations.js`** na primeira fase (**Subfases A–D**).
+- **Não** alterar **`calculations.js`** na primeira fase (**Subfases A–D1** entregues; **Subfase E** não iniciada).
 - **Não** usar vínculo remoto como permissão obrigatória para registrar pagamento local (é livro próprio do cliente — vínculo só delimita **fornecedores elegíveis na Fase 1**).
 
 ---
 
 ## 18. Próxima ação recomendada
 
-1. Obter **aprovação explícita de produto** desta ADR (escopo Fase 1 + subfases).
-2. Executar **Subfase A** primeiro (dados + testes), antes de qualquer UI ampla.
-3. Registrar QA específico ao encerrar cada subfase (matriz nova ou extensão da existente — decisão na Subfase A).
+1. **Smoke manual** focado em backup/import/auto-backup com **`clientDebtLedger`** (exportar → importar em escopo limpo; arquivo legado sem o campo; restaurar último auto-backup após editar dívidas locais) — integrar ao encerramento da linha ou à **Subfase D3** se formalizada.
+2. Priorizar **resto da Subfase D** (vencimentos/lembretes, refinamentos UX **locais neste aparelho**) ou **fechamento administrativo** da entrega «Minhas dívidas» conforme roadmap do produto — **sem** integração ao dashboard global (**Subfase E**) sem ADR própria.
+3. Manter **backlog explícito:** refinamento visual do detalhe do fornecedor; integração futura ao Painel mediante ADR; eventual alinhamento de cálculo do ledger ao motor central se o produto decidir.
 
 ---
 
@@ -229,3 +236,4 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 | Data | Nota |
 |------|------|
 | 2026-05-04 | Versão inicial — ADR/plano documental; sem mudanças em `src/`, `firestore.rules`, `calculations.js` nem testes. |
+| 2026-05-16 | **Subfase D1 entregue no código** (`40fa3a4`): backup/export/import/auto-backup incluem **`clientDebtLedger`** normalizado; compatível com backups antigos; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados; **Subfase D2** atualiza só documentação viva (este arquivo e correlatos). |
