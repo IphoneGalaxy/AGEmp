@@ -149,6 +149,59 @@ export const exportBackup = (fundsTransactions, clients, clientDebtLedger) => {
   URL.revokeObjectURL(url);
 };
 
+/** Discriminador do arquivo JSON dedicado a «Minhas dívidas» (não é backup completo). */
+export const CLIENT_DEBT_LEDGER_EXPORT_TYPE = 'financasProClientDebtLedgerExport';
+
+/** Versão do envelope de exportação (distinta do `schemaVersion` interno do ledger). */
+export const CLIENT_DEBT_LEDGER_EXPORT_SCHEMA_VERSION = 1;
+
+/**
+ * Monta o objeto serializável do export específico do livro «Minhas dívidas».
+ * Não inclui `clients`, `fundsTransactions` nem dados remotos de pedidos — só o ledger normalizado.
+ *
+ * @param {unknown} rawLedger
+ * @param {{ exportedAt?: string }} [options] — `exportedAt` fixo útil em testes.
+ * @returns {{
+ *   exportType: string;
+ *   schemaVersion: number;
+ *   exportedAt: string;
+ *   source: string;
+ *   clientDebtLedger: import('./clientDebtLedger').ClientDebtLedger;
+ * }}
+ */
+export function buildClientDebtLedgerExportPayload(rawLedger, options = {}) {
+  const exportedAt =
+    typeof options.exportedAt === 'string' && options.exportedAt.trim()
+      ? options.exportedAt.trim()
+      : new Date().toISOString();
+  return {
+    exportType: CLIENT_DEBT_LEDGER_EXPORT_TYPE,
+    schemaVersion: CLIENT_DEBT_LEDGER_EXPORT_SCHEMA_VERSION,
+    exportedAt,
+    source: 'clientDebtLedger',
+    clientDebtLedger: normalizeClientDebtLedger(rawLedger),
+  };
+}
+
+/**
+ * Download JSON só do `clientDebtLedger` (não substitui backup completo; não há import deste formato).
+ *
+ * @param {unknown} rawLedger
+ */
+export function exportClientDebtLedgerJsonDownload(rawLedger) {
+  const payload = buildClientDebtLedgerExportPayload(rawLedger);
+  const dataStr = JSON.stringify(payload, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `financaspro_minhas_dividas_${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /**
  * Lê e valida um arquivo de backup importado.
  * @param {File} file - Arquivo selecionado pelo input.

@@ -30,6 +30,7 @@ import {
 } from '../utils/displayNameSnapshots';
 import { groupLoanRequestsBySupplierId } from '../utils/groupLoanRequestsBySupplierId';
 import { useSupplierDisplayNameMap } from '../hooks/useSupplierDisplayNameMap';
+import { exportClientDebtLedgerJsonDownload } from '../utils/storage';
 import ClientSupplierDebtDetail from './ClientSupplierDebtDetail';
 
 const sectionCardClass =
@@ -598,6 +599,29 @@ export default function ClientSuppliersPanel({
             </dd>
           </div>
         </dl>
+
+        <details className="mt-4 rounded-design-md border border-edge/70 bg-surface-muted/40 px-3 py-2">
+          <summary className="cursor-pointer select-none text-xs font-medium text-content-soft underline-offset-2 hover:underline">
+            Exportar «Minhas dívidas» em JSON (só este aparelho)
+          </summary>
+          <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
+            Gera um arquivo com <span className="font-medium text-content-soft">apenas</span> o livro
+            local «Minhas dívidas» neste escopo.{' '}
+            <span className="font-medium text-content-soft">Não substitui</span> o backup completo da
+            app e <span className="font-medium text-content-soft">não sincroniza</span> com o fornecedor.
+            Não serve para restaurar o app inteiro.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              exportClientDebtLedgerJsonDownload(clientDebtLedger);
+              showToast?.('JSON exportado — só Minhas dívidas locais.');
+            }}
+            className="mt-3 inline-flex min-h-[40px] w-full items-center justify-center rounded-design-md border border-primary/35 bg-surface px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary-soft/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring sm:w-auto sm:min-w-[200px]"
+          >
+            Baixar JSON das dívidas locais
+          </button>
+        </details>
       </div>
 
       <div className="relative py-1">

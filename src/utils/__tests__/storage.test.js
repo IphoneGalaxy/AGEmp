@@ -9,8 +9,25 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { normalizeClients, loadData, saveData, parseBackupFile } from '../storage';
-import { emptyClientDebtLedger, normalizeClientDebtLedger } from '../clientDebtLedger';
+import {
+  buildClientDebtLedgerExportPayload,
+  CLIENT_DEBT_LEDGER_EXPORT_SCHEMA_VERSION,
+  CLIENT_DEBT_LEDGER_EXPORT_TYPE,
+  exportClientDebtLedgerJsonDownload,
+  normalizeClients,
+  loadData,
+  saveData,
+  parseBackupFile,
+} from '../storage';
+import {
+  appendDebtToSupplierLedger,
+  appendSupplierToLedgerIfMissing,
+  CLIENT_DEBT_LINK_APPROVED_STATUS,
+  createManualDebtDraft,
+  createSupplierFromApprovedLink,
+  emptyClientDebtLedger,
+  normalizeClientDebtLedger,
+} from '../clientDebtLedger';
 import { SCOPE_ANONYMOUS, getScopedDataKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
 
 // ==================== NORMALIZE CLIENTS ====================
@@ -445,5 +462,87 @@ describe('parseBackupFile', () => {
     const result = await parseBackupFile(file);
     // parseBackupFile apenas valida, não normaliza
     expect(result.clients[0].transactions).toBeDefined();
+  });
+});
+
+describe('buildClientDebtLedgerExportPayload', () => {
+  const fixedAt = '2026-05-16T12:00:00.000Z';
+
+  it('ledger null/undefined → envelope válido e ledger vazio normalizado', () => {
+    const p = buildClientDebtLedgerExportPayload(null, { exportedAt: fixedAt });
+    expect(p.exportType).toBe(CLIENT_DEBT_LEDGER_EXPORT_TYPE);
+    expect(p.schemaVersion).toBe(CLIENT_DEBT_LEDGER_EXPORT_SCHEMA_VERSION);
+    expect(p.exportedAt).toBe(fixedAt);
+    expect(p.source).toBe('clientDebtLedger');
+    expect(p.clientDebtLedger).toEqual(emptyClientDebtLedger());
+    expect('clients' in p).toBe(false);
+    expect('fundsTransactions' in p).toBe(false);
+    expect('loanRequests' in p).toBe(false);
+    expect(() => JSON.parse(JSON.stringify(p))).not.toThrow();
+  });
+
+  it('JSON raiz parseável e sem chaves de backup completo', () => {
+    const p = buildClientDebtLedgerExportPayload(undefined, { exportedAt: fixedAt });
+    const raw = JSON.stringify(p);
+    const parsed = JSON.parse(raw);
+    expect(parsed.exportType).toBe('financasProClientDebtLedgerExport');
+    expect(Object.keys(parsed).sort()).toEqual(
+      ['clientDebtLedger', 'exportType', 'exportedAt', 'schemaVersion', 'source'].sort(),
+    );
+  });
+
+  it('export com fornecedor, dívida e pagamento (normalizado)', () => {
+    const sup = createSupplierFromApprovedLink({
+      id: 'L1',
+      supplierId: 'S1',
+      status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+    });
+    let L = appendSupplierToLedgerIfMissing(emptyClientDebtLedger(), sup);
+    const debt = createManualDebtDraft({
+      principalAmount: 200,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    L = appendDebtToSupplierLedger(L, 'S1', 'L1', {
+      ...debt,
+      payments: [{ id: 'p1', date: '2025-02-01', amount: 50, note: 'x', source: 'manual' }],
+    });
+    const p = buildClientDebtLedgerExportPayload(L, { exportedAt: fixedAt });
+    expect(p.clientDebtLedger.suppliers).toHaveLength(1);
+    expect(p.clientDebtLedger.suppliers[0].debts).toHaveLength(1);
+    expect(p.clientDebtLedger.suppliers[0].debts[0].payments).toHaveLength(1);
+    expect(p.clientDebtLedger.suppliers[0].debts[0].principalAmount).toBe(200);
+  });
+
+  it('idempotência: normalizar o ledger exportado == ledger do payload', () => {
+    const p = buildClientDebtLedgerExportPayload(
+      { suppliers: [{ supplierId: 'bad', linkId: '', debts: [] }] },
+      { exportedAt: fixedAt },
+    );
+    expect(normalizeClientDebtLedger(p.clientDebtLedger)).toEqual(p.clientDebtLedger);
+  });
+
+  it('exportClientDebtLedgerJsonDownload dispara download (DOM mock)', () => {
+    const click = vi.fn();
+    const origCreate = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag) => {
+      const el = origCreate(tag);
+      if (tag === 'a') {
+        el.click = click;
+      }
+      return el;
+    });
+    const appendChild = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {});
+    const removeChild = vi.spyOn(document.body, 'removeChild').mockImplementation(() => {});
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+
+    exportClientDebtLedgerJsonDownload(emptyClientDebtLedger());
+
+    expect(click).toHaveBeenCalled();
+    expect(appendChild).toHaveBeenCalled();
+    expect(removeChild).toHaveBeenCalled();
+    expect(revoke).toHaveBeenCalled();
+
+    vi.restoreAllMocks();
   });
 });
