@@ -53,6 +53,18 @@ function formatRequestTimestamp(ts) {
   }
 }
 
+/**
+ * Rótulo em pt-BR para o status da dívida no livro local (alinhado a `DEBT_STATUS` em clientDebtLedger).
+ * @param {unknown} status
+ */
+function debtStatusLabelPt(status) {
+  if (status === DEBT_STATUS.ACTIVE) return 'Ativa';
+  if (status === DEBT_STATUS.SETTLED_LOCALLY) return 'Quitada localmente';
+  if (status === DEBT_STATUS.ARCHIVED) return 'Arquivada';
+  if (status == null || status === '') return 'Status local';
+  return typeof status === 'string' ? status : 'Status local';
+}
+
 function debtDueReminderCopy(debt, refDate) {
   const r = deriveDebtDueReminder(debt, refDate);
   const when = r.dueEffectiveIso ? formatDate(r.dueEffectiveIso) : '';
