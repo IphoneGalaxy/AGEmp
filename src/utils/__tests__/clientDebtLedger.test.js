@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 
 import {
   appendDebtToSupplierLedger,
+  appendPaymentToDebt,
   appendSupplierToLedgerIfMissing,
   applyPaymentsToPrincipal,
   CLIENT_DEBT_LINK_APPROVED_STATUS,
@@ -22,6 +23,7 @@ import {
   sanitizeInterestRatePercent,
   validateMinimumDebtForCommit,
   findSupplierEntry,
+  updateDebtStatusInLedger,
 } from '../clientDebtLedger';
 import { loadClientDebtLedger, saveClientDebtLedger } from '../storage';
 import { getScopedClientDebtLedgerKey } from '../storageScope';
@@ -321,9 +323,109 @@ describe('clientDebtLedger', () => {
       interestRate: 10,
       startDate: '2025-01-01',
     });
-    L = appendDebtToSupplierLedger(L, 'S1', debt);
+    L = appendDebtToSupplierLedger(L, 'S1', 'L1', debt);
     expect(L.suppliers[0].debts).toHaveLength(1);
-    expect(appendDebtToSupplierLedger(L, 'missing', debt).suppliers[0].debts).toHaveLength(1);
+    expect(appendDebtToSupplierLedger(L, 'missing', 'L1', debt).suppliers[0].debts).toHaveLength(1);
+  });
+
+  it('appendDebtToSupplierLedger grava no vínculo correto quando mesmo supplierId tem dois links', () => {
+    let L = emptyClientDebtLedger();
+    L = appendSupplierToLedgerIfMissing(
+      L,
+      createSupplierFromApprovedLink({
+        id: 'L1',
+        supplierId: 'S1',
+        status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+      }),
+    );
+    L = appendSupplierToLedgerIfMissing(
+      L,
+      createSupplierFromApprovedLink({
+        id: 'L2',
+        supplierId: 'S1',
+        status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+      }),
+    );
+    const debt = createManualDebtDraft({
+      principalAmount: 100,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    L = appendDebtToSupplierLedger(L, 'S1', 'L2', debt);
+    expect(L.suppliers.find((x) => x.linkId === 'L1')?.debts ?? []).toHaveLength(0);
+    expect(L.suppliers.find((x) => x.linkId === 'L2')?.debts ?? []).toHaveLength(1);
+  });
+
+  it('appendPaymentToDebt aplica pagamento e atualiza principal derivado', () => {
+    const sup = createSupplierFromApprovedLink({
+      id: 'L1',
+      supplierId: 'S1',
+      status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+    });
+    let L = appendSupplierToLedgerIfMissing(emptyClientDebtLedger(), sup);
+    const debt = createManualDebtDraft({
+      principalAmount: 1000,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    L = appendDebtToSupplierLedger(L, 'S1', 'L1', debt);
+    const debtId = L.suppliers[0].debts[0].id;
+    const ref = new Date('2025-02-15');
+    L = appendPaymentToDebt(L, 'S1', 'L1', debtId, {
+      id: 'p1',
+      date: '2025-02-10',
+      amount: 200,
+      note: '',
+      source: 'manual',
+    });
+    const d = L.suppliers[0].debts[0];
+    const snap = deriveDebtSnapshot(d, ref);
+    expect(snap.currentPrincipal).toBeLessThan(1000);
+    expect(snap.totalInterestPaid).toBeGreaterThan(0);
+  });
+
+  it('appendPaymentToDebt ignora dívida arquivada', () => {
+    const sup = createSupplierFromApprovedLink({
+      id: 'L1',
+      supplierId: 'S1',
+      status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+    });
+    let L = appendSupplierToLedgerIfMissing(emptyClientDebtLedger(), sup);
+    const debt = createManualDebtDraft({
+      principalAmount: 100,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    L = appendDebtToSupplierLedger(L, 'S1', 'L1', debt);
+    const debtId = L.suppliers[0].debts[0].id;
+    L = updateDebtStatusInLedger(L, 'S1', 'L1', debtId, DEBT_STATUS.ARCHIVED);
+    const beforeLen = L.suppliers[0].debts[0].payments.length;
+    L = appendPaymentToDebt(L, 'S1', 'L1', debtId, {
+      id: 'p1',
+      date: '2025-02-10',
+      amount: 10,
+      note: '',
+      source: 'manual',
+    });
+    expect(L.suppliers[0].debts[0].payments.length).toBe(beforeLen);
+  });
+
+  it('updateDebtStatusInLedger altera status', () => {
+    const sup = createSupplierFromApprovedLink({
+      id: 'L1',
+      supplierId: 'S1',
+      status: CLIENT_DEBT_LINK_APPROVED_STATUS,
+    });
+    let L = appendSupplierToLedgerIfMissing(emptyClientDebtLedger(), sup);
+    const debt = createManualDebtDraft({
+      principalAmount: 100,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    L = appendDebtToSupplierLedger(L, 'S1', 'L1', debt);
+    const debtId = L.suppliers[0].debts[0].id;
+    L = updateDebtStatusInLedger(L, 'S1', 'L1', debtId, DEBT_STATUS.ARCHIVED);
+    expect(L.suppliers[0].debts[0].status).toBe(DEBT_STATUS.ARCHIVED);
   });
 });
 
@@ -348,7 +450,7 @@ describe('clientDebtLedger storage', () => {
       interestRate: 10,
       startDate: '2025-05-01',
     });
-    L = appendDebtToSupplierLedger(L, 'S2', debt);
+    L = appendDebtToSupplierLedger(L, 'S2', 'L2', debt);
     saveClientDebtLedger(L, scope);
     const loaded = loadClientDebtLedger(scope);
     expect(loaded.suppliers).toHaveLength(1);

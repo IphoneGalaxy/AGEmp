@@ -28,6 +28,7 @@ import {
 } from '../utils/displayNameSnapshots';
 import { groupLoanRequestsBySupplierId } from '../utils/groupLoanRequestsBySupplierId';
 import { useSupplierDisplayNameMap } from '../hooks/useSupplierDisplayNameMap';
+import ClientSupplierDebtDetail from './ClientSupplierDebtDetail';
 
 const sectionCardClass =
   'rounded-design-lg border border-edge bg-surface p-5 shadow-design-sm sm:p-6';
@@ -133,6 +134,7 @@ function SupplierUidDetails({ supplierId }) {
  * @param {import('../utils/clientDebtLedger').ClientDebtLedger} [props.clientDebtLedger]
  * @param {Date} [props.ledgerReferenceDate]
  * @param {(n: number) => string} [props.displayMoney]
+ * @param {(updater: (prev: import('../utils/clientDebtLedger').ClientDebtLedger) => import('../utils/clientDebtLedger').ClientDebtLedger) => void} [props.onUpdateClientDebtLedger]
  */
 export default function ClientSuppliersPanel({
   user,
@@ -143,6 +145,7 @@ export default function ClientSuppliersPanel({
   clientDebtLedger,
   ledgerReferenceDate,
   displayMoney: displayMoneyProp,
+  onUpdateClientDebtLedger,
 }) {
   const displayMoney =
     typeof displayMoneyProp === 'function' ? displayMoneyProp : (n) => formatMoney(n);
@@ -165,6 +168,8 @@ export default function ClientSuppliersPanel({
   const [noteInput, setNoteInput] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const [supplierDetail, setSupplierDetail] = useState(null);
 
   const approvedAsClient = useMemo(
     () =>
@@ -377,6 +382,16 @@ export default function ClientSuppliersPanel({
           </div>
         )}
 
+        {linkId && linkOrNull && typeof onUpdateClientDebtLedger === 'function' ? (
+          <button
+            type="button"
+            onClick={() => setSupplierDetail({ link: linkOrNull, headingName })}
+            className="mt-3 inline-flex min-h-[44px] w-full items-center justify-center rounded-design-md border border-primary/40 bg-surface px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-ring"
+          >
+            Ver detalhes
+          </button>
+        ) : null}
+
         <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
           Vínculo aprovado entre contas na plataforma. Os pedidos abaixo são só intenção pré-financeira
           remota —{' '}
@@ -483,6 +498,27 @@ export default function ClientSuppliersPanel({
       </section>
     );
   };
+
+  if (supplierDetail?.link && typeof onUpdateClientDebtLedger === 'function') {
+    return (
+      <ClientSupplierDebtDetail
+        user={user}
+        showToast={showToast}
+        link={supplierDetail.link}
+        headingName={supplierDetail.headingName}
+        clientDebtLedger={clientDebtLedger}
+        ledgerReferenceDate={refDate}
+        displayMoney={displayMoney}
+        onUpdateClientDebtLedger={onUpdateClientDebtLedger}
+        onClose={() => {
+          setSupplierDetail(null);
+          void loadRequests();
+        }}
+        requests={requests}
+        onReloadRequests={loadRequests}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">

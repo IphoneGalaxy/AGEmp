@@ -9,6 +9,7 @@ import {
   loadLoanRequestConversionRegistry,
   saveLoanRequestConversionRegistry,
   loadClientDebtLedger,
+  saveClientDebtLedger,
 } from './utils/storage';
 import { upsertLoanRequestConversionRegistryEntry } from './utils/loanRequestConversionRegistry';
 import { isClientArchived } from './utils/clientArchive';
@@ -27,6 +28,7 @@ import { mapFirestoreError } from './firebase/firestoreErrors';
 import { listUserLinks } from './firebase/links';
 import { USER_ROLES, profileHasEffectiveAccountRole } from './firebase/roles';
 import { ensureUserProfileExists, getUserProfile } from './firebase/users';
+import { normalizeClientDebtLedger } from './utils/clientDebtLedger';
 import Dashboard from './components/Dashboard';
 import ClientsList from './components/ClientsList';
 import ClientView from './components/ClientView';
@@ -97,6 +99,11 @@ function App() {
   useEffect(() => {
     conversionRegistryRef.current = loanRequestConversionRegistry;
   }, [loanRequestConversionRegistry]);
+
+  const clientDebtLedgerRef = useRef(clientDebtLedger);
+  useEffect(() => {
+    clientDebtLedgerRef.current = clientDebtLedger;
+  }, [clientDebtLedger]);
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -170,6 +177,7 @@ function App() {
         saveData(fundsRef.current, clientsRef.current, oldScope);
         saveSettings(settingsRef.current, oldScope);
         saveLoanRequestConversionRegistry(conversionRegistryRef.current, oldScope);
+        saveClientDebtLedger(normalizeClientDebtLedger(clientDebtLedgerRef.current), oldScope);
       } catch (e) {
         console.warn('[App] Falha ao persistir escopo anterior:', e);
       }
@@ -455,6 +463,18 @@ function App() {
     triggerAutoBackup();
   }, []);
 
+  const handleUpdateClientDebtLedger = useCallback(
+    (updater) => {
+      setClientDebtLedger((prev) => {
+        const nextRaw = typeof updater === 'function' ? updater(prev) : updater;
+        const next = normalizeClientDebtLedger(nextRaw);
+        saveClientDebtLedger(next, getActiveStorageScope(user));
+        return next;
+      });
+    },
+    [user],
+  );
+
   const activeClientsForList = useMemo(
     () => clients.filter((c) => !isClientArchived(c)),
     [clients],
@@ -632,6 +652,7 @@ function App() {
               clientDebtLedger={clientDebtLedger}
               ledgerReferenceDate={timeInfo.today}
               displayMoney={displayMoney}
+              onUpdateClientDebtLedger={handleUpdateClientDebtLedger}
             />
           </div>
         )}

@@ -602,23 +602,107 @@ export function findSupplierEntry(ledger, supplierId, linkId) {
 }
 
 /**
+ * Anexa dívida ao fornecedor identificado pelo par **supplierId + linkId** (vínculo aprovado).
+ *
  * @param {ClientDebtLedger} ledger
  * @param {string} supplierId
- * @param {ClientDebtDebt} debtDraft
+ * @param {string} linkId
+ * @param {ClientDebtDebt | unknown} debtDraft
  */
-export function appendDebtToSupplierLedger(ledger, supplierId, debtDraft) {
+export function appendDebtToSupplierLedger(ledger, supplierId, linkId, debtDraft) {
   const L = normalizeClientDebtLedger(ledger);
   const sid = typeof supplierId === 'string' ? supplierId.trim() : '';
+  const lid = typeof linkId === 'string' ? linkId.trim() : '';
   const debt = normalizeDebt(debtDraft);
-  if (!sid || !debt) return L;
+  if (!sid || !lid || !debt) return L;
 
-  const idx = L.suppliers.findIndex((s) => s.supplierId === sid);
+  const idx = L.suppliers.findIndex((s) => s.supplierId === sid && s.linkId === lid);
   if (idx < 0) return L;
 
   const nextSuppliers = L.suppliers.map((s, i) => {
     if (i !== idx) return s;
     return normalizeSupplier({ ...s, debts: [...s.debts, debt] });
   });
+  return normalizeClientDebtLedger({ ...L, suppliers: nextSuppliers });
+}
+
+/**
+ * Registra pagamento manual em uma dívida (sem `payment.linkContext`).
+ *
+ * @param {ClientDebtLedger} ledger
+ * @param {string} supplierId
+ * @param {string} linkId
+ * @param {string} debtId
+ * @param {unknown} rawPayment — mínimo: date (YYYY-MM-DD), amount (reais ≥ 0), note?
+ */
+export function appendPaymentToDebt(ledger, supplierId, linkId, debtId, rawPayment) {
+  const L = normalizeClientDebtLedger(ledger);
+  const sid = typeof supplierId === 'string' ? supplierId.trim() : '';
+  const lid = typeof linkId === 'string' ? linkId.trim() : '';
+  const did = typeof debtId === 'string' ? debtId.trim() : '';
+  if (!sid || !lid || !did) return L;
+
+  const pay = normalizePayment(rawPayment);
+  if (!pay) return L;
+
+  const sidx = L.suppliers.findIndex((s) => s.supplierId === sid && s.linkId === lid);
+  if (sidx < 0) return L;
+
+  const sup = L.suppliers[sidx];
+  const didx = sup.debts.findIndex((d) => d.id === did);
+  if (didx < 0) return L;
+
+  const debt = sup.debts[didx];
+  if (debt.status === DEBT_STATUS.ARCHIVED) return L;
+
+  const nextDebts = sup.debts.map((d, i) => {
+    if (i !== didx) return d;
+    return normalizeDebt({ ...d, payments: [...d.payments, pay] });
+  });
+  const nextSuppliers = L.suppliers.map((s, i) =>
+    i === sidx ? normalizeSupplier({ ...sup, debts: nextDebts }) : s,
+  );
+  return normalizeClientDebtLedger({ ...L, suppliers: nextSuppliers });
+}
+
+/**
+ * Atualiza status de uma dívida (ex.: arquivar). Não altera `loanRequests` nem remoto.
+ *
+ * @param {ClientDebtLedger} ledger
+ * @param {string} supplierId
+ * @param {string} linkId
+ * @param {string} debtId
+ * @param {ClientDebtStatus} nextStatus
+ */
+export function updateDebtStatusInLedger(ledger, supplierId, linkId, debtId, nextStatus) {
+  const L = normalizeClientDebtLedger(ledger);
+  const sid = typeof supplierId === 'string' ? supplierId.trim() : '';
+  const lid = typeof linkId === 'string' ? linkId.trim() : '';
+  const did = typeof debtId === 'string' ? debtId.trim() : '';
+  if (!sid || !lid || !did) return L;
+
+  const st =
+    nextStatus === DEBT_STATUS.ACTIVE ||
+    nextStatus === DEBT_STATUS.SETTLED_LOCALLY ||
+    nextStatus === DEBT_STATUS.ARCHIVED
+      ? nextStatus
+      : null;
+  if (!st) return L;
+
+  const sidx = L.suppliers.findIndex((s) => s.supplierId === sid && s.linkId === lid);
+  if (sidx < 0) return L;
+
+  const sup = L.suppliers[sidx];
+  const didx = sup.debts.findIndex((d) => d.id === did);
+  if (didx < 0) return L;
+
+  const nextDebts = sup.debts.map((d, i) => {
+    if (i !== didx) return d;
+    return normalizeDebt({ ...d, status: st });
+  });
+  const nextSuppliers = L.suppliers.map((s, i) =>
+    i === sidx ? normalizeSupplier({ ...sup, debts: nextDebts }) : s,
+  );
   return normalizeClientDebtLedger({ ...L, suppliers: nextSuppliers });
 }
 
