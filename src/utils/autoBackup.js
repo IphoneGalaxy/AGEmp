@@ -5,6 +5,7 @@
  */
 
 import { SCOPE_ANONYMOUS, getScopedAutoBackupsKey } from './storageScope';
+import { normalizeClientDebtLedger } from './clientDebtLedger';
 
 /**
  * Retorna todos os backups automáticos armazenados.
@@ -26,15 +27,26 @@ export const getAutoBackups = (scope = SCOPE_ANONYMOUS) => {
  * Cria um novo backup automático e faz a rotação dos antigos.
  * @param {Array} fundsTransactions - Transações do caixa.
  * @param {Array} clients - Lista de clientes.
+ * @param {unknown} [clientDebtLedger] - Livro «Minhas dívidas» (mesmo shape do backup manual).
  * @param {number} maxBackups - Quantidade máxima de backups a manter.
  * @param {string} [scope]
  * @returns {Array} Lista atualizada de backups.
  */
-export const createAutoBackup = (fundsTransactions, clients, maxBackups = 3, scope = SCOPE_ANONYMOUS) => {
+export const createAutoBackup = (
+  fundsTransactions,
+  clients,
+  clientDebtLedger,
+  maxBackups = 3,
+  scope = SCOPE_ANONYMOUS,
+) => {
   const backups = getAutoBackups(scope);
   const newBackup = {
     timestamp: new Date().toISOString(),
-    data: { fundsTransactions, clients },
+    data: {
+      fundsTransactions,
+      clients,
+      clientDebtLedger: normalizeClientDebtLedger(clientDebtLedger),
+    },
   };
   const updated = [newBackup, ...backups].slice(0, maxBackups);
   const key = getScopedAutoBackupsKey(scope);
@@ -66,7 +78,7 @@ export const getLastAutoBackup = (scope = SCOPE_ANONYMOUS) => {
  * Retorna os dados de um backup por índice.
  * @param {number} index - Índice do backup (0 = mais recente).
  * @param {string} [scope]
- * @returns {{ fundsTransactions: Array, clients: Array } | null}
+ * @returns {{ fundsTransactions: Array, clients: Array, clientDebtLedger?: unknown } | null}
  */
 export const restoreAutoBackup = (index = 0, scope = SCOPE_ANONYMOUS) => {
   const backups = getAutoBackups(scope);

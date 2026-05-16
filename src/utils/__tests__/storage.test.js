@@ -10,6 +10,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { normalizeClients, loadData, saveData, parseBackupFile } from '../storage';
+import { emptyClientDebtLedger, normalizeClientDebtLedger } from '../clientDebtLedger';
 import { SCOPE_ANONYMOUS, getScopedDataKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
 
 // ==================== NORMALIZE CLIENTS ====================
@@ -374,6 +375,59 @@ describe('parseBackupFile', () => {
 
     const result = await parseBackupFile(file);
     expect(result.clients).toEqual([]);
+  });
+
+  it('aceita backup com clientDebtLedger presente (parse não normaliza)', async () => {
+    const ledger = normalizeClientDebtLedger({
+      suppliers: [{ supplierId: 's1', linkId: 'l1', debts: [] }],
+    });
+    const data = {
+      fundsTransactions: [],
+      clients: [{ id: 'c1', name: 'Ana', loans: [] }],
+      clientDebtLedger: ledger,
+    };
+    const file = createMockFile(JSON.stringify(data));
+
+    const result = await parseBackupFile(file);
+
+    expect(result.clientDebtLedger).toEqual(ledger);
+    expect(normalizeClientDebtLedger(result.clientDebtLedger ?? undefined)).toEqual(ledger);
+  });
+
+  it('backup sem clientDebtLedger: restore deve usar ledger vazio após normalizar', async () => {
+    const data = { fundsTransactions: [], clients: [{ id: 'c1', name: 'Ana', loans: [] }] };
+    const file = createMockFile(JSON.stringify(data));
+
+    const result = await parseBackupFile(file);
+
+    expect(result.clientDebtLedger).toBeUndefined();
+    expect(normalizeClientDebtLedger(result.clientDebtLedger ?? undefined)).toEqual(emptyClientDebtLedger());
+  });
+
+  it('backup com clientDebtLedger null: normalização vira ledger vazio', async () => {
+    const data = {
+      clients: [],
+      clientDebtLedger: null,
+    };
+    const file = createMockFile(JSON.stringify(data));
+    const result = await parseBackupFile(file);
+    expect(normalizeClientDebtLedger(result.clientDebtLedger ?? undefined)).toEqual(emptyClientDebtLedger());
+  });
+
+  it('round-trip JSON manual espelha export estável (funds + clients + ledger)', async () => {
+    const ledger = normalizeClientDebtLedger({
+      suppliers: [{ supplierId: 's1', linkId: 'l1', debts: [] }],
+    });
+    const payload = {
+      fundsTransactions: [{ id: 'f1', date: '2025-01-01', amount: 100 }],
+      clients: [{ id: 'c1', name: 'Bob', loans: [] }],
+      clientDebtLedger: normalizeClientDebtLedger(ledger),
+    };
+    const file = createMockFile(JSON.stringify(payload, null, 2));
+    const parsed = await parseBackupFile(file);
+    expect(normalizeClientDebtLedger(parsed.clientDebtLedger ?? undefined)).toEqual(ledger);
+    expect(parsed.fundsTransactions).toHaveLength(1);
+    expect(parsed.clients).toHaveLength(1);
   });
 
   it('aceita backup com dados de formato antigo (transactions)', async () => {

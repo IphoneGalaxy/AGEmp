@@ -129,9 +129,14 @@ export const saveData = (fundsTransactions, clients, scope = SCOPE_ANONYMOUS) =>
  * Exporta os dados como arquivo .txt para download.
  * @param {Array} fundsTransactions - Transações do caixa.
  * @param {Array} clients - Lista de clientes.
+ * @param {unknown} [clientDebtLedger] - Livro «Minhas dívidas» (normalizado na exportação).
  */
-export const exportBackup = (fundsTransactions, clients) => {
-  const data = { fundsTransactions, clients };
+export const exportBackup = (fundsTransactions, clients, clientDebtLedger) => {
+  const data = {
+    fundsTransactions,
+    clients,
+    clientDebtLedger: normalizeClientDebtLedger(clientDebtLedger),
+  };
   const dataStr = JSON.stringify(data, null, 2);
   const blob = new Blob([dataStr], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
@@ -147,7 +152,7 @@ export const exportBackup = (fundsTransactions, clients) => {
 /**
  * Lê e valida um arquivo de backup importado.
  * @param {File} file - Arquivo selecionado pelo input.
- * @returns {Promise<{ fundsTransactions: Array, clients: Array }>}
+ * @returns {Promise<{ fundsTransactions: Array, clients: Array, clientDebtLedger?: unknown }>}
  */
 export const parseBackupFile = (file) => {
   return new Promise((resolve, reject) => {

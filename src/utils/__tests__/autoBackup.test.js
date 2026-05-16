@@ -17,7 +17,10 @@ import {
   restoreAutoBackup,
   getAutoBackupCount,
 } from '../autoBackup';
+import { emptyClientDebtLedger, normalizeClientDebtLedger } from '../clientDebtLedger';
 import { SCOPE_ANONYMOUS, getScopedAutoBackupsKey, migrateLegacyKeysToAnonymousScope } from '../storageScope';
+
+const emptyLedger = () => emptyClientDebtLedger();
 
 describe('autoBackup', () => {
   const backupKey = () => getScopedAutoBackupsKey(SCOPE_ANONYMOUS);
@@ -36,7 +39,10 @@ describe('autoBackup', () => {
 
     it('retorna backups armazenados', () => {
       const backups = [
-        { timestamp: '2025-03-15T10:00:00.000Z', data: { fundsTransactions: [], clients: [] } },
+        {
+          timestamp: '2025-03-15T10:00:00.000Z',
+          data: { fundsTransactions: [], clients: [], clientDebtLedger: emptyLedger() },
+        },
       ];
       localStorage.setItem(backupKey(), JSON.stringify(backups));
 
@@ -57,18 +63,26 @@ describe('autoBackup', () => {
       const funds = [{ id: 'f1', amount: 1000 }];
       const clients = [{ id: 'c1', name: 'Ana', loans: [] }];
 
-      const result = createAutoBackup(funds, clients, 3);
+      const result = createAutoBackup(funds, clients, emptyLedger(), 3);
 
       expect(result).toHaveLength(1);
       expect(result[0].data.fundsTransactions).toEqual(funds);
       expect(result[0].data.clients).toEqual(clients);
+      expect(result[0].data.clientDebtLedger).toEqual(emptyLedger());
       expect(result[0].timestamp).toBeDefined();
+    });
+
+    it('normaliza clientDebtLedger no snapshot', () => {
+      const raw = { suppliers: null };
+      createAutoBackup([], [], raw, 3);
+      const stored = JSON.parse(localStorage.getItem(backupKey()));
+      expect(stored[0].data.clientDebtLedger).toEqual(emptyLedger());
     });
 
     it('adiciona novo backup no início da lista', () => {
       // Cria dois backups
-      createAutoBackup([], [{ id: 'c1', name: 'Primeiro', loans: [] }], 3);
-      const result = createAutoBackup([], [{ id: 'c2', name: 'Segundo', loans: [] }], 3);
+      createAutoBackup([], [{ id: 'c1', name: 'Primeiro', loans: [] }], emptyLedger(), 3);
+      const result = createAutoBackup([], [{ id: 'c2', name: 'Segundo', loans: [] }], emptyLedger(), 3);
 
       expect(result).toHaveLength(2);
       expect(result[0].data.clients[0].name).toBe('Segundo'); // mais recente primeiro
@@ -76,9 +90,9 @@ describe('autoBackup', () => {
     });
 
     it('respeita o limite máximo de backups', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'B1', loans: [] }], 2);
-      createAutoBackup([], [{ id: 'c2', name: 'B2', loans: [] }], 2);
-      const result = createAutoBackup([], [{ id: 'c3', name: 'B3', loans: [] }], 2);
+      createAutoBackup([], [{ id: 'c1', name: 'B1', loans: [] }], emptyLedger(), 2);
+      createAutoBackup([], [{ id: 'c2', name: 'B2', loans: [] }], emptyLedger(), 2);
+      const result = createAutoBackup([], [{ id: 'c3', name: 'B3', loans: [] }], emptyLedger(), 2);
 
       expect(result).toHaveLength(2);
       expect(result[0].data.clients[0].name).toBe('B3'); // mais recente
@@ -87,25 +101,25 @@ describe('autoBackup', () => {
     });
 
     it('persiste no localStorage', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'Test', loans: [] }], 3);
+      createAutoBackup([], [{ id: 'c1', name: 'Test', loans: [] }], emptyLedger(), 3);
 
       const stored = JSON.parse(localStorage.getItem(backupKey()));
       expect(stored).toHaveLength(1);
     });
 
     it('funciona com maxBackups = 1', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }], 1);
-      const result = createAutoBackup([], [{ id: 'c2', name: 'B', loans: [] }], 1);
+      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }], emptyLedger(), 1);
+      const result = createAutoBackup([], [{ id: 'c2', name: 'B', loans: [] }], emptyLedger(), 1);
 
       expect(result).toHaveLength(1);
       expect(result[0].data.clients[0].name).toBe('B');
     });
 
     it('usa maxBackups padrão de 3 quando não especificado', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }]);
-      createAutoBackup([], [{ id: 'c2', name: 'B', loans: [] }]);
-      createAutoBackup([], [{ id: 'c3', name: 'C', loans: [] }]);
-      const result = createAutoBackup([], [{ id: 'c4', name: 'D', loans: [] }]);
+      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }], emptyLedger());
+      createAutoBackup([], [{ id: 'c2', name: 'B', loans: [] }], emptyLedger());
+      createAutoBackup([], [{ id: 'c3', name: 'C', loans: [] }], emptyLedger());
+      const result = createAutoBackup([], [{ id: 'c4', name: 'D', loans: [] }], emptyLedger());
 
       expect(result).toHaveLength(3);
       expect(result[0].data.clients[0].name).toBe('D');
@@ -120,8 +134,8 @@ describe('autoBackup', () => {
     });
 
     it('retorna o backup mais recente', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'Antigo', loans: [] }], 3);
-      createAutoBackup([], [{ id: 'c2', name: 'Recente', loans: [] }], 3);
+      createAutoBackup([], [{ id: 'c1', name: 'Antigo', loans: [] }], emptyLedger(), 3);
+      createAutoBackup([], [{ id: 'c2', name: 'Recente', loans: [] }], emptyLedger(), 3);
 
       const last = getLastAutoBackup();
 
@@ -134,8 +148,8 @@ describe('autoBackup', () => {
 
   describe('restoreAutoBackup', () => {
     it('retorna dados do backup no índice especificado', () => {
-      createAutoBackup([{ id: 'f1', amount: 100 }], [{ id: 'c1', name: 'A', loans: [] }], 5);
-      createAutoBackup([{ id: 'f2', amount: 200 }], [{ id: 'c2', name: 'B', loans: [] }], 5);
+      createAutoBackup([{ id: 'f1', amount: 100 }], [{ id: 'c1', name: 'A', loans: [] }], emptyLedger(), 5);
+      createAutoBackup([{ id: 'f2', amount: 200 }], [{ id: 'c2', name: 'B', loans: [] }], emptyLedger(), 5);
 
       // Índice 0 = mais recente (B)
       const latest = restoreAutoBackup(0);
@@ -146,15 +160,37 @@ describe('autoBackup', () => {
       expect(previous.clients[0].name).toBe('A');
     });
 
+    it('preserva clientDebtLedger normalizado no restore', () => {
+      const ledger = normalizeClientDebtLedger({
+        suppliers: [{ supplierId: 's1', linkId: 'l1', debts: [] }],
+      });
+      createAutoBackup([], [], ledger, 3);
+      const latest = restoreAutoBackup(0);
+      expect(latest.clientDebtLedger).toEqual(ledger);
+    });
+
     it('retorna null para índice fora do range', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }], 3);
+      createAutoBackup([], [{ id: 'c1', name: 'A', loans: [] }], emptyLedger(), 3);
 
       expect(restoreAutoBackup(5)).toBeNull();
       expect(restoreAutoBackup(1)).toBeNull();
     });
 
+    it('restore de snapshot legado sem clientDebtLedger não inclui a chave em data', () => {
+      const legacy = [
+        {
+          timestamp: '2020-01-01T00:00:00.000Z',
+          data: { fundsTransactions: [], clients: [{ id: 'c1', name: 'Legado', loans: [] }] },
+        },
+      ];
+      localStorage.setItem(backupKey(), JSON.stringify(legacy));
+      const data = restoreAutoBackup(0);
+      expect(data.clientDebtLedger).toBeUndefined();
+      expect(data.clients[0].name).toBe('Legado');
+    });
+
     it('usa índice 0 por padrão', () => {
-      createAutoBackup([], [{ id: 'c1', name: 'Único', loans: [] }], 3);
+      createAutoBackup([], [{ id: 'c1', name: 'Único', loans: [] }], emptyLedger(), 3);
 
       const result = restoreAutoBackup();
       expect(result.clients[0].name).toBe('Único');
@@ -173,18 +209,18 @@ describe('autoBackup', () => {
     });
 
     it('retorna contagem correta', () => {
-      createAutoBackup([], [], 5);
-      createAutoBackup([], [], 5);
-      createAutoBackup([], [], 5);
+      createAutoBackup([], [], emptyLedger(), 5);
+      createAutoBackup([], [], emptyLedger(), 5);
+      createAutoBackup([], [], emptyLedger(), 5);
 
       expect(getAutoBackupCount()).toBe(3);
     });
 
     it('contagem respeita o limite de rotação', () => {
-      createAutoBackup([], [], 2);
-      createAutoBackup([], [], 2);
-      createAutoBackup([], [], 2);
-      createAutoBackup([], [], 2);
+      createAutoBackup([], [], emptyLedger(), 2);
+      createAutoBackup([], [], emptyLedger(), 2);
+      createAutoBackup([], [], emptyLedger(), 2);
+      createAutoBackup([], [], emptyLedger(), 2);
 
       expect(getAutoBackupCount()).toBe(2);
     });

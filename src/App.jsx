@@ -317,10 +317,25 @@ function App() {
       return;
     }
     if (pendingAutoBackup.current && settings.autoBackupEnabled) {
-      createAutoBackup(fundsTransactions, clients, settings.maxAutoBackups, scope);
+      createAutoBackup(
+        fundsTransactions,
+        clients,
+        clientDebtLedger,
+        settings.maxAutoBackups,
+        scope,
+      );
       pendingAutoBackup.current = false;
     }
-  }, [fundsTransactions, clients, loanRequestConversionRegistry, settings, user?.uid, bootstrapped, legacyModalOpen]);
+  }, [
+    fundsTransactions,
+    clients,
+    clientDebtLedger,
+    loanRequestConversionRegistry,
+    settings,
+    user?.uid,
+    bootstrapped,
+    legacyModalOpen,
+  ]);
 
   const triggerAutoBackup = () => {
     pendingAutoBackup.current = true;
@@ -341,7 +356,7 @@ function App() {
   );
 
   const handleExportBackup = () => {
-    exportBackup(fundsTransactions, clients);
+    exportBackup(fundsTransactions, clients, clientDebtLedger);
     showToast('✅ Backup salvo no celular!');
   };
 
@@ -360,12 +375,16 @@ function App() {
             '⚠️ ATENÇÃO: Isso vai apagar os dados atuais e carregar o backup. Deseja continuar?'
           )
         ) {
+          const scope = getActiveStorageScope(user);
           const normalizedClients = normalizeClients(
             parsed.clients,
-            settings.defaultInterestRate || 10
+            settings.defaultInterestRate || 10,
           );
+          const nextLedger = normalizeClientDebtLedger(parsed.clientDebtLedger ?? undefined);
           setFundsTransactions(parsed.fundsTransactions || []);
           setClients(normalizedClients);
+          setClientDebtLedger(nextLedger);
+          saveClientDebtLedger(nextLedger, scope);
           triggerAutoBackup();
           showToast('✅ Backup restaurado com sucesso!');
         }
@@ -389,8 +408,11 @@ function App() {
       return false;
     }
     const normalizedClients = normalizeClients(backup.clients, settings.defaultInterestRate || 10);
+    const nextLedger = normalizeClientDebtLedger(backup.clientDebtLedger ?? undefined);
     setFundsTransactions(backup.fundsTransactions || []);
     setClients(normalizedClients);
+    setClientDebtLedger(nextLedger);
+    saveClientDebtLedger(nextLedger, scope);
     triggerAutoBackup();
     showToast('✅ Backup automático restaurado!');
     return true;
@@ -471,6 +493,7 @@ function App() {
         saveClientDebtLedger(next, getActiveStorageScope(user));
         return next;
       });
+      triggerAutoBackup();
     },
     [user],
   );
