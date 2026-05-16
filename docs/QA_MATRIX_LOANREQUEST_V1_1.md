@@ -214,7 +214,25 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 - **A2b/A2c** (continuam backlog).
 - Backup/export do registry local se necessário.
 - Melhoria visual / extração de componentes se necessário.
-- **Financeiro Local do Cliente («Minhas dívidas»):** **em entrega parcial** — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente; backup/export/import/auto-backup **incluem** **`clientDebtLedger`** (**`40fa3a4`**, **dados locais neste aparelho**); smoke/QA adicional: export → import; arquivo legado sem `clientDebtLedger`; auto-backup após edição do ledger — [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md).
+- **Financeiro Local do Cliente («Minhas dívidas»):** **funcionalmente fechado nesta etapa** (**Subfases A–D3**, **`5fc8a58`** … **`eedbd2e`**) — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente (**pedido aprovado ≠ dívida local automática**); **`clientDebtLedger`** **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**; backup/export/import/auto-backup **incluem** o ledger (**dados locais neste aparelho**); **sem sincronização financeira remota** — o fornecedor **não** acede automaticamente ao financeiro local do cliente neste modelo; smoke manual **D3** **OK integral**, **sem NOK crítico** (**2026-05-17**) — ADR §20 e § dedicado abaixo; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **intocados** nesta linha — [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md).
+
+---
+
+## Smoke manual — «Minhas dívidas» (Subfase D3)
+
+**Data:** 2026-05-17 · **Executor:** operador humano · **Resultado:** **OK integral** · **NOK crítico:** nenhum informado
+
+| # | Cenário | Resultado |
+|---|---------|-----------|
+| 1 | Criar dívida manual em fornecedor com vínculo aprovado | OK |
+| 2 | Registar pagamento parcial | OK |
+| 3 | Criar dívida local a partir de pedido **approved**, com confirmação explícita | OK |
+| 4 | Confirmar que **pedido approved não cria dívida local automaticamente** | OK |
+| 5 | Exportar backup e verificar **`clientDebtLedger`** no ficheiro | OK |
+| 6 | Importar/restaurar backup e confirmar retorno dos dados | OK |
+| 7 | Trocar conta/escopo sem misturar dados | OK |
+| 8 | Confirmar que fornecedor **não vê** automaticamente o financeiro local do cliente | OK |
+| 9 | Confirmar que dashboard/cálculos principais **não** foram afetados negativamente | OK |
 
 ---
 
@@ -236,5 +254,5 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 | 2026-05-04 | **Bloco 2 implementado + Bloco2-E:** **`624c725`**, **`3badcbc`**, **`5dd4c36`**; smoke OK; § Bloco 2 nesta matriz; guardrails MVP preservados. |
 | 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**. |
 | 2026-05-05 | **«Visão Fornecedores + Governança local» — Pacotes 1–3:** fecho documental § dedicado nesta matriz; commits **`0be3e0b`**, **`c921d8d`**, **`a6c2d8c`**; sem mudança Firestore/rules — [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md). |
-| 2026-05-16 | **«Minhas dívidas» — backup com `clientDebtLedger`:** **`40fa3a4`**; § backlog «Minhas dívidas» atualizado; smoke recomendado export/import/auto-backup — ADR §18. |
-| 2026-05-05 | Mini ADR [`ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md`](./ADR_IDENTIDADE_PUBLICA_SNAPSHOTS_NOMES.md) — **Subfase 0** só docs; implementação §13 posterior. |
+| 2026-05-16 | **«Minhas dívidas» — backup com `clientDebtLedger`:** **`40fa3a4`**; § backlog/smoke atualizados — ADR §18 (época D2). |
+| 2026-05-17 | **Smoke manual D3 OK integral:** linha «Minhas dívidas» **funcionalmente fechada nesta etapa** (ADR §20; § smoke nesta matriz); **sem NOK crítico** informado; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados nesta linha. |

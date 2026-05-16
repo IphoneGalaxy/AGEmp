@@ -4,9 +4,9 @@
 **Projeto:** AGEmp / Finanças Pro  
 **Escopo:** Evoluir a aba **Fornecedores** (papel **Cliente**) para uma superfície útil de **controle local-first das dívidas do cliente por fornecedor**, preservando a separação entre **plataforma remota pré-financeira** e **financeiro local**.
 
-**Estado da fase:** **em implementação parcial no código** — Subfases **A**, **B**, **C** e **D1** entregues (`5fc8a58`, `e24eb25`, `0f2c43b`, `40fa3a4`); **Subfase D2** (só docs) registra o fecho documental da **D1**; restante da **Subfase D** e **Subfase E** continuam planejadas conforme §13.
+**Estado da fase:** **funcionalmente fechada nesta etapa** (entrega «Minhas dívidas» — Fase 1 documentada): Subfases **A**, **B**, **C**, **D1**, **D2** e **D3** **concluídas** (`5fc8a58`, `e24eb25`, `0f2c43b`, `40fa3a4`, `eedbd2e`, smoke **D3** registrado **2026-05-17**). O **`clientDebtLedger`** permanece **dados locais neste aparelho** (por escopo), **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**, incluído em backup/export/import/auto-backup, **sem sincronização financeira remota** com o fornecedor e **sem** Firebase como fonte financeira autoritativa do passivo local; **`pedido aprovado` na plataforma não cria dívida local automaticamente**. Evoluções (**Subfase E**, Painel global, alinhamento ao motor central, UX avançada) ficam **backlog** mediante ADR/decisão própria — §18.
 
-**Data do documento:** 2026-05-04 · **Atualização registro D1/D2:** 2026-05-16
+**Data do documento:** 2026-05-04 · **Registros D1/D2:** 2026-05-16 · **Registro D3 (smoke + docs):** 2026-05-17
 
 ---
 
@@ -169,10 +169,11 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - **Subfase A — Fundamentos locais:** **concluída** (`5fc8a58`) — storage `clientDebtLedger` + normalização + helpers de cálculo/derivação + testes unitários.
 - **Subfase B — Resumo na aba Fornecedores:** **concluída** (`e24eb25`) — KPIs «Minhas dívidas» + lista por fornecedor **sem** alterar dados remotos.
 - **Subfase C — Detalhe do fornecedor:** **concluída** (`0f2c43b`) — dívidas locais + pagamentos + pedidos remotos lado a lado, CTAs claros; confirmação explícita para dívida local; **sem** sync financeiro remoto.
-- **Subfase D — Operações secundárias (parcial):**
-  - **D1 — Backup/export/import/autoBackup:** **concluída** (`40fa3a4`) — campo raiz **`clientDebtLedger`** no JSON de backup manual e em `data` dos snapshots automáticos; import e restauração aplicam **`normalizeClientDebtLedger`** (ausência do campo ⇒ ledger vazio válido); ledger permanece **fora** de **`clients[]`**, **fora** de **`loanRequestConversionRegistry`** e **fora** do Firebase; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **não** foram alterados nesta entrega.
-  - **D2 — Registro documental (fecho da D1):** atualização dos docs vivos listados na própria execução (**2026-05-16**) — **sem** mudança em `src/`.
-  - **Restante da Subfase D (backlog):** vencimentos/lembretes refinados no produto; eventual **arquivamento local do ledger** como operação dedicada na UX se ainda não coberta pelo fluxo atual; outros refinamentos **locais neste aparelho** acordados em sprint própria.
+- **Subfase D — Operações secundárias (entrega desta etapa fechada):**
+  - **D1 — Backup/export/import/autoBackup:** **concluída** (`40fa3a4`) — campo raiz **`clientDebtLedger`** no JSON de backup manual e em `data` dos snapshots automáticos; import e restauração aplicam **`normalizeClientDebtLedger`** (ausência do campo ⇒ ledger vazio válido); ledger permanece **fora** de **`clients[]`**, **fora** de **`loanRequestConversionRegistry`** e **fora** do Firebase como autoritativo financeiro; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **não** foram alterados nesta linha.
+  - **D2 — Registro documental (fecho da D1):** **`eedbd2e`** (**2026-05-16**) — atualização dos docs vivos — **sem** mudança em `src/`.
+  - **D3 — Registro documental + smoke manual final:** **concluída** (**2026-05-17**) — ver §20; operador humano atesta **OK integral** nos cenários listados; **sem NOK crítico informado** — **sem** mudança em `src/` nesta rodada documental.
+  - **Backlog evolutivo (não é falha de encerramento):** refinamentos de vencimentos/lembretes **locais neste aparelho**; refinamento visual da aba Fornecedores / detalhe do fornecedor; limites de **`localStorage`** conforme volume de dívidas/backups; exportação/relatório específico das dívidas do cliente; **Subfase E** / Painel global / possível alinhamento futuro ao **`calculations.js`** — **somente** com ADR própria; **sync financeiro remoto** continua **fora de escopo** até decisão explícita.
 - **Subfase E — Avaliação:** eventual integração ao **Painel**/motor central ou fusão conceitual com `clients[]` — **somente** com ADR próprio + decisão explícita sobre `calculations.js` (**não iniciar** sem ADR).
 
 ---
@@ -185,8 +186,9 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - Fase 1: apenas fornecedores com vínculo **aprovado**.
 - Pedidos **`loanRequests`** continuam pré-financeiros; mudanças remotas **não** reescrevem saldos locais sem ação local.
 - **Sem** `payment.linkContext`; **sem** sync financeiro remoto; **sem** contrato remoto.
-- **`calculations.js`** permanece **inalterado** na primeira entrega técnica desta linha (**Subfases A–D1** entregues; **Subfase E** não iniciada).
+- **`calculations.js`** permanece **inalterado** na entrega desta linha até **Subfase E** (se alguma vez autorizada por ADR).
 - Backup/import/auto-backup: arquivo `.txt` inclui **`clientDebtLedger`** normalizado; restauração **substitui** o ledger do escopo atual pelo do arquivo (sem merge), com confirmação no fluxo manual já existente no app.
+- **Smoke manual Subfase D3:** executado com **sucesso**, **sem NOK crítico** — §20.
 
 ---
 
@@ -197,6 +199,7 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - Fluxos UX: criar dívida manual; criar a partir de pedido **aprovado** com confirmação; garantir que **`approved` remoto sozinho** não cria linha local.
 - Regressão: **`loanRequests`** e vínculos **não** passam a gravar financeiro central (`clients[]`) por conta desta feature.
 - Backup/import (**D1 — entregue):** compatibilidade com backups antigos sem o campo `clientDebtLedger`; dados inválidos absorvidos por **`normalizeClientDebtLedger`**; cobertura em `storage.test.js` / `autoBackup.test.js` (Vitest).
+- **Smoke manual D3:** evidência humana complementar registada em §20 (**OK integral**, sem NOK crítico).
 
 ---
 
@@ -218,16 +221,15 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 - **Não** criar contrato financeiro remoto.
 - **Não** sincronizar financeiro com o fornecedor.
 - **Não** criar **`payment.linkContext`**.
-- **Não** alterar **`calculations.js`** na primeira fase (**Subfases A–D1** entregues; **Subfase E** não iniciada).
+- **Não** alterar **`calculations.js`** nesta linha até **Subfase E** ou ADR própria (**Subfases A–D3** entregues nesta etapa).
 - **Não** usar vínculo remoto como permissão obrigatória para registrar pagamento local (é livro próprio do cliente — vínculo só delimita **fornecedores elegíveis na Fase 1**).
 
 ---
 
 ## 18. Próxima ação recomendada
 
-1. **Smoke manual** focado em backup/import/auto-backup com **`clientDebtLedger`** (exportar → importar em escopo limpo; arquivo legado sem o campo; restaurar último auto-backup após editar dívidas locais) — integrar ao encerramento da linha ou à **Subfase D3** se formalizada.
-2. Priorizar **resto da Subfase D** (vencimentos/lembretes, refinamentos UX **locais neste aparelho**) ou **fechamento administrativo** da entrega «Minhas dívidas» conforme roadmap do produto — **sem** integração ao dashboard global (**Subfase E**) sem ADR própria.
-3. Manter **backlog explícito:** refinamento visual do detalhe do fornecedor; integração futura ao Painel mediante ADR; eventual alinhamento de cálculo do ledger ao motor central se o produto decidir.
+1. Tratar evoluções como **backlog priorizado pelo produto** — §13 (Subfase D backlog) e §16 (riscos residuais); **não** abrir integração ao Painel global (**Subfase E**), sync financeiro remoto nem alteração a **`calculations.js`** sem **ADR própria**.
+2. **Backlog explícito (sem nova implementação nesta rodada):** refinamento visual da aba Fornecedores / detalhe do fornecedor; vencimentos/lembretes **locais neste aparelho** mais avançados; limites/tamanho de **`localStorage`** conforme volume de dívidas/backups; possível alinhamento futuro do **`clientDebtLedger`** com **`calculations.js`** mediante ADR própria; possível integração futura com dashboard global mediante ADR própria; possível melhoria de exportação/relatório específico das dívidas do cliente; **sync financeiro remoto** continua **fora do escopo** até decisão própria.
 
 ---
 
@@ -237,3 +239,24 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 |------|------|
 | 2026-05-04 | Versão inicial — ADR/plano documental; sem mudanças em `src/`, `firestore.rules`, `calculations.js` nem testes. |
 | 2026-05-16 | **Subfase D1 entregue no código** (`40fa3a4`): backup/export/import/auto-backup incluem **`clientDebtLedger`** normalizado; compatível com backups antigos; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados; **Subfase D2** atualiza só documentação viva (este arquivo e correlatos). |
+| 2026-05-17 | **Subfase D3 documental:** smoke manual final **OK integral**, **sem NOK crítico** (§20); linha «Minhas dívidas» registada como **funcionalmente fechada nesta etapa**; **`eedbd2e`** (D2) + docs D3 — **sem** `src/`. |
+
+---
+
+## 20. Smoke manual — Subfase D3 (registro operador humano)
+
+**Data do registro:** 2026-05-17 · **Resultado:** **OK integral** · **NOK crítico:** **nenhum informado**
+
+Execução humana confirmou (entre outros):
+
+- criar dívida manual em fornecedor com vínculo aprovado — **OK**
+- registar pagamento parcial — **OK**
+- criar dívida local a partir de pedido **approved**, com confirmação explícita — **OK**
+- **pedido approved não cria dívida local automaticamente** — **OK**
+- exportar backup e verificar presença de **`clientDebtLedger`** — **OK**
+- importar/restaurar backup e confirmar retorno coerente dos **dados locais neste aparelho** — **OK**
+- troca de conta/escopo **sem** misturar dados entre sessões — **OK**
+- **fornecedor não acede automaticamente ao financeiro local do cliente** (ledger não sincronizado na plataforma como extrato conjunto) — **OK**
+- painel/dashboard e cálculos principais do núcleo existente **sem regressão observada** neste smoke — **OK**
+
+**Nota:** Firebase permanece camada **pré-financeira / relacional** para pedidos e vínculos — **não** fonte autoritativa do **`clientDebtLedger`**.
