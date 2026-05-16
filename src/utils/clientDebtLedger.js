@@ -81,6 +81,19 @@ export const PAYMENT_SOURCE = Object.freeze({
   MANUAL: 'manual',
 });
 
+/** Lembrete visual derivado (UI); não altera motor financeiro nem persistência. */
+export const DEBT_DUE_REMINDER_KIND = Object.freeze({
+  SETTLED_LOCALLY: 'settledLocally',
+  ARCHIVED: 'archived',
+  NO_DUE: 'noDue',
+  OVERDUE: 'overdue',
+  UPCOMING: 'upcoming',
+  ON_TRACK: 'onTrack',
+});
+
+/** Janela em dias civis (inclui o vencimento) para classificar como «próximo». */
+export const DEBT_DUE_UPCOMING_WINDOW_DAYS = 7;
+
 /** Status remoto de pedido aprovado (string estável; evita importar `firebase/loanRequests`). */
 export const LOAN_REQUEST_APPROVED_STATUS = 'approved';
 
@@ -140,6 +153,170 @@ export function parseYearMonthDay(dateStr) {
     return null;
   }
   return { year, month0 };
+}
+
+/**
+ * Último dia (1–31) do mês civil (monthIndex 0–11).
+ * @param {number} year
+ * @param {number} month0
+ */
+export function lastDayOfCalendarMonth(year, month0) {
+  if (!Number.isFinite(year) || !Number.isFinite(month0)) return 31;
+  const m = Math.min(11, Math.max(0, Math.floor(month0)));
+  return new Date(year, m + 1, 0).getDate();
+}
+
+/**
+ * «Hoje» / dia de referência em ISO local (YYYY-MM-DD), alinhado ao calendário do aparelho.
+ * @param {Date} [referenceDate]
+ */
+export function formatReferenceDayIso(referenceDate = new Date()) {
+  const d =
+    referenceDate instanceof Date && !Number.isNaN(referenceDate.getTime())
+      ? referenceDate
+      : new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * Diferença em dias civis entre duas datas ISO (meio-dia local para evitar DST edge).
+ * @param {string} fromIso YYYY-MM-DD
+ * @param {string} toIso YYYY-MM-DD
+ */
+export function calendarDaysBetweenIso(fromIso, toIso) {
+  const a = normalizeIsoDateString(fromIso);
+  const b = normalizeIsoDateString(toIso);
+  if (!a || !b) return NaN;
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  const t0 = new Date(ay, am - 1, ad, 12, 0, 0, 0).getTime();
+  const t1 = new Date(by, bm - 1, bd, 12, 0, 0, 0).getTime();
+  return Math.round((t1 - t0) / 86400000);
+}
+
+/**
+ * Data efetiva de vencimento para lembrete: `dueDate` tem prioridade sobre `dueDay`
+ * (mês civil de `referenceDate`; dia clampado ao fim do mês).
+ *
+ * @param {ClientDebtDebt | unknown} debt
+ * @param {Date} [referenceDate]
+ * @returns {string} YYYY-MM-DD ou '' se sem vencimento derivável
+ */
+export function deriveDebtDueEffectiveIso(debt, referenceDate = new Date()) {
+  const d = normalizeDebt(debt);
+  if (!d) return '';
+  const fixed = normalizeIsoDateString(d.dueDate);
+  if (fixed) return fixed;
+  if (typeof d.dueDay !== 'number' || !Number.isFinite(d.dueDay)) return '';
+  const refDay = formatReferenceDayIso(referenceDate);
+  const ym = parseYearMonthDay(refDay);
+  if (!ym) return '';
+  const last = lastDayOfCalendarMonth(ym.year, ym.month0);
+  const rawDay = Math.floor(d.dueDay);
+  if (rawDay < 1) return '';
+  const day = Math.min(rawDay, last);
+  const mm = String(ym.month0 + 1).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  return `${ym.year}-${mm}-${dd}`;
+}
+
+/**
+ * Lembrete visual por dívida (local, derivado). Não grava estado novo.
+ *
+ * @param {ClientDebtDebt | unknown} debt
+ * @param {Date} [referenceDate]
+ * @returns {{
+ *   kind: string;
+ *   dueEffectiveIso: string;
+ *   daysUntilDue: number | null;
+ * }} `daysUntilDue` — dias até o vencimento quando futuro ou hoje; `null` se atrasado ou sem vencimento.
+ */
+export function deriveDebtDueReminder(debt, referenceDate = new Date()) {
+  const normalized = normalizeDebt(debt);
+  const refInvalid = !(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime());
+  const refDay = refInvalid ? formatReferenceDayIso(new Date()) : formatReferenceDayIso(referenceDate);
+
+  if (!normalized) {
+    return { kind: DEBT_DUE_REMINDER_KIND.NO_DUE, dueEffectiveIso: '', daysUntilDue: null };
+  }
+  if (normalized.status === DEBT_STATUS.SETTLED_LOCALLY) {
+    return { kind: DEBT_DUE_REMINDER_KIND.SETTLED_LOCALLY, dueEffectiveIso: '', daysUntilDue: null };
+  }
+  if (normalized.status === DEBT_STATUS.ARCHIVED) {
+    return { kind: DEBT_DUE_REMINDER_KIND.ARCHIVED, dueEffectiveIso: '', daysUntilDue: null };
+  }
+
+  const dueEff = deriveDebtDueEffectiveIso(normalized, refInvalid ? new Date() : referenceDate);
+  if (!dueEff) {
+    return { kind: DEBT_DUE_REMINDER_KIND.NO_DUE, dueEffectiveIso: '', daysUntilDue: null };
+  }
+
+  if (dueEff < refDay) {
+    return {
+      kind: DEBT_DUE_REMINDER_KIND.OVERDUE,
+      dueEffectiveIso: dueEff,
+      daysUntilDue: null,
+    };
+  }
+
+  const daysUntil = calendarDaysBetweenIso(refDay, dueEff);
+  if (!Number.isFinite(daysUntil)) {
+    return { kind: DEBT_DUE_REMINDER_KIND.NO_DUE, dueEffectiveIso: dueEff, daysUntilDue: null };
+  }
+  if (daysUntil <= DEBT_DUE_UPCOMING_WINDOW_DAYS) {
+    return {
+      kind: DEBT_DUE_REMINDER_KIND.UPCOMING,
+      dueEffectiveIso: dueEff,
+      daysUntilDue: daysUntil,
+    };
+  }
+  return {
+    kind: DEBT_DUE_REMINDER_KIND.ON_TRACK,
+    dueEffectiveIso: dueEff,
+    daysUntilDue: daysUntil,
+  };
+}
+
+const SUPPLIER_DUE_RANK = Object.freeze({
+  [DEBT_DUE_REMINDER_KIND.OVERDUE]: 4,
+  [DEBT_DUE_REMINDER_KIND.UPCOMING]: 3,
+  [DEBT_DUE_REMINDER_KIND.ON_TRACK]: 2,
+  [DEBT_DUE_REMINDER_KIND.NO_DUE]: 1,
+  none: 0,
+});
+
+/**
+ * Agrega lembrete por fornecedor: pior estado entre dívidas **active** (settled/archived fora do ranking).
+ *
+ * @param {ClientDebtSupplier | unknown} supplier
+ * @param {Date} [referenceDate]
+ * @returns {{ worstKind: string; worstRank: number }}
+ */
+export function deriveSupplierDueSummary(supplier, referenceDate = new Date()) {
+  const s = normalizeSupplier(supplier);
+  if (!s || !Array.isArray(s.debts) || s.debts.length === 0) {
+    return { worstKind: 'none', worstRank: 0 };
+  }
+  let worstKind = 'none';
+  let worstRank = 0;
+  for (const debt of s.debts) {
+    const r = deriveDebtDueReminder(debt, referenceDate);
+    if (
+      r.kind === DEBT_DUE_REMINDER_KIND.SETTLED_LOCALLY ||
+      r.kind === DEBT_DUE_REMINDER_KIND.ARCHIVED
+    ) {
+      continue;
+    }
+    const rk = SUPPLIER_DUE_RANK[r.kind] ?? 0;
+    if (rk > worstRank) {
+      worstRank = rk;
+      worstKind = r.kind;
+    }
+  }
+  return { worstKind, worstRank };
 }
 
 /**

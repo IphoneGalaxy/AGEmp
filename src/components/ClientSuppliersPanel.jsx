@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formatMoney } from '../utils/format';
 import {
+  DEBT_DUE_REMINDER_KIND,
   deriveLedgerTotals,
+  deriveSupplierDueSummary,
   deriveSupplierTotals,
   findSupplierEntry,
   normalizeClientDebtLedger,
@@ -44,44 +46,75 @@ const sectionCardClass =
  * @param {(n: number) => string} props.displayMoney
  */
 function LocalSupplierDebtStrip({ supplierId, linkId, ledgerNorm, refDate, displayMoney }) {
+  const entry = useMemo(
+    () => findSupplierEntry(ledgerNorm, supplierId, linkId),
+    [ledgerNorm, supplierId, linkId],
+  );
+
   const totals = useMemo(() => {
-    const entry = findSupplierEntry(ledgerNorm, supplierId, linkId);
     const stub = { id: '_stub', supplierId, linkId, debts: [] };
     return deriveSupplierTotals(entry ?? stub, refDate);
-  }, [ledgerNorm, supplierId, linkId, refDate]);
+  }, [entry, supplierId, linkId, refDate]);
+
+  const dueSummary = useMemo(() => {
+    const stub = { id: '_stub', supplierId, linkId, debts: [] };
+    return deriveSupplierDueSummary(entry ?? stub, refDate);
+  }, [entry, supplierId, linkId, refDate]);
 
   const hasActiveLocal = totals.activeDebts > 0 || totals.openPrincipal > 0;
 
+  const dueHint =
+    dueSummary.worstKind === DEBT_DUE_REMINDER_KIND.OVERDUE ? (
+      <p className="mt-2 flex items-start gap-2 rounded-design-sm border border-danger/25 bg-danger-soft/40 px-2.5 py-2 text-[11px] leading-snug text-content-soft">
+        <span className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-danger" aria-hidden />
+        <span>
+          <span className="font-medium text-content">Lembrete local:</span> há vencimento passado
+          no seu registro — só neste aparelho, sem cobrança automática.
+        </span>
+      </p>
+    ) : dueSummary.worstKind === DEBT_DUE_REMINDER_KIND.UPCOMING ? (
+      <p className="mt-2 flex items-start gap-2 rounded-design-sm border border-warning/30 bg-warning-soft/50 px-2.5 py-2 text-[11px] leading-snug text-content-soft">
+        <span className="mt-0.5 inline-block h-2 w-2 shrink-0 rounded-full bg-warning" aria-hidden />
+        <span>
+          <span className="font-medium text-content">Lembrete local:</span> vencimento em breve no
+          seu registro — informativo, não sincroniza com o fornecedor.
+        </span>
+      </p>
+    ) : null;
+
   return (
-    <div className="mt-3 rounded-design-sm border border-primary/20 bg-primary-soft/20 px-3 py-3">
+    <div className="mt-3 rounded-design-sm border border-primary/25 bg-primary-soft/15 px-3 py-3 dark:border-primary/35 dark:bg-primary-soft/10">
       <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
-        Minhas dívidas neste aparelho
+        Dados locais neste aparelho — Minhas dívidas
       </p>
       {!hasActiveLocal ? (
         <p className="mt-2 text-xs leading-relaxed text-content-muted">
-          Nenhum registro local de dívida para este fornecedor. Valores aprovados na plataforma não
-          entram aqui automaticamente — você poderá registrar no financeiro local em uma próxima
-          etapa.
+          Nenhuma dívida registrada aqui para este fornecedor. Pedido aprovado na plataforma{' '}
+          <span className="font-medium text-content-soft">não cria</span> registro local
+          automaticamente — use o detalhe do fornecedor quando quiser anotar no seu livro local.
         </p>
       ) : (
-        <dl className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
-          <div>
-            <dt className="text-content-muted">Principal (posição no livro)</dt>
-            <dd className="font-semibold text-content">{displayMoney(totals.openPrincipal)}</dd>
-          </div>
-          <div>
-            <dt className="text-content-muted">Juros estimados (mês)</dt>
-            <dd className="font-semibold text-content">{displayMoney(totals.estimatedMonthlyInterest)}</dd>
-          </div>
-          <div>
-            <dt className="text-content-muted">Quitação estimada</dt>
-            <dd className="font-semibold text-content">{displayMoney(totals.estimatedSettlement)}</dd>
-          </div>
-          <div className="sm:col-span-3">
-            <dt className="text-content-muted">Dívidas ativas (local)</dt>
-            <dd className="font-semibold text-content">{totals.activeDebts}</dd>
-          </div>
-        </dl>
+        <>
+          {dueHint}
+          <dl className="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3">
+            <div>
+              <dt className="text-content-muted">Principal (posição no livro)</dt>
+              <dd className="font-semibold text-content">{displayMoney(totals.openPrincipal)}</dd>
+            </div>
+            <div>
+              <dt className="text-content-muted">Juros estimados (mês)</dt>
+              <dd className="font-semibold text-content">{displayMoney(totals.estimatedMonthlyInterest)}</dd>
+            </div>
+            <div>
+              <dt className="text-content-muted">Quitação estimada</dt>
+              <dd className="font-semibold text-content">{displayMoney(totals.estimatedSettlement)}</dd>
+            </div>
+            <div className="sm:col-span-3">
+              <dt className="text-content-muted">Dívidas ativas (local)</dt>
+              <dd className="font-semibold text-content">{totals.activeDebts}</dd>
+            </div>
+          </dl>
+        </>
       )}
     </div>
   );
@@ -360,8 +393,8 @@ export default function ClientSuppliersPanel({
         key={sid || headingName}
         className="rounded-design-md border border-edge bg-surface-muted px-4 py-4"
       >
-        <p className="text-xs font-medium uppercase tracking-wide text-content-muted">
-          Fornecedor na plataforma
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-content-muted">
+          Plataforma — vínculo e pedidos remotos
         </p>
         <h4 className="mt-0.5 text-base font-semibold text-content">{headingName}</h4>
 
@@ -393,12 +426,12 @@ export default function ClientSuppliersPanel({
         ) : null}
 
         <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
-          Vínculo aprovado entre contas na plataforma. Os pedidos abaixo são só intenção pré-financeira
+          Vínculo aprovado entre contas na plataforma. Os pedidos abaixo são intenção pré-financeira
           remota —{' '}
           <span className="font-medium text-content-soft">
-            não criam contrato local, não alteram caixa e não sincronizam
+            não criam dívida local automaticamente, não alteram caixa e não sincronizam
           </span>{' '}
-          seu financeiro neste aparelho.
+          com o fornecedor o que você anota em «Minhas dívidas» neste aparelho.
         </p>
 
         <SupplierUidDetails supplierId={sid} />
@@ -523,18 +556,21 @@ export default function ClientSuppliersPanel({
   return (
     <div className="space-y-6">
       <div className={`${sectionCardClass} border-primary/25`}>
-        <h3 className="text-base font-semibold text-content">Minhas dívidas locais</h3>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+          Dados locais neste aparelho
+        </p>
+        <h3 className="mt-1 text-base font-semibold text-content">Minhas dívidas locais</h3>
         <p className="mt-2 text-xs leading-relaxed text-content-muted">
-          Registro opcional neste aparelho, separado da plataforma.{' '}
+          Livro opcional só neste aparelho — separado da plataforma.{' '}
           <span className="font-medium text-content-soft">
             Não sincroniza com o fornecedor nem substitui o controle dele.
           </span>{' '}
-          Um pedido aprovado na plataforma{' '}
+          Pedido aprovado na plataforma{' '}
           <span className="font-medium text-content-soft">não cria dívida aqui automaticamente</span>.
         </p>
         <p className="mt-2 text-[11px] leading-relaxed text-content-muted">
-          Os totais abaixo somam todo o livro local neste escopo (podem incluir fornecedores que não
-          aparecem na lista de vínculos atuais). Cada fornecedor mostra o recorte daquele vínculo.
+          Totais do livro inteiro neste escopo; cada fornecedor abaixo mostra só o recorte daquele
+          vínculo.
         </p>
         <dl className="mt-4 grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
           <div className="rounded-design-md border border-edge bg-surface-muted/60 px-3 py-2">
@@ -570,7 +606,7 @@ export default function ClientSuppliersPanel({
         </div>
         <div className="relative flex justify-center">
           <span className="bg-base px-3 text-[10px] font-semibold uppercase tracking-wide text-content-muted">
-            Plataforma — vínculos e pedidos remotos
+            Plataforma — vínculos e pedidos (remoto)
           </span>
         </div>
       </div>
@@ -607,9 +643,10 @@ export default function ClientSuppliersPanel({
           </button>
         </div>
         <p className="mb-4 text-[11px] leading-relaxed text-content-muted">
-          Relação <span className="font-medium text-content-soft">apenas na plataforma</span>. Clientes,
-          contratos e pagamentos que você usa no dia a dia continuam{' '}
-          <span className="font-medium text-content-soft">locais neste aparelho</span>.
+          Esta lista é <span className="font-medium text-content-soft">só na plataforma</span> (conta
+          ↔ conta). O financeiro que você opera no app (clientes, contratos, caixa) continua{' '}
+          <span className="font-medium text-content-soft">local neste aparelho</span> — exceto o
+          bloco «Minhas dívidas locais» acima, que é outro livro só seu.
         </p>
 
         {requestsError ? (

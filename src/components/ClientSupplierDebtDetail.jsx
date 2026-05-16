@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 
-import { formatMoney } from '../utils/format';
+import { formatMoney, formatDate } from '../utils/format';
 import { parseBrlMoneyInputToCents, normalizeNoteForLoanRequest } from '../utils/brlMoneyInput';
 import { mapFirestoreError } from '../firebase/firestoreErrors';
 import {
@@ -22,7 +22,9 @@ import {
   createDebtDraftFromApprovedLoanRequest,
   createManualDebtDraft,
   createSupplierFromApprovedLink,
+  DEBT_DUE_REMINDER_KIND,
   DEBT_STATUS,
+  deriveDebtDueReminder,
   deriveDebtSnapshot,
   findSupplierEntry,
   normalizeClientDebtLedger,
@@ -51,11 +53,51 @@ function formatRequestTimestamp(ts) {
   }
 }
 
-function debtStatusLabelPt(status) {
-  if (status === DEBT_STATUS.ACTIVE) return 'Ativa';
-  if (status === DEBT_STATUS.SETTLED_LOCALLY) return 'Quitada localmente';
-  if (status === DEBT_STATUS.ARCHIVED) return 'Arquivada';
-  return String(status);
+function debtDueReminderCopy(debt, refDate) {
+  const r = deriveDebtDueReminder(debt, refDate);
+  const when = r.dueEffectiveIso ? formatDate(r.dueEffectiveIso) : '';
+  switch (r.kind) {
+    case DEBT_DUE_REMINDER_KIND.SETTLED_LOCALLY:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-edge/80 bg-surface/50 px-2.5 py-2 text-[11px] leading-relaxed text-content-muted',
+        text: 'Quitada localmente. Lembretes de data não se aplicam a esta entrada.',
+      };
+    case DEBT_DUE_REMINDER_KIND.ARCHIVED:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-edge/80 bg-surface/50 px-2.5 py-2 text-[11px] leading-relaxed text-content-muted',
+        text: 'Arquivada. Lembretes de data não se aplicam a esta entrada.',
+      };
+    case DEBT_DUE_REMINDER_KIND.NO_DUE:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-edge/70 bg-surface/40 px-2.5 py-2 text-[11px] leading-relaxed text-content-muted',
+        text: 'Sem vencimento anotado neste registro local. Você pode usar data ou dia do mês só para se organizar.',
+      };
+    case DEBT_DUE_REMINDER_KIND.OVERDUE:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-danger/25 bg-danger-soft/35 px-2.5 py-2 text-[11px] leading-relaxed text-content-soft',
+        text: `Lembrete local (informativo): data anotada ${when} já passou no calendário — não calcula multa nem mora.`,
+      };
+    case DEBT_DUE_REMINDER_KIND.UPCOMING:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-warning/30 bg-warning-soft/40 px-2.5 py-2 text-[11px] leading-relaxed text-content-soft',
+        text: `Lembrete local (informativo): vencimento anotado ${when}${
+          r.daysUntilDue === 0 ? ' (hoje)' : r.daysUntilDue != null ? ` — em ${r.daysUntilDue} dia(s) no calendário local` : ''
+        }. Não sincroniza com o fornecedor.`,
+      };
+    case DEBT_DUE_REMINDER_KIND.ON_TRACK:
+      return {
+        className:
+          'mt-2 rounded-design-sm border border-edge/70 bg-surface/40 px-2.5 py-2 text-[11px] leading-relaxed text-content-muted',
+        text: `Vencimento anotado ${when} — além da janela de lembrete curto; só no seu aparelho, sem cobrança automática.`,
+      };
+    default:
+      return { className: 'hidden', text: '' };
+  }
 }
 
 /**
@@ -373,21 +415,24 @@ export default function ClientSupplierDebtDetail({
         </div>
       </div>
 
-      <div className="rounded-design-md border border-primary/30 bg-primary-soft/25 px-4 py-3 text-xs leading-relaxed text-content-soft">
-        <p className="font-medium text-content">
-          Estes dados são locais neste aparelho e não sincronizam com o fornecedor.
-        </p>
+      <div className="rounded-design-md border border-primary/30 bg-primary-soft/25 px-4 py-3 text-xs leading-relaxed text-content-soft dark:bg-primary-soft/15">
+        <p className="font-medium text-content">Dados locais neste aparelho</p>
         <p className="mt-2">
-          Registrar aqui não altera o controle do fornecedor. Pedido aprovado na plataforma não cria
+          O bloco «Minhas dívidas locais» abaixo não envia valores ao fornecedor e{' '}
+          <span className="font-medium text-content-soft">não sincroniza</span> com o controle dele.
+          Pedido aprovado na plataforma <span className="font-medium text-content-soft">não cria</span>{' '}
           dívida local automaticamente.
         </p>
       </div>
 
       <section className={`${cardClass} border-primary/20`}>
-        <h3 className="text-base font-semibold text-content">Minhas dívidas locais</h3>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">
+          Dados locais neste aparelho
+        </p>
+        <h3 className="mt-1 text-base font-semibold text-content">Minhas dívidas locais</h3>
         <p className="mt-2 text-xs leading-relaxed text-content-muted">
-          O que você registra abaixo fica só no seu financeiro local, neste escopo — não envia
-          valores ao fornecedor nem substitui o cadastro dele.
+          Registros opcionais só no seu livro local — não substituem pedidos na plataforma nem viram
+          extrato conjunto.
         </p>
 
         {debts.length === 0 ? (
@@ -399,6 +444,7 @@ export default function ClientSupplierDebtDetail({
           <ul className="mt-4 space-y-4">
             {debts.map((debt) => {
               const snap = deriveDebtSnapshot(debt, refDate);
+              const dueLine = debtDueReminderCopy(debt, refDate);
               return (
                 <li
                   key={debt.id}
@@ -437,6 +483,8 @@ export default function ClientSupplierDebtDetail({
                   {debt.localNote ? (
                     <p className="mt-2 text-[11px] text-content-muted">Obs.: {debt.localNote}</p>
                   ) : null}
+
+                  <p className={dueLine.className}>{dueLine.text}</p>
 
                   {debt.payments.length > 0 ? (
                     <div className="mt-3 border-t border-edge pt-2">
@@ -602,9 +650,13 @@ export default function ClientSupplierDebtDetail({
       </section>
 
       <section className={`${cardClass} border-edge`}>
-        <h3 className="text-base font-semibold text-content">Pedidos na plataforma</h3>
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-content-muted">
+          Plataforma — pedidos remotos
+        </p>
+        <h3 className="mt-1 text-base font-semibold text-content">Pedidos na plataforma</h3>
         <p className="mt-2 text-xs leading-relaxed text-content-muted">
-          Pré-financeiro remoto — não altera dívidas locais automaticamente.
+          Pré-financeiro remoto — não cria dívida local automaticamente nem altera o bloco «Minhas
+          dívidas locais» sem ação sua.
         </p>
 
         {prefillDraft ? (

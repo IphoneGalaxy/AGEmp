@@ -5,14 +5,19 @@ import {
   appendPaymentToDebt,
   appendSupplierToLedgerIfMissing,
   applyPaymentsToPrincipal,
+  calendarDaysBetweenIso,
   CLIENT_DEBT_LINK_APPROVED_STATUS,
   createDebtDraftFromApprovedLoanRequest,
   createManualDebtDraft,
   createSupplierFromApprovedLink,
+  DEBT_DUE_REMINDER_KIND,
   DEBT_ORIGIN,
   DEBT_STATUS,
+  deriveDebtDueEffectiveIso,
+  deriveDebtDueReminder,
   deriveDebtSnapshot,
   deriveLedgerTotals,
+  deriveSupplierDueSummary,
   deriveSupplierTotals,
   emptyClientDebtLedger,
   estimateMonthlyInterestForDebt,
@@ -426,6 +431,324 @@ describe('clientDebtLedger', () => {
     const debtId = L.suppliers[0].debts[0].id;
     L = updateDebtStatusInLedger(L, 'S1', 'L1', debtId, DEBT_STATUS.ARCHIVED);
     expect(L.suppliers[0].debts[0].status).toBe(DEBT_STATUS.ARCHIVED);
+  });
+
+  it('dueDate tem prioridade sobre dueDay em deriveDebtDueEffectiveIso', () => {
+    const d = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-08-10',
+              dueDay: 5,
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueEffectiveIso(d, new Date(2025, 1, 15, 12, 0, 0))).toBe('2025-08-10');
+  });
+
+  it('sem dueDate nem dueDay → sem vencimento efetivo', () => {
+    const d = createManualDebtDraft({
+      principalAmount: 200,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    expect(deriveDebtDueEffectiveIso(d, new Date(2025, 5, 1, 12, 0, 0))).toBe('');
+    const r = deriveDebtDueReminder(d, new Date(2025, 5, 1, 12, 0, 0));
+    expect(r.kind).toBe(DEBT_DUE_REMINDER_KIND.NO_DUE);
+  });
+
+  it('dueDay 31 em fevereiro → último dia válido (mês do referenceDate)', () => {
+    const d = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDay: 31,
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueEffectiveIso(d, new Date(2025, 1, 10, 12, 0, 0))).toBe('2025-02-28');
+    expect(deriveDebtDueEffectiveIso(d, new Date(2024, 1, 10, 12, 0, 0))).toBe('2024-02-29');
+  });
+
+  it('dueDay 30 em fevereiro comum → 29 em bissexto, 28 em não bissexto', () => {
+    const base = {
+      id: 'd1',
+      createdAt: '2025-01-01',
+      origin: DEBT_ORIGIN.MANUAL,
+      principalAmount: 100,
+      interestRate: 10,
+      startDate: '2025-01-01',
+      status: DEBT_STATUS.ACTIVE,
+      localNote: '',
+      payments: [],
+      dueDay: 30,
+    };
+    const d2025 = normalizeClientDebtLedger({
+      suppliers: [{ supplierId: 's', linkId: 'l', debts: [base] }],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueEffectiveIso(d2025, new Date(2025, 1, 10, 12, 0, 0))).toBe('2025-02-28');
+    const d2024 = normalizeClientDebtLedger({
+      suppliers: [{ supplierId: 's', linkId: 'l', debts: [{ ...base, id: 'd2' }] }],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueEffectiveIso(d2024, new Date(2024, 1, 10, 12, 0, 0))).toBe('2024-02-29');
+  });
+
+  it('lembretes: em dia (fora da janela de 7 dias), próximo, atrasado', () => {
+    const ref = new Date(2025, 5, 15, 12, 0, 0);
+    const onTrack = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-07-20',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueReminder(onTrack, ref).kind).toBe(DEBT_DUE_REMINDER_KIND.ON_TRACK);
+
+    const upcoming = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd2',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-06-18',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueReminder(upcoming, ref).kind).toBe(DEBT_DUE_REMINDER_KIND.UPCOMING);
+    expect(deriveDebtDueReminder(upcoming, ref).daysUntilDue).toBe(3);
+
+    const overdue = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd3',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-06-01',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueReminder(overdue, ref).kind).toBe(DEBT_DUE_REMINDER_KIND.OVERDUE);
+  });
+
+  it('settledLocally e archived sobrepõem lembrete de calendário', () => {
+    const ref = new Date(2025, 5, 15, 12, 0, 0);
+    const settled = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.SETTLED_LOCALLY,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-01-01',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueReminder(settled, ref).kind).toBe(DEBT_DUE_REMINDER_KIND.SETTLED_LOCALLY);
+
+    const archived = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd2',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ARCHIVED,
+              localNote: '',
+              payments: [],
+              dueDate: '2020-01-01',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    expect(deriveDebtDueReminder(archived, ref).kind).toBe(DEBT_DUE_REMINDER_KIND.ARCHIVED);
+  });
+
+  it('deriveSupplierDueSummary prioriza overdue sobre upcoming; ignora settled no ranking', () => {
+    const ref = new Date(2025, 5, 15, 12, 0, 0);
+    const sup = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-06-20',
+            },
+            {
+              id: 'd2',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-06-01',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0];
+    expect(deriveSupplierDueSummary(sup, ref).worstKind).toBe(DEBT_DUE_REMINDER_KIND.OVERDUE);
+
+    const sup2 = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [
+            {
+              id: 'd1',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.SETTLED_LOCALLY,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-01-01',
+            },
+            {
+              id: 'd2',
+              createdAt: '2025-01-01',
+              origin: DEBT_ORIGIN.MANUAL,
+              principalAmount: 100,
+              interestRate: 10,
+              startDate: '2025-01-01',
+              status: DEBT_STATUS.ACTIVE,
+              localNote: '',
+              payments: [],
+              dueDate: '2025-07-01',
+            },
+          ],
+        },
+      ],
+    }).suppliers[0];
+    expect(deriveSupplierDueSummary(sup2, ref).worstKind).toBe(DEBT_DUE_REMINDER_KIND.ON_TRACK);
+  });
+
+  it('deriveDebtDueReminder não altera deriveDebtSnapshot', () => {
+    const debt = createManualDebtDraft({
+      principalAmount: 500,
+      interestRate: 10,
+      startDate: '2025-01-01',
+    });
+    const withDue = normalizeClientDebtLedger({
+      suppliers: [
+        {
+          supplierId: 's',
+          linkId: 'l',
+          debts: [{ ...debt, dueDate: '2025-06-20' }],
+        },
+      ],
+    }).suppliers[0].debts[0];
+    const ref = new Date(2025, 5, 15, 12, 0, 0);
+    const snap0 = deriveDebtSnapshot(withDue, ref);
+    deriveDebtDueReminder(withDue, ref);
+    deriveDebtDueEffectiveIso(withDue, ref);
+    const snap1 = deriveDebtSnapshot(withDue, ref);
+    expect(snap1).toEqual(snap0);
+  });
+
+  it('calendarDaysBetweenIso mede dias civis', () => {
+    expect(calendarDaysBetweenIso('2025-06-15', '2025-06-18')).toBe(3);
+    expect(calendarDaysBetweenIso('2025-06-15', '2025-06-15')).toBe(0);
   });
 });
 
