@@ -214,7 +214,7 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 - **A2b/A2c** (continuam backlog).
 - Backup/export do registry local se necessário.
 - Melhoria visual / extração de componentes se necessário.
-- **Financeiro Local do Cliente («Minhas dívidas»):** **funcionalmente fechado nesta etapa** (**Subfases A–D3**, **`5fc8a58`** … **`eedbd2e`**) — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente (**pedido aprovado ≠ dívida local automática**); **`clientDebtLedger`** **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**; backup/export/import/auto-backup **incluem** o ledger (**dados locais neste aparelho**); **sem sincronização financeira remota** — o fornecedor **não** acede automaticamente ao financeiro local do cliente neste modelo; smoke manual **D3** **OK integral**, **sem NOK crítico** (**2026-05-17**) — ADR §20 e § dedicado abaixo; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **intocados** nesta linha — [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md).
+- **Financeiro Local do Cliente («Minhas dívidas»):** **funcionalmente fechado nesta etapa** (**Subfases A–D3**, **`5fc8a58`** … **`eedbd2e`**) — **`loanRequests`** e vínculos **não** criam/atualizam passivo local automaticamente (**pedido aprovado ≠ dívida local automática**); **`clientDebtLedger`** **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**; backup/export/import/auto-backup **incluem** o ledger (**dados locais neste aparelho**); **sem sincronização financeira remota** — o fornecedor **não** acede automaticamente ao financeiro local do cliente neste modelo; smoke manual **D3** **OK integral**, **sem NOK crítico** (**2026-05-17**) — ADR §20 e § dedicado abaixo; **pacote «Pré-Sync Local Hardening»** (**UX fronteira, lembretes derivados, export JSON específico**, **`d6f69af`** · **`8228b5c`** · **`b86ae9b`**) **fechado documentalmente** (**2026-05-16**) — [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md); smoke § Pacote Pré-Sync — ADR §21; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **intocados** nesta linha — [`ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md`](./ADR_FINANCEIRO_LOCAL_CLIENTE_MINHAS_DIVIDAS.md).
 
 ---
 
@@ -233,6 +233,22 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 | 7 | Trocar conta/escopo sem misturar dados | OK |
 | 8 | Confirmar que fornecedor **não vê** automaticamente o financeiro local do cliente | OK |
 | 9 | Confirmar que dashboard/cálculos principais **não** foram afetados negativamente | OK |
+
+---
+
+## Smoke manual — Pacote «Pré-Sync Local Hardening» (Onda 2B)
+
+**Data:** **2026-05-16** · **Executor:** operador humano · **Resultado:** **OK** · **NOK crítico:** nenhum informado após **`b86ae9b`**
+
+| # | Cenário | Resultado |
+|---|---------|-----------|
+| 1 | Aba **Fornecedores** operacional | OK |
+| 2 | Separação **Plataforma** vs **dados locais neste aparelho** | OK |
+| 3 | Lembretes derivados **sem** alteração ao motor central (`calculations.js`) | OK |
+| 4 | Dívida a partir de pedido **approved** — **Ver detalhes** **sem** tela branca | OK |
+| 5 | Export JSON específico baixa; raiz contém **`clientDebtLedger`**; **sem** **`clients`** / **`fundsTransactions`** na raiz | OK |
+
+**Referências:** commits **`d6f69af`** (Onda 1), **`8228b5c`** (Onda 2A), **`b86ae9b`** (correção); plano [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md); ADR §21. **Guardrails:** export específico **não substitui** backup completo nesta linha; **sem** sync financeiro remoto.
 
 ---
 
@@ -255,4 +271,5 @@ Backlog consolidado após a fase **«Visão Fornecedores + Governança local»:*
 | 2026-05-05 | **Mini ADR snapshots — Subfase 7 (QA/docs):** mini fase **fechada**; commits **`6793461`** … **`28f3f4a`**; deploy rules **`agemp-financas-pro`** após **`cdc55d9`**; smoke § **Mini ADR**. |
 | 2026-05-05 | **«Visão Fornecedores + Governança local» — Pacotes 1–3:** fecho documental § dedicado nesta matriz; commits **`0be3e0b`**, **`c921d8d`**, **`a6c2d8c`**; sem mudança Firestore/rules — [`FIRESTORE_LOANREQUESTS.md`](./FIRESTORE_LOANREQUESTS.md). |
 | 2026-05-16 | **«Minhas dívidas» — backup com `clientDebtLedger`:** **`40fa3a4`**; § backlog/smoke atualizados — ADR §18 (época D2). |
+| 2026-05-16 | **Pacote «Pré-Sync Local Hardening» — Onda 2B documental:** **`d6f69af`**, **`8228b5c`**, **`b86ae9b`**; smoke § Pacote Pré-Sync **OK**; plano [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md); **sem sync financeiro remoto**. |
 | 2026-05-17 | **Smoke manual D3 OK integral:** linha «Minhas dívidas» **funcionalmente fechada nesta etapa** (ADR §20; § smoke nesta matriz); **sem NOK crítico** informado; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados nesta linha. |

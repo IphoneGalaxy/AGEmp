@@ -4,9 +4,9 @@
 **Projeto:** AGEmp / Finanças Pro  
 **Escopo:** Evoluir a aba **Fornecedores** (papel **Cliente**) para uma superfície útil de **controle local-first das dívidas do cliente por fornecedor**, preservando a separação entre **plataforma remota pré-financeira** e **financeiro local**.
 
-**Estado da fase:** **funcionalmente fechada nesta etapa** (entrega «Minhas dívidas» — Fase 1 documentada): Subfases **A**, **B**, **C**, **D1**, **D2** e **D3** **concluídas** (`5fc8a58`, `e24eb25`, `0f2c43b`, `40fa3a4`, `eedbd2e`, smoke **D3** registrado **2026-05-17**). O **`clientDebtLedger`** permanece **dados locais neste aparelho** (por escopo), **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**, incluído em backup/export/import/auto-backup, **sem sincronização financeira remota** com o fornecedor e **sem** Firebase como fonte financeira autoritativa do passivo local; **`pedido aprovado` na plataforma não cria dívida local automaticamente**. Evoluções (**Subfase E**, Painel global, alinhamento ao motor central, UX avançada) ficam **backlog** mediante ADR/decisão própria — §18.
+**Estado da fase:** **funcionalmente fechada nesta etapa** (entrega «Minhas dívidas» — Fase 1 documentada): Subfases **A**, **B**, **C**, **D1**, **D2** e **D3** **concluídas** (`5fc8a58`, `e24eb25`, `0f2c43b`, `40fa3a4`, `eedbd2e`, smoke **D3** registrado **2026-05-17**). **Pacote «Pré-Sync Local Hardening»** (UX fronteira plataforma/local, lembretes derivados locais, export JSON específico do ledger — **sem** import desse arquivo nesta entrega) **fechado documentalmente** (**Onda 2B**, **2026-05-16** — [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md); commits **`d6f69af`**, **`8228b5c`**, **`b86ae9b`**). O **`clientDebtLedger`** permanece **dados locais neste aparelho** (por escopo), **separado** de **`clients[]`** e de **`loanRequestConversionRegistry`**, incluído em backup/export/import/auto-backup, **sem sincronização financeira remota** com o fornecedor e **sem** Firebase como fonte financeira autoritativa do passivo local; **`pedido aprovado` na plataforma não cria dívida local automaticamente**. Evoluções (**Subfase E**, Painel global, alinhamento ao motor central, **importação do JSON dedicado**, CSV, UX avançada) ficam **backlog** mediante ADR/decisão própria — §18.
 
-**Data do documento:** 2026-05-04 · **Registros D1/D2:** 2026-05-16 · **Registro D3 (smoke + docs):** 2026-05-17
+**Data do documento:** 2026-05-04 · **Registros D1/D2:** 2026-05-16 · **Registro D3 (smoke + docs):** 2026-05-17 · **Pacote Pré-Sync — registro §21:** 2026-05-16
 
 ---
 
@@ -229,7 +229,7 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 ## 18. Próxima ação recomendada
 
 1. Tratar evoluções como **backlog priorizado pelo produto** — §13 (Subfase D backlog) e §16 (riscos residuais); **não** abrir integração ao Painel global (**Subfase E**), sync financeiro remoto nem alteração a **`calculations.js`** sem **ADR própria**.
-2. **Backlog explícito (sem nova implementação nesta rodada):** refinamento visual da aba Fornecedores / detalhe do fornecedor; vencimentos/lembretes **locais neste aparelho** mais avançados; limites/tamanho de **`localStorage`** conforme volume de dívidas/backups; possível alinhamento futuro do **`clientDebtLedger`** com **`calculations.js`** mediante ADR própria; possível integração futura com dashboard global mediante ADR própria; possível melhoria de exportação/relatório específico das dívidas do cliente; **sync financeiro remoto** continua **fora do escopo** até decisão própria.
+2. **Backlog explícito:** quota/tamanho de **`localStorage`** conforme volume de dívidas/backups; possível alinhamento futuro do **`clientDebtLedger`** com **`calculations.js`** mediante ADR própria; possível integração futura com dashboard global mediante ADR própria; **importação/restauração** a partir do **JSON específico** «Minhas dívidas» (distinto do backup completo); formato **CSV** ou relatórios adicionais; lembretes/notificações mais avançados — **sync financeiro remoto** continua **fora do escopo** até decisão própria. *(Entregues e arquivadas — [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md):* refinamento UX fronteira **Plataforma** vs **dados locais**, lembretes derivados **`dueDate`/`dueDay`**, export JSON específico tipado.)*
 
 ---
 
@@ -239,6 +239,7 @@ Microcopy deve impedir interpretação de **extrato oficial conjunto** ou **sald
 |------|------|
 | 2026-05-04 | Versão inicial — ADR/plano documental; sem mudanças em `src/`, `firestore.rules`, `calculations.js` nem testes. |
 | 2026-05-16 | **Subfase D1 entregue no código** (`40fa3a4`): backup/export/import/auto-backup incluem **`clientDebtLedger`** normalizado; compatível com backups antigos; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** intocados; **Subfase D2** atualiza só documentação viva (este arquivo e correlatos). |
+| 2026-05-16 | **Pacote «Pré-Sync Local Hardening» — Onda 2B documental:** UX/lembretes/export JSON específico + correção `debtStatusLabelPt`; commits **`d6f69af`**, **`8228b5c`**, **`b86ae9b`**; smoke §21 **OK**; plano arquivado [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md); guardrails §17 preservados — **sem** sync financeiro remoto neste pacote. |
 | 2026-05-17 | **Subfase D3 documental:** smoke manual final **OK integral**, **sem NOK crítico** (§20); linha «Minhas dívidas» registada como **funcionalmente fechada nesta etapa**; **`eedbd2e`** (D2) + docs D3 — **sem** `src/`. |
 
 ---
@@ -260,3 +261,21 @@ Execução humana confirmou (entre outros):
 - painel/dashboard e cálculos principais do núcleo existente **sem regressão observada** neste smoke — **OK**
 
 **Nota:** Firebase permanece camada **pré-financeira / relacional** para pedidos e vínculos — **não** fonte autoritativa do **`clientDebtLedger`**.
+
+---
+
+## 21. Smoke manual — Pacote «Pré-Sync Local Hardening» (Onda 2B)
+
+**Data do registro:** **2026-05-16** · **Resultado:** **OK** · **NOK crítico:** **nenhum informado** após **`b86ae9b`**
+
+Execução humana confirmou (entre outros):
+
+- aba **Fornecedores** operacional — **OK**
+- separação **Plataforma** vs **dados locais neste aparelho** — **OK**
+- lembretes derivados **sem** alteração ao motor central — **OK**
+- dívida a partir de pedido **approved** + reabrir **Ver detalhes** **sem** tela branca — **OK**
+- export JSON específico baixa e contém **`clientDebtLedger`**; raiz **sem** **`clients`** / **`fundsTransactions`** — **OK**
+
+**Commits de referência do pacote:** **`d6f69af`** (Onda 1) · **`8228b5c`** (Onda 2A) · **`b86ae9b`** (correção). **Plano:** [`plans/completed/PRE_SYNC_LOCAL_HARDENING.md`](./plans/completed/PRE_SYNC_LOCAL_HARDENING.md).
+
+**Guardrails:** local-first; **sem** sync financeiro remoto; **`calculations.js`**, **`firestore.rules`**, Firebase SDK e **`payment.linkContext`** **intocados** por este pacote; export específico **não substitui** backup completo nem declara fluxo de import nesta entrega.
